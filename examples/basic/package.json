@@ -1,0 +1,24 @@
+{
+  "name": "basic",
+  "version": "0.0.1",
+  "description": "Hyperact basic example",
+  "main": "bundle.js",
+  "scripts": {
+    "build": "WEBPACK_ENV=build webpack",
+    "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kevin Doughty",
+  "license": "MIT",
+  "dependencies": {
+    "hyperact": "^0.0.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.18.2",
+    "babel-loader": "^6.2.8",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-react": "^6.16.0",
+    "webpack": "^1.14.0",
+    "webpack-dev-server": "^1.16.2"
+  }
+}
