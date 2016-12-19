@@ -5,9 +5,7 @@ Any resemblance to an animation library is purely coincidental.
 
 ## Style
 
-The files in the source/style directory are highly modified derivative works of:
-
-[web-animations-js-legacy](https://github.com/web-animations/web-animations-js-legacy)
+The files in the [source/style directory](https://github.com/KevinDoughty/hyperact/tree/master/source/style) are highly modified derivative works of [web-animations-js-legacy](https://github.com/web-animations/web-animations-js-legacy).
 
 
 ## Examples
