@@ -3,6 +3,13 @@
 Any resemblance to an animation library is purely coincidental.
 
 
+## Style
+
+The files in the source/style directory are highly modified derivative works of:
+
+[web-animations-js-legacy](https://github.com/web-animations/web-animations-js-legacy)
+
+
 ## Examples
 
 - [tags](https://kevindoughty.github.io/hyperact/examples/tags/) Hello world using script tags
@@ -14,5 +21,4 @@ Any resemblance to an animation library is purely coincidental.
 ## License
 
 Apache-2.0
-
 

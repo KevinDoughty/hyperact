@@ -1,29 +1,3 @@
-// export function HyperValue(settings) { // The former base type class
-// 	if (this instanceof HyperValue === false) {
-// 		throw new Error("HyperValue is a constructor, not a function. Do not call it directly.");
-// 	}
-// 	if (this.constructor === HyperValue) {
-// 		throw new Error("HyperValue is an abstract base class.");
-// 	}
-// }
-// HyperValue.prototype = {
-// 	constructor: HyperValue,
-// 	zero: function() {
-// 		throw new Error("HyperValue subclasses must implement function: zero()");
-// 	},
-// 	add: function() {
-// 		throw new Error("HyperValue subclasses must implement function: add(a,b)");
-// 	},
-// 	subtract: function() {
-// 		throw new Error("HyperValue subclasses must implement function: subtract(a,b) in the form subtract b from a");
-// 	},
-// 	interpolate: function(a,b,progress) { // new, meant to be overridden, otherwise you get discrete.
-// 		//throw new Error("HyperValue subclasses must implement function: interpolate(a,b,progress)");
-// 		if (progress >= 1) return b;
-// 		return a;
-// 	}
-// };
-
 function isFunction(w) { // WET
 	return w && {}.toString.call(w) === "[object Function]";
 }
@@ -46,8 +20,6 @@ HyperNumber.prototype = {
 	}
 };
 
-
-
 export function HyperScale(settings) {
 }
 HyperScale.prototype = {
@@ -66,8 +38,6 @@ HyperScale.prototype = {
 		return a + (b-a) * progress;
 	}
 };
-
-
 
 export function HyperArray(type,length,settings) {
 	this.type = type;
@@ -104,8 +74,6 @@ HyperArray.prototype = {
 		return array;
 	}
 };
-
-
 
 export function HyperSet(settings) {
 	if (isFunction(settings)) this.sort = settings;
@@ -204,8 +172,6 @@ HyperSet.prototype = {
 	}
 };
 
-
-
 export function HyperPoint(settings) {
 }
 HyperPoint.prototype = {
@@ -224,8 +190,6 @@ HyperPoint.prototype = {
 	}
 };
 
-
-
 export function HyperSize(settings) {
 }
 HyperSize.prototype = {
@@ -243,8 +207,6 @@ HyperSize.prototype = {
 		return HyperMakeSize(a.width + (b.width-a.width) * progress, a.height + (b.height-a.height) * progress);
 	}
 };
-
-
 
 export function HyperRect(settings) {
 }
@@ -272,8 +234,6 @@ HyperRect.prototype = {
 		};
 	}
 };
-
-
 
 export function HyperRange(settings) { // TODO: negative values? // This should union the whole range, not add the individual values. NSUnionRange, not NSIntersectionRange, which is a range containing the indices that exist in both ranges.
 	throw new Error("HyperRange not supported");

@@ -376,7 +376,7 @@ describe("five", function() {
 			to:2,
 			blend:"absolute"
 		});
-		assert(true);
+		assert(false);
 	});
 // 	it("input output array", function(done) {
 // 		var completed = false;

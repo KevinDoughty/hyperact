@@ -60,7 +60,7 @@ export function decorate(controller, delegate, layerInstance) {
 	if (!controller) throw new Error("Nothing to hyperactivate.");
 	if (controller.registerAnimatableProperty || controller.addAnimation) throw new Error("Already hyperactive"); // TODO: be more thorough
 	if (!delegate) delegate = controller;
-	if (!layerInstance) layerInstance = delegate;
+	if (!layerInstance) layerInstance = controller;
 	var allAnimations = [];
 	var allNames = [];
 	var namedAnimations = {};
