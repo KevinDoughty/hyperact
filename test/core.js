@@ -378,34 +378,13 @@ describe("five", function() {
 		});
 		assert(false);
 	});
-// 	it("input output array", function(done) {
-// 		var completed = false;
-// 		var view = {
-// 			a:1,
-// 			b:2,
-// 			c:3,
-// 			display: function() {
-// 				if (completed) done();
-// 			},
-// 			input: function(key,value) {
-// 				if (Array.isArray(value) && value.length) return value[0];
-// 				return value;
-// 			},
-// 			output: function(key,value) {
-// 			}
-// 		};
-// 		core.decorate(view);
-// 		view.registerAnimatableProperty("a");
-// 		view.addAnimation({
-// 			property:"a",
-// 			duration:duration,
-// 			from:2,
-// 			to:2,
-// 			blend:"absolute",
-// 			onend: function(finished) {
-// 				var presentation = view.presentation;
-// 				completed = true;
-// 			}
-// 		});
-// 	});
+	it("layer setter automatically registers properties"), function() {
+		assert(false);
+	});
+	it("decorate automatically registers existing properties"), function() {
+		assert(false);
+	});
+	it("animationForKey presentation argument"), function() {
+		assert(false);
+	});
 });
