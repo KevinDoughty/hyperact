@@ -148,19 +148,19 @@ view.x = 1;
 #### `get model`
 
 *Returns*  
-  `{object} A copy of the layer reflecting specified values.
+  `{object}` A copy of the layer reflecting specified values.
 
 
 #### `get presentation`
 
 *Returns*  
-  `{object} A copy of the layer reflecting animated values.
+  `{object}` A copy of the layer reflecting animated values.
 
 
 #### `get previous`
 
 *Returns*  
-  `{object} A copy of the layer reflecting previous values.
+  `{object}` A copy of the layer reflecting previous values.
 
 
 ### Delegate methods
