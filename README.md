@@ -66,7 +66,7 @@ view.x = 1;
   `default {object|number}` Optional. The description or duration used to implicitly animate on registered property value change.  
 
 *Returns*  
-  `{object}` The same `receiver` with animation management functions.
+  `{undefined}`
 
 *Discussion*  
   The default animation may be changed by calling again, but there is currently no way to deregister.
@@ -118,7 +118,7 @@ view.x = 1;
 
 
 #### `removeAllAnimations`
-  Removes all animations, including those not accessible for lack of a name.
+  Removes all animations from the receiver, including those not accessible for lack of a name.
 
 *Returns*  
   `{undefined}`

@@ -388,4 +388,6 @@ export function decorate(controller, delegate, layerInstance) {
 		}
 		return null;
 	};
+
+	return controller;
 }
