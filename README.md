@@ -26,9 +26,9 @@ view.x = 1;
   Provides `receiver` with methods and property accessors for animation management.
 
 *Parameters*  
-  `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate by a call to `registerAnimatableProperty` with no default animation.
-  `delegate {object}` Optional. The object that implements also optional delegate methods. Default is `receiver`.
-  `layer {object}` Optional. The object upon which property value changes trigger implicit animation. Default is `receiver`.
+  `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate by a call to `registerAnimatableProperty` with no default animation.  
+  `delegate {object}` Optional. The object that implements also optional delegate methods. Default is `receiver`.  
+  `layer {object}` Optional. The object upon which property value changes trigger implicit animation. Default is `receiver`.  
 
 *Returns*  
   `{object}` The same `receiver` with animation management methods and property accessors.
@@ -62,8 +62,8 @@ view.x = 1;
   Enables implicit animation on property value change of the receiver’s layer.
 
 *Parameters*  
-  `property {string}` Required. The name of the animatable property.
-  `default {object|number}` Optional. The description or duration used to implicitly animate on registered property value change.
+  `property {string}` Required. The name of the animatable property.  
+  `default {object|number}` Optional. The description or duration used to implicitly animate on registered property value change.  
 
 *Returns*  
   `{object}` The same `receiver` with animation management functions.
@@ -83,8 +83,8 @@ view.x = 1;
   Adds an animation to the receiver.
 
 *Parameters*  
-  `description {object|number}` Required. An animation description. Duration is also allowed but not expected to be useful.
-  `name {string}` Optional. If provided, becomes the argument needed for `animationNamed` and `removeAnimation`.
+  `description {object|number}` Required. An animation description. Duration is also allowed but not expected to be useful.  
+  `name {string}` Optional. If provided, becomes the argument needed for `animationNamed` and `removeAnimation`.  
 
 *Returns*  
   `{undefined}`
@@ -96,7 +96,7 @@ view.x = 1;
 #### `removeAnimation(name)`
 
 *Parameters*  
-  `name {string}` Required. The `name` argument that was passed to `addAnimation`.
+  `name {string}` Required. The `name` argument that was passed to `addAnimation`.  
 
 *Returns*  
   `{undefined}`
@@ -105,7 +105,7 @@ view.x = 1;
 #### `animationNamed(name)`
 
 *Parameters*  
-  `name {string}` Required. The `name` argument that was passed to `addAnimation`.
+  `name {string}` Required. The `name` argument that was passed to `addAnimation`.  
 
 *Returns*  
   `{object}` A description of the animation.
@@ -170,10 +170,10 @@ view.x = 1;
   Optional. If this method is implemented, the delegate will be asked to return an animation to run in response to every value change of registered properties.
 
 *Parameters*  
-  `key {string}` The property that changed.
-  `value {any}` The new value.
-  `previous {any}` The previous value.
-  `presentation {any}` The current animated value.
+  `key {string}` The property that changed.  
+  `value {any}` The new value.  
+  `previous {any}` The previous value.  
+  `presentation {any}` The current animated value.  
 
 *Returns*  
   `{object|number|null|undefined}` Expects an animation description or duration to animate. Returning undefined is equivalent to returning the default animation registered by `registerAnimatableProperty`. Returning null will result in no animation, regardless if a default is registered.
@@ -193,8 +193,8 @@ view.x = 1;
   Optional. A value transformer. If this method is implemented, it must return a value.
 
 *Parameters*  
-  `key {string}` The affected property.
-  `value {any}` The value to be transformed.
+  `key {string}` The affected property.  
+  `value {any}` The value to be transformed.  
 
 *Returns*  
   `{any}` Expects the transformed value.
@@ -204,11 +204,11 @@ view.x = 1;
   Optional. A value transformer. If this method is implemented, it must return a value.
 
 *Parameters*  
-  `key {string}` The affected property.
-  `value {any}` The value to be transformed.
+  `key {string}` The affected property.  
+  `value {any}` The value to be transformed.  
 
 *Returns*  
-  `{any}` Expects the transformed value;
+  `{any}` Expects the transformed value.
 
 
 ## Style
