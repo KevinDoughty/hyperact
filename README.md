@@ -226,6 +226,8 @@ view.x = 1;
 - [basic](https://kevindoughty.github.io/hyperact/examples/basic/) Hello world using ES6 import
 - [rococo](https://kevindoughty.github.io/hyperact/examples/rococo/) Canvas drawing example
 - [bohr](https://kevindoughty.github.io/hyperact/examples/bohr/) The not quite Bohr model of the atom
+- tree-shaking (a failed attempt)
+- chunks (nothing to see here)
 
 
 ## Credits
