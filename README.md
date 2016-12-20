@@ -25,9 +25,9 @@ view.x = 1;
   Provides `receiver` with methods and property accessors for animation management.
 
 *Parameters*  
-  `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate by a call to `registerAnimatableProperty` with no default animation.  
-  `delegate {object}` Optional. The object that implements also optional delegate methods. Default is `receiver`.  
-  `layer {object}` Optional. The object upon which property value changes trigger implicit animation. Default is `receiver`.  
+  - `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate by a call to `registerAnimatableProperty` with no default animation.  
+  - `delegate {object}` Optional. The object that implements also optional delegate methods. Default is `receiver`.  
+  - `layer {object}` Optional. The object upon which property value changes trigger implicit animation. Default is `receiver`.  
 
 *Returns*  
   `{object}` The same `receiver` with animation management methods and property accessors.
@@ -55,14 +55,15 @@ view.x = 1;
 
 
 ## Receiver Methods
+  The following methods are added to the `receiver`, the first argument to the `decorate` function.
 
 
 #### `registerAnimatableProperty(property, default)`
   Enables implicit animation on property value change of the receiver’s layer.
 
 *Parameters*  
-  `property {string}` Required. The name of the animatable property.  
-  `default {object|number}` Optional. The description or duration used to implicitly animate on registered property value change.  
+  - `property {string}` Required. The name of the animatable property.  
+  - `default {object|number}` Optional. The description or duration used to implicitly animate on registered property value change.  
 
 *Returns*  
   `{undefined}`
@@ -82,8 +83,8 @@ view.x = 1;
   Adds an animation to the receiver.
 
 *Parameters*  
-  `description {object|number}` Required. An animation description. Duration is also allowed but not expected to be useful.  
-  `name {string}` Optional. If provided, becomes the argument needed for `animationNamed` and `removeAnimation`.  
+  - `description {object|number}` Required. An animation description. Duration is also allowed but not expected to be useful.  
+  - `name {string}` Optional. If provided, becomes the argument needed for `animationNamed` and `removeAnimation`.  
 
 *Returns*  
   `{undefined}`
@@ -95,7 +96,7 @@ view.x = 1;
 #### `removeAnimation(name)`
 
 *Parameters*  
-  `name {string}` Required. The `name` argument that was passed to `addAnimation`.  
+  - `name {string}` Required. The `name` argument that was passed to `addAnimation`.  
 
 *Returns*  
   `{undefined}`
@@ -104,7 +105,7 @@ view.x = 1;
 #### `animationNamed(name)`
 
 *Parameters*  
-  `name {string}` Required. The `name` argument that was passed to `addAnimation`.  
+  - `name {string}` Required. The `name` argument that was passed to `addAnimation`.  
 
 *Returns*  
   `{object}` A description of the animation.
@@ -124,6 +125,7 @@ view.x = 1;
 
 
 ## Receiver Property Accessors
+  The following property accessors are added to the `receiver`, the first argument to the `decorate` function.
 
 
 #### `get layer`
@@ -163,37 +165,44 @@ view.x = 1;
 
 
 ## Delegate methods
+  The following methods, when implemented on the `delegate` object passed as the second argument to the `decorate` function,
+  allow additional configuration.
+
+
+#### `display`
+  Optional. 
+  This will be called at every animation frame of a `receiver` with running animations.
+  Properties will reflect current animated values. 
+  An implementation should apply those values here to produce the animated results.
+
+*Returns*  
+  `{undefined}` Expects nothing. A return value is ignored.
+
+*Discussion*  
+  Currently, neither `decorate` nor `registerAnimatableProperty` result in a call to `display` but this may change in the future.
 
 
 #### `animationForKey(key, value, previous, presentation)`
   Optional. If this method is implemented, the delegate will be asked to return an animation to run in response to every value change of registered properties.
 
 *Parameters*  
-  `key {string}` The property that changed.  
-  `value {any}` The new value.  
-  `previous {any}` The previous value.  
-  `presentation {any}` The current animated value.  
+  - `key {string}` The property that changed.  
+  - `value {any}` The new value.  
+  - `previous {any}` The previous value.  
+  - `presentation {any}` The current animated value.  
 
 *Returns*  
-  `{object|number|null|undefined}` Expects an animation description or duration to animate. Returning undefined is equivalent to returning the default animation registered by `registerAnimatableProperty`. Returning null will result in no animation, regardless if a default is registered.
-
-
-#### `display`
-  Optional. If this method is implemented, it will be called on every animation frame to render the results. Layer values reflect animated values.
-
-*Returns*  
-  `{undefined}` Expects nothing. A return value is ignored.
-
-*Discussion*  
-  Currently, neither `decorate` nor `registerAnimatableProperty` result in calls to `display` but this may change in the future.
+  `{object|number|null|undefined}` Expects an animation description or duration to animate. 
+  Returning undefined is equivalent to returning the default animation registered by `registerAnimatableProperty`. 
+  Returning null will result in no animation, regardless if a default is registered.
 
 
 #### `input`
   Optional. A value transformer. If this method is implemented, it must return a value.
 
 *Parameters*  
-  `key {string}` The affected property.  
-  `value {any}` The value to be transformed.  
+  - `key {string}` The affected property.  
+  - `value {any}` The value to be transformed.  
 
 *Returns*  
   `{any}` Expects the transformed value.
@@ -203,8 +212,8 @@ view.x = 1;
   Optional. A value transformer. If this method is implemented, it must return a value.
 
 *Parameters*  
-  `key {string}` The affected property.  
-  `value {any}` The value to be transformed.  
+  - `key {string}` The affected property.  
+  - `value {any}` The value to be transformed.  
 
 *Returns*  
   `{any}` Expects the transformed value.
