@@ -25,9 +25,9 @@ view.x = 1;
   Provides `receiver` with methods and property accessors for animation management.
 
 *Parameters*  
-  - `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate by a call to `registerAnimatableProperty` with no default animation.  
+  - `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate. 
   - `delegate {object}` Optional. The object that implements also optional delegate methods. Default is `receiver`.  
-  - `layer {object}` Optional. The object upon which property value changes trigger implicit animation. Default is `receiver`.  
+  - `layer {object}` Optional. The object upon which property value change triggers implicit animation. Default is `receiver`.  
 
 *Returns*  
   `{object}` The same `receiver` with animation management methods and property accessors.
@@ -135,8 +135,10 @@ view.x = 1;
   
 
 #### `set layer`
-  Perform a merge of properties similar to React’s `setState`. 
-  Properties are automatically registered to animate by a call to `registerAnimatableProperty` with no default animation.
+  Perform a merge of properties like React’s `setState` but synchronous. 
+  Properties are automatically registered to animate, 
+  no call to `registerAnimatableProperty` is needed, 
+  unless to specify a default animation.
   Delegate `animationForKey` calls are triggered on value change of respective properties.
 
 *Returns*  
@@ -173,7 +175,7 @@ view.x = 1;
   Optional. 
   This will be called at every animation frame of a `receiver` with running animations.
   Properties will reflect current animated values. 
-  An implementation should apply those values here to produce the animated results.
+  An implementation should apply those values here to produce animated results.
 
 *Returns*  
   `{undefined}` Expects nothing. A return value is ignored.
