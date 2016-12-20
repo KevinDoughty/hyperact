@@ -1,6 +1,5 @@
 # Hyperact
 
-Any resemblance to an animation library is purely coincidental. 
 This is a work in progress, still poorly defined in many areas. 
 Documentation does not mean implementation. 
 Beware changes like renaming, with semver violations, for just a little while longer.
@@ -19,7 +18,7 @@ view.x = 1;
 ```
 
 
-### Core
+## Core
 
 
 ####`decorate(receiver, delegate, layer)`
@@ -55,7 +54,7 @@ view.x = 1;
   `output`.
 
 
-### Receiver Methods
+## Receiver Methods
 
 
 #### `registerAnimatableProperty(property, default)`
@@ -124,7 +123,7 @@ view.x = 1;
   `{undefined}`
 
 
-### Receiver Property Accessors
+## Receiver Property Accessors
 
 
 #### `get layer`
@@ -163,7 +162,7 @@ view.x = 1;
   `{object}` A copy of the layer reflecting previous values.
 
 
-### Delegate methods
+## Delegate methods
 
 
 #### `animationForKey(key, value, previous, presentation)`
@@ -182,11 +181,11 @@ view.x = 1;
 #### `display`
   Optional. If this method is implemented, it will be called on every animation frame to render the results. Layer values reflect animated values.
 
-*Discussion*  
-  Currently, neither `decorate` nor `registerAnimatableProperty` result in calls to `display` but this may change in the future.
-
 *Returns*  
   `{undefined}` Expects nothing. A return value is ignored.
+
+*Discussion*  
+  Currently, neither `decorate` nor `registerAnimatableProperty` result in calls to `display` but this may change in the future.
 
 
 #### `input`
@@ -211,17 +210,24 @@ view.x = 1;
   `{any}` Expects the transformed value.
 
 
-## Style
-
-Files in the [source/style directory](https://github.com/KevinDoughty/hyperact/tree/master/source/style) are highly modified derivative works of [web-animations-js-legacy](https://github.com/web-animations/web-animations-js-legacy).
-
-
 ## Examples
+
 
 - [tags](https://kevindoughty.github.io/hyperact/examples/tags/) Hello world using script tags
 - [basic](https://kevindoughty.github.io/hyperact/examples/basic/) Hello world using ES6 import
 - [rococo](https://kevindoughty.github.io/hyperact/examples/rococo/) Canvas drawing example
 - [bohr](https://kevindoughty.github.io/hyperact/examples/bohr/) The not quite Bohr model of the atom
+
+
+## Credits
+
+
+The API design is heavily influenced by [Core Animation](https://www.google.com/search?q=Core+Animation+Reference).
+
+
+Files in the [source/style directory](https://github.com/KevinDoughty/hyperact/tree/master/source/style) are 
+highly modified derivative works of [web-animations-js-legacy](https://github.com/web-animations/web-animations-js-legacy),
+which is released under the same license.
 
 
 ## License

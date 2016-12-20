@@ -387,4 +387,10 @@ describe("five", function() {
 	it("animationForKey presentation argument"), function() {
 		assert(false);
 	});
+	it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous "), function() {
+		assert(false);
+	});
+	it("previousLayer values are correct"), function() {
+		assert(false);
+	});
 });
