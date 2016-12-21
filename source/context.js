@@ -27,7 +27,7 @@ export default function HyperContext() {
 	this.ticking = false;
 	this.animationFrame;
 	this.displayLayers = []; // renderLayer
-	this.displayFunctions = []; // strange new behavior // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
+	this.displayFunctions = []; // strange new implementation // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
 	this.cleanupFunctions = [];
 }
 
@@ -93,7 +93,7 @@ HyperContext.prototype = {
 		var i = targets.length;
 		while (i--) {
 			var target = targets[i];
-			var display = this.displayFunctions[i]; // strange new behavior
+			var display = this.displayFunctions[i]; // strange new implementation
 			if (!target.animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
 				if (isFunction(display)) {
 					//var presentationLayer = target.presentation;

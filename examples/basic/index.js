@@ -1,16 +1,17 @@
 import { decorate, HyperScale } from "../../hyperact.js";
 
 function One(element) {
-	decorate(this);
 	this.display = function() {
 		document.getElementById(element).innerHTML = element +":<br>" +
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
+			"own&nbsp;" + JSON.stringify(Object.getOwnPropertyNames(this)) + "<br>" + 
 			"this:" + JSON.stringify(this) + "<br>" + 
 			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
 			"this.model:" + JSON.stringify(this.model) + "<br>" + 
 			"this.presentation:" + JSON.stringify(this.presentation) + "<br>" + 
 			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
 	}
+	decorate(this);
 }
 One.prototype = {
 	animationForKey: function(key,value,previous,presentation) {
@@ -43,11 +44,13 @@ one.addAnimation(e);
 
 console.log("animations:%s;",JSON.stringify(one.animations));
 
+
 function Two(element) {
 	decorate(this,this,{});
 	this.display = function() {
 		document.getElementById(element).innerHTML = element+":" + "<br>" + 
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
+			"own&nbsp;" + JSON.stringify(Object.getOwnPropertyNames(this)) + "<br>" + 
 			"this:" + JSON.stringify(this) + "<br>" + 
 			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
 			"this.model:" + JSON.stringify(this.model) + "<br>" + 
@@ -80,8 +83,15 @@ var three = {
 		return 1.0;
 	},
 	display:function() {
+// 		console.log("three display");
+// 		console.log("three keys:%s;",JSON.stringify(Object.keys(this)));
+// 		console.log("three own:%s;",JSON.stringify(Object.getOwnPropertyNames(this)));
+// 		console.log("three this:%s;",JSON.stringify(this));
+		
+		
 		document.getElementById("three").innerHTML = "three:<br>" +
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
+			"own&nbsp;" + JSON.stringify(Object.getOwnPropertyNames(this)) + "<br>" + 
 			"this:" + JSON.stringify(this) + "<br>" + 
 			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
 			"this.model:" + JSON.stringify(this.model) + "<br>" + 
@@ -97,12 +107,17 @@ var three = {
 		return value;
 	}
 }
+// console.log("three pre");
 decorate(three);
+// console.log("three decorated");
 three.display();
+// console.log("three displayed");
 three.registerAnimatableProperty("x");
+// console.log("three registered");
 three.layer = {
 	c: 3
 }
+console.log("three!");
 
 var four = {
 	animationForKey: function(key,value,previous,presentation) {
@@ -111,6 +126,7 @@ var four = {
 	display:function() {
 		document.getElementById("four").innerHTML = "four:<br>" +
 			"keys&nbsp;" + JSON.stringify(Object.keys(four)) + "<br>" + 
+			"own&nbsp;" + JSON.stringify(Object.getOwnPropertyNames(four)) + "<br>" + 
 			"this:" + JSON.stringify(this) + "<br>" + 
 			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
 			"this.model:" + JSON.stringify(this.model) + "<br>" + 

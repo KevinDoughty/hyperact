@@ -1,12 +1,13 @@
 {
   "name": "hyperact",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Hyperactive animation layers",
   "main": "hyperact.js",
   "scripts": {
     "build": "WEBPACK_ENV=build webpack",
     "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch",
-    "test": "eslint source/*.js && eslint test/*.js --rule 'no-undef:0' && mocha --compilers js:babel-core/register --colors"
+    "test": "eslint source/*.js && eslint test/*.js --rule 'no-undef:0' && mocha --compilers js:babel-core/register --colors",
+    "gcc": "gcc -framework Cocoa -framework QuartzCore -x objective-c -o ./test/objc ./test/test.m ; ./test/objc ; rm ./test/objc"
   },
   "repository": {
     "type": "git",

@@ -33,7 +33,8 @@ view.x = 1;
   `{object}` The same `receiver` with animation management methods and property accessors.
 
 *Discussion*  
-  Currently, behavior is undefined if there are any naming collisions. 
+  Currently, behavior is undefined if there are any naming collisions, 
+  including calling decorate with the same object more than once. 
   The provided receiver methods are 
   `registerAnimatableProperty`, 
   `needsDisplay`, 
@@ -219,6 +220,48 @@ view.x = 1;
 
 *Returns*  
   `{any}` Expects the transformed value.
+
+
+## Animation Descriptions
+  Currently there are no exposed animation classes but this might change.
+  A number, array, or object literal is returned by `animationForKey`, 
+  and passed to `addAnimation` and `registerAnimatableProperty`.
+  
+
+### Basic Animation
+
+
+*Parameters*
+  - `property {string}`
+  - `from {any}` Type specific
+  - `to; {any}` Type specific
+  - `type {object}` Must implement `zero`, `add`, `subtract` and `interpolate`. Default is `HyperNumber`.
+  - `duration {number}` In seconds!
+  - `easing {function}` currently callback function only, need cubic bezier and presets. Defaults to linear
+  - `delay {number}` In seconds
+  - `blend {string}` "relative" (the default) or "absolute" but will probably be changed to `absolute {boolean}` defaulting to `false`.
+  - `additive {boolean}` The default is true!
+  - `speed {number}` Not finished.
+  - `iterations {number}` Default is 1.
+  - `autoreverse {boolean}` When iterations > 1. Easing also reversed.
+  - `fillMode {string}` Not finished.
+  - `index {number}` For a custom compositing order.
+  - `finished {number}` Not finished. Should be `finished {boolean}` or better yet private.
+  - `startTime {number}` Set automatically when added.
+  - `progress {number}` Between zero and one.
+  - `onend {function}` Currently fires regardless of fillMode. Should be renamed.
+  - `naming {string}` Not finished. "default", "exact", "increment", "nil" but might just be replaced with a "key" property
+  - `remove {boolean}` If the animation is removed on completion.
+
+
+## Group Animation
+
+
+  
+
+
+## Transactions
+  Probably could use some work.
 
 
 ## Examples

@@ -63,7 +63,7 @@ function HyperAction() {}
 
 export function HyperGroup(children) {
 	HyperAction.call(this);
-	this.finished = 0;
+	this.finished = false;
 	var groupDuration = 0;
 	this.group = children.map( function(animation) {
 		var copy = animationFromDescription(animation);
@@ -74,9 +74,9 @@ export function HyperGroup(children) {
 	Object.defineProperty(this, "finished", {
 		get: function() {
 			this.group.forEach( function(animation) {
-				if (!animation.finished) return 0;
+				if (!animation.finished) return false;
 			});
-			return 1;
+			return true;
 		},
 		enumerable: false,//true,
 		configurable: false
@@ -121,11 +121,10 @@ export function HyperAnimation(settings) {
 	this.blend = "relative"; // also "absolute" or "zero" // Default should be "absolute" if explicit
 	this.additive = true;
 	this.sort;
-	this.finished = 0;//false;
+	this.finished = false;
 	this.startTime; // float // Should this be private?
 	this.progress = 0;//null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers
 	this.onend; // NOT FINISHED. callback function, fires regardless of fillMode. Should rename. Should also implement didStart, maybe didTick, etc.
-	//this.delegate; // Maybe I should use this instead of onend
 	//this.naming; // "default","exact","increment","nil" // why not a key property?
 	this.remove = true;
 
@@ -134,7 +133,6 @@ export function HyperAnimation(settings) {
 	}.bind(this));
 
 }
-
 
 HyperAnimation.prototype = {
 	constructor: HyperAnimation,
@@ -163,8 +161,7 @@ HyperAnimation.prototype = {
 		}
 		if (combinedProgress >= 1) {
 			iterationProgress = 1;
-			if (this.finished > 1) throw new Error("animation not removed");
-			this.finished++;// = true;
+			this.finished = true;
 		}
 		var inReverse = 0; // falsy
 		if (!this.finished) {
