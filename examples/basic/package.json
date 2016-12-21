@@ -11,7 +11,7 @@
   "author": "Kevin Doughty",
   "license": "Apache-2.0",
   "dependencies": {
-    "hyperact": "0.0.3"
+    "hyperact": "0.0.4"
   },
   "devDependencies": {
     "babel-core": "^6.18.2",
