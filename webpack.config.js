@@ -46,6 +46,7 @@ module.exports = [
 		entry: {
 			core: "./source/core.js",
 			types: "./source/types.js",
+			style: "./source/style/style.js"
 		},
 		output: {
 			path: path.join(__dirname, "chunks"),
