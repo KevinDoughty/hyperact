@@ -14,14 +14,16 @@ var now = Date.getTime;
 if (Date.now) now = Date.now;
 if (typeof window !== "undefined" && typeof window.performance !== "undefined" && typeof window.performance.now !== "undefined") now = window.performance.now.bind(window.performance);
 
-function HyperTransaction(settings,automaticallyCommit) {
+export function HyperTransaction(settings,automaticallyCommit) {
 	this.time = now() / 1000; // value should probably be inherited from parent transaction
 	this.disableAnimation = false; // value should probably be inherited from parent transaction
-	this._automaticallyCommit = automaticallyCommit;
+	this.duration;
+	this.easing;
+	this.completionHandler;
 	this.settings = settings;
 }
 
-export default function HyperContext() {
+export function HyperContext() {
 	this.targets = [];
 	this.transactions = [];
 	this.ticking = false;
@@ -36,26 +38,27 @@ HyperContext.prototype = {
 		var transaction = new HyperTransaction(settings,automaticallyCommit);
 		var length = this.transactions.length;
 		if (length) { // Time freezes in transactions. A time getter should return transaction time if within one.
-			transaction.time = this.transactions[length-1].time;
+			transaction.time = this.transactions[length-1].representedObject.time;
 		}
-		this.transactions.push(transaction);
+		this.transactions.push({ representedObject:transaction, automaticallyCommit:automaticallyCommit });
 		if (automaticallyCommit) this.startTicking(); // Automatic transactions will otherwise not be closed if there is no animation or value set.
 		return transaction;
 	},
 	currentTransaction: function() {
 		var length = this.transactions.length;
-		if (length) return this.transactions[length-1];
+		if (length) return this.transactions[length-1].representedObject;
 		return this.createTransaction({},true);
 	},
 	beginTransaction: function(settings) { // TODO: throw on unclosed (user created) transaction
-		this.createTransaction(settings,false);
+		return this.createTransaction(settings,false);
 	},
 	commitTransaction: function() {
 		this.transactions.pop();
 	},
 	flushTransaction: function() { // TODO: prevent unterminated when called within display
 		//if (this.animationFrame) cAF(this.animationFrame); // Unsure if cancelling animation frame is needed.
-		this.ticker(); // Probably should not commit existing transaction
+		this.ticker(); // This is completely wrong, or at least is nothing like CATransaction -(void)flush;
+		//this.displayLayers = this.displayLayers.map( function(item) { return null; });
 	},
 	disableAnimation: function(disable) { // If this is false, it enables animation
 		if (disable !== false) disable = true; // because the function name is misleading
@@ -112,10 +115,9 @@ HyperContext.prototype = {
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
 			}
 		}
-
 		var length = this.transactions.length;
 		if (length) {
-			var transaction = this.transactions[length-1];
+			var transaction = this.transactions[length-1].representedObject;
 			if (transaction._automaticallyCommit) this.commitTransaction();
 		}
 		if (this.targets.length) this.startTicking();

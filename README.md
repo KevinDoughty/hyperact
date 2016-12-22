@@ -257,9 +257,6 @@ view.x = 1;
 ## Group Animation
 
 
-  
-
-
 ## Transactions
   Probably could use some work.
 

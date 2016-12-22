@@ -1,9 +1,17 @@
-import HyperContext from "./context.js";
+import { HyperContext } from "./context.js";
 import { HyperAnimation, HyperGroup, animationFromDescription } from "./actions.js";
 
 const DELEGATE_MASSAGE_INPUT_OUTPUT = true; // allow delegate the ability to convert values to and from private internal representation ("ugly" values)
 const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
+
+//const FAKE_RUN_LOOP_TRANSACTION = true;
+// context caches presentation layers
+// they get generated lazily
+// If an object has no animations or presentationLayer, you will need to generate one.
+// I need to generate one to emulate the core animation run loop transaction.
+// presentationLayer will have to be generated before any change is made to registered layer properties.
+// An existing presentationLayer should not be invalidated.
 
 const delegateMethods = ["display","animationForKey","input","output"];
 
@@ -76,7 +84,7 @@ export function decorate(controller, delegate, layerInstance) {
 	var presentationBacking = null; // This is nulled out to invalidate.
 	var registeredProperties = [];
 	var activeBacking = modelBacking;
-	var initialLayerOwnProperties = Object.getOwnPropertyNames(layerInstance);
+// 	var initialLayerOwnProperties = Object.getOwnPropertyNames(layerInstance);
 	var initialLayerKeys = Object.keys(layerInstance);
 // 	var initialControllerOwnProperties = Object.getOwnPropertyNames(controller);
 // 	var initialControllerKeys = Object.keys(controller);
@@ -403,36 +411,20 @@ export function decorate(controller, delegate, layerInstance) {
 		return null;
 	};
 
-	const hyperOwnProperties = Object.getOwnPropertyNames(layerInstance);
-	initialLayerOwnProperties.forEach( (key) => { // API fluctuation
-		const index = hyperOwnProperties.indexOf(key);
-		if (index > -1) hyperOwnProperties.splice(index,1);
-	});
-	const hyperKeys = Object.keys(layerInstance);
-	initialLayerKeys.forEach( (key) => { // API fluctuation
-		const index = hyperKeys.indexOf(key);
-		if (index > -1) hyperKeys.splice(index,1);
-	});
-// console.log("own:%s;",hyperOwnProperties);
-// console.log("keys:%s;",hyperKeys);
+// 	const hyperOwnProperties = Object.getOwnPropertyNames(layerInstance);
+// 	initialLayerOwnProperties.forEach( (key) => { // API fluctuation
+// 		const index = hyperOwnProperties.indexOf(key);
+// 		if (index > -1) hyperOwnProperties.splice(index,1);
+// 	});
+// 	const hyperKeys = Object.keys(layerInstance);
+// 	initialLayerKeys.forEach( (key) => { // API fluctuation
+// 		const index = hyperKeys.indexOf(key);
+// 		if (index > -1) hyperKeys.splice(index,1);
+// 	});
 
 	initialLayerKeys.forEach( (key) => { // More initialization // decorate automatically registers pre-existing properties.
 		modelBacking[key] = layerInstance[key];
 		controller.registerAnimatableProperty(key);
 	});
-// 	const hyperOwnProperties = Object.getOwnPropertyNames(controller);
-// 	initialControllerOwnProperties.forEach( (key) => { // API fluctuation proofing
-// 		const index = hyperOwnProperties.indexOf(key);
-// 		if (index > -1) hyperOwnProperties.splice(index,1);
-// 	});
-// 	const hyperKeys = Object.keys(controller);
-// 	initialControllerKeys.forEach( (key) => { // API fluctuation proofing
-// 		const index = hyperKeys.indexOf(key);
-// 		if (index > -1) hyperKeys.splice(index,1);
-// 	});
-// 	initialControllerKeys.forEach( (key) => { // More initialization // decorate automatically registers pre-existing properties.
-// 		modelBacking[key] = layerInstance[key];
-// 		controller.registerAnimatableProperty(key);
-// 	});
 	return controller;
 }
