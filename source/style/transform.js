@@ -1,6 +1,8 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
+const ASSERT_ENABLED = false;
+
 var convertToDeg = function(num, type) {
 	switch (type) {
 		case 'grad':

@@ -14,13 +14,15 @@ var now = Date.getTime;
 if (Date.now) now = Date.now;
 if (typeof window !== "undefined" && typeof window.performance !== "undefined" && typeof window.performance.now !== "undefined") now = window.performance.now.bind(window.performance);
 
-export function HyperTransaction(settings,automaticallyCommit) {
+export function HyperTransaction(settings) {
 	this.time = now() / 1000; // value should probably be inherited from parent transaction
 	this.disableAnimation = false; // value should probably be inherited from parent transaction
 	this.duration;
 	this.easing;
-	this.completionHandler;
-	this.settings = settings;
+	//this.completionHandler; // would be nice
+	if (settings) Object.keys(settings).forEach( function(key) {
+		this[key] = settings[key];
+	}.bind(this));
 }
 
 export function HyperContext() {
@@ -35,7 +37,7 @@ export function HyperContext() {
 
 HyperContext.prototype = {
 	createTransaction: function(settings,automaticallyCommit) {
-		var transaction = new HyperTransaction(settings,automaticallyCommit);
+		var transaction = new HyperTransaction(settings);
 		var length = this.transactions.length;
 		if (length) { // Time freezes in transactions. A time getter should return transaction time if within one.
 			transaction.time = this.transactions[length-1].representedObject.time;
@@ -117,8 +119,8 @@ HyperContext.prototype = {
 		}
 		var length = this.transactions.length;
 		if (length) {
-			var transaction = this.transactions[length-1].representedObject;
-			if (transaction._automaticallyCommit) this.commitTransaction();
+			var transactionWrapper = this.transactions[length-1];
+			if (transactionWrapper.automaticallyCommit) this.commitTransaction();
 		}
 		if (this.targets.length) this.startTicking();
 	}

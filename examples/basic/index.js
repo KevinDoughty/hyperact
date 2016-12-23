@@ -15,6 +15,10 @@ function One(element) {
 }
 One.prototype = {
 	animationForKey: function(key,value,previous,presentation) {
+		if (key === "transform") return {
+			type: typeForStyle("transform"),
+			duration:5.0
+		}
 		return 1.0;
 	},
 	input:function(key,value) {
