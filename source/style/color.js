@@ -208,7 +208,6 @@ var namedColors = {
 
 
 var colorType = typeWithKeywords(['currentColor'], {
-
 	inverse: function(value) { // KxDx
 		return this.subtract(value,[255,255,255,1]);
 	},

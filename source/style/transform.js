@@ -1,6 +1,10 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
+import { isDefinedAndNotNull } from "./shared.js";
+import lengthType from "./length.js";
+import numberType from "./number.js";
+
 const ASSERT_ENABLED = false;
 
 var convertToDeg = function(num, type) {
@@ -526,12 +530,12 @@ function interpTransformValue(from, to, f) {
 		default:
 			// Transforms with lengthType parameters.
 			var result = [];
-			var maxVal;
+			var maxVal = 0;
 			if (from.d && to.d) {
 				maxVal = Math.max(from.d.length, to.d.length);
 			} else if (from.d) {
 				maxVal = from.d.length;
-			} else {
+			} else if (to.d) {
 				maxVal = to.d.length;
 			}
 			for (var j = 0; j < maxVal; j++) {
@@ -689,7 +693,7 @@ const transformType = {
 					case "matrix3d":
 						console.warn("TransformType sum matrix3d not supported");
 					default:
-						throw new Error("TransformType sum no type?");
+						//throw new Error("TransformType sum no type?"+JSON.stringify(value[i].t));
 				}
 				j++;
 			}
@@ -755,6 +759,7 @@ const transformType = {
 	},
 
 	interpolate: function(from, to, f) {
+		//console.log("transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
 		var out = [];
 		for (var i = 0; i < Math.min(from.length, to.length); i++) {
 			if (from[i].t !== to[i].t) {
@@ -778,6 +783,9 @@ const transformType = {
 
 	toCssValue: function(value, svgMode) {
 		// TODO: fix this :)
+		//console.log("toCssValue:%s;",JSON.stringify(value));
+		//if (typeof value === "string") throw new Error("this should not be a string");
+		if (typeof value === "string") return value;
 		var out = '';
 		for (var i = 0; i < value.length; i++) {
 			ASSERT_ENABLED && assert( value[i].t, 'transform type should be resolved by now');
@@ -852,18 +860,22 @@ const transformType = {
 					break;
 			}
 		}
-		return out.substring(0, out.length - 1);
+		var result = out.substring(0, out.length - 1);
+		//console.log("toCssValue result:%s;",JSON.stringify(result));
+		return result;
 	},
 
 	fromCssValue: function(value) {
 		// TODO: fix this :)
 		// TODO: need rotate3d(1, 2.0, 3.0, 10deg);
 		// TODO: still need matrix3d
-		if (value === undefined) {
-			return undefined;
-		}
+		//console.log("fromCssValue:%s;",JSON.stringify(value));
+// 		if (value === undefined) {
+// 			return undefined;
+// 		}
+		//if (value && typeof value !== "string") throw new Error("this should be a string");
 		var result = [];
-		while (value.length > 0) {
+		while (typeof value === "string" && value.length > 0) {
 			var r;
 			for (var i = 0; i < transformREs.length; i++) {
 				var reSpec = transformREs[i];
@@ -878,6 +890,7 @@ const transformType = {
 				return result;
 			}
 		}
+		//console.log("fromCssValue result:%s;",JSON.stringify(result));
 		return result;
 	}
 };

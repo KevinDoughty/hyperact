@@ -17,7 +17,7 @@ class View {
 	constructor(element) {
 		this.element = element;
 		this.iterations = 50;
-		this.vertices = 1000;
+		this.vertices = 500;
 		this.radius = 75;
 		this.value = 0;
 		this.positionArray = this.plot();

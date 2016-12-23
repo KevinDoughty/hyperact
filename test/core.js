@@ -51,12 +51,6 @@ describe("core", function() {
 	// 		assert(one.presentation.zxcv === 1);
 	// 	});
 
-		it("registered presentation, unflushed", function() {
-			one.layer.zxcv = 0;
-			one.registerAnimatableProperty("zxcv");
-			one.layer.zxcv = 1;
-			assert(one.presentation.zxcv === 0);
-		});
 
 		it("registered presentation, flushed", function() {
 			one.registerAnimatableProperty("zxcv");
@@ -114,19 +108,6 @@ describe("core", function() {
 			assert(one.uiop === 2);
 		});
 
-		it("unregistered animation presentation, unflushed", function() {
-			one.uiop = 2;
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute",
-				additive:false
-			});
-			assert(one.presentation.uiop === 2);
-		});
-
 		it("unregistered animation presentation, flushed", function() {
 			one.uiop = 2;
 			one.addAnimation({
@@ -139,20 +120,6 @@ describe("core", function() {
 			});
 			core.flushTransaction();
 			assert(one.presentation.uiop === 1);
-		});
-
-		it("registered before animation presentation, unflushed", function() {
-			one.registerAnimatableProperty("uiop");
-			one.uiop = 2;
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute",
-				additive:false
-			});
-			assert(one.presentation.uiop === 2);
 		});
 
 		it("registered before animation presentation, flushed", function() {
@@ -168,20 +135,6 @@ describe("core", function() {
 			});
 			core.flushTransaction();
 			assert(one.presentation.uiop === 1);
-		});
-
-		it("registered after animation presentation, unflushed", function() {
-			one.uiop = 2;
-			one.registerAnimatableProperty("uiop");
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute",
-				additive:false
-			});
-			assert(one.presentation.uiop === 2);
 		});
 
 		it("registered after animation presentation, flushed", function() {
@@ -209,19 +162,6 @@ describe("core", function() {
 			one.registerAnimatableProperty("uiop");
 			one.uiop = 2;
 			assert(one.uiop === 2);
-		});
-
-		it("registered animation effect, unflushed", function() {
-			one.uiop = 2;
-			one.registerAnimatableProperty("uiop");
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute"
-			});
-			assert(one.presentation.uiop === 2);
 		});
 
 		it("registered animation effect, flushed", function() {
@@ -288,34 +228,6 @@ describe("core", function() {
 	});
 
 	describe("three", function() {
-	// 	it("presentation does not include functions, decorate(view)", function() {
-	// 		const animationForKey = function(key,value,previous) {
-	// 			return duration;
-	// 		};
-	// 		var view = {
-	// 			a:1,
-	// 			b:2,
-	// 			c:3,
-	// 			animationForKey: animationForKey
-	// 		};
-	// 		core.decorate(view);
-	// 		assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
-	// 	});
-	// 	it("presentation does not include functions, decorate(view,view,layer)", function() {
-	// 		const animationForKey = function(key,value,previous) {
-	// 			return duration;
-	// 		};
-	// 		var layer = {
-	// 			a:1,
-	// 			b:2,
-	// 			c:3
-	// 		};
-	// 		var view = {
-	// 			animationForKey: animationForKey
-	// 		};
-	// 		core.decorate(view,view,layer);
-	// 		assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
-	// 	});
 		it("presentation does include functions, decorate(view)", function() {
 			const animationForKey = function(key,value,previous) {
 				return duration;
@@ -461,41 +373,40 @@ describe("core", function() {
 			});
 		});
 
-		it("group presentation unflushed", function() {
-			var view = {};
+		it("single presentation flushed", function() {
+			var view = {a:1, b:2, c:3};
 			core.decorate(view);
-			view.layer = {a:1, b:2, c:3};
-			view.addAnimation([
-				{
-					property:"a",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute"
-				},
-				{
-					property:"b",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute"
-				},
-				{
-					property:"c",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute",
-					additive:false
-				}
-			]);
-			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
+			//view.layer = {a:1, b:2, c:3};
+			view.addAnimation({
+				property:"a",
+				duration:duration,
+				from:1,
+				to:1,
+				blend:"absolute"
+			});
+			view.addAnimation({
+				property:"b",
+				duration:duration,
+				from:1,
+				to:1,
+				blend:"absolute"
+			});
+			view.addAnimation({
+				property:"c",
+				duration:duration,
+				from:1,
+				to:1,
+				blend:"absolute",
+				additive:false
+			});
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, { a:2, b:3, c:1 });
 		});
 
 		it("group presentation flushed", function() {
-			var view = {};
+			var view = {a:1, b:2, c:3};
 			core.decorate(view);
-			view.layer = {a:1, b:2, c:3};
+			//view.layer = {a:1, b:2, c:3};
 			view.addAnimation([
 				{
 					property:"a",
@@ -569,8 +480,7 @@ describe("core", function() {
 			core.flushTransaction();
 			const presentation = view.presentation;
 			const model = view.model;
-			//console.log("view:%s; model:%s; presentation:%s;",JSON.stringify(view),JSON.stringify(model),JSON.stringify(presentation));
-		
+			
 			assert(layer.a === 1);
 			assert(model.a === 1);
 			assert(presentation.a === 3);
@@ -591,7 +501,7 @@ describe("core", function() {
 			core.flushTransaction();
 			const presentation = view.presentation;
 			const model = view.model;
-			//console.log("view:%s; model:%s; presentation:%s;",JSON.stringify(view),JSON.stringify(model),JSON.stringify(presentation));
+			
 			assert(view.a === 1);
 			assert(model.a === 1);
 			assert(presentation.a === 3);
@@ -808,11 +718,11 @@ describe("core", function() {
 			assert(view.presentation.a === 1);
 		});
 
-
 	});
 
-	describe("seven", function() {
 
+
+	describe("seven", function() {
 		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
 			const view = {};
 			core.decorate(view);
@@ -854,6 +764,102 @@ describe("core", function() {
 		});
 		it("previousLayer values are correct", function() {
 			assert(false);
+		});
+	});
+	describe("eight", function() {
+		var one;
+		var view;
+		beforeEach( function() {
+			one = {};
+			core.decorate(one);
+			view = {};
+			core.decorate(view);
+		});
+		it("registered presentation, unflushed", function() {
+			one.layer.zxcv = 0;
+			one.registerAnimatableProperty("zxcv");
+			one.layer.zxcv = 1;
+			assert(one.presentation.zxcv === 0);
+		});
+		it("unregistered animation presentation, unflushed", function() {
+			one.uiop = 2;
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute",
+				additive:false
+			});
+			assert(one.presentation.uiop === 2);
+		});
+		it("registered before animation presentation, unflushed", function() {
+			one.registerAnimatableProperty("uiop");
+			one.uiop = 2;
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute",
+				additive:false
+			});
+			assert(one.presentation.uiop === 2);
+		});
+		it("registered after animation presentation, unflushed", function() {
+			one.uiop = 2;
+			one.registerAnimatableProperty("uiop");
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute",
+				additive:false
+			});
+			assert(one.presentation.uiop === 2);
+		});
+		it("registered animation effect, unflushed", function() {
+			one.uiop = 2;
+			one.registerAnimatableProperty("uiop");
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute"
+			});
+			assert(one.presentation.uiop === 2);
+		});
+		it("group presentation unflushed", function() {
+			var view = {};
+			core.decorate(view);
+			view.layer = {a:1, b:2, c:3};
+			view.addAnimation([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"b",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"c",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute",
+					additive:false
+				}
+			]);
+			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
 		});
 	});
 });

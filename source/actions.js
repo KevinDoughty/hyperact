@@ -63,22 +63,27 @@ function HyperAction() {}
 
 export function HyperGroup(children) {
 	HyperAction.call(this);
-	this.finished = false;
-	var groupDuration = 0;
-	this.group = children.map( function(animation) {
+	if (!Array.isArray(children)) throw new Error("actions group constructor children not array");
+	//this.finished = false;
+	//var groupDuration = 0;
+	//console.log("actions group:",children);
+	var result = [];
+	children.forEach( function(animation) {
 		var copy = animationFromDescription(animation);
-		var copyDuration = copy.delay + copy.duration * copy.iterations / copy.speed;
-		groupDuration = Math.max(copyDuration,groupDuration);
-		return copy;
+		//var copyDuration = copy.delay + copy.duration * copy.iterations / copy.speed;
+		//groupDuration = Math.max(copyDuration,groupDuration);
+		result.push(copy);
 	});
+	this.group = result;
 	Object.defineProperty(this, "finished", {
 		get: function() {
+			var result = true;
 			this.group.forEach( function(animation) {
-				if (!animation.finished) return false;
+				if (!animation.finished) result = false;
 			});
-			return true;
+			return result;
 		},
-		enumerable: false,//true,
+		enumerable: false,
 		configurable: false
 	});
 }

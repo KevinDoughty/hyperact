@@ -1,6 +1,9 @@
-import { decorate, HyperScale } from "../../hyperact.js";
+import { decorate, HyperScale, typeForStyle } from "../../hyperact.js";
+
+const transformType = typeForStyle("transform");
 
 function One(element) {
+	decorate(this);
 	this.display = function() {
 		document.getElementById(element).innerHTML = element +":<br>" +
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
@@ -11,42 +14,53 @@ function One(element) {
 			"this.presentation:" + JSON.stringify(this.presentation) + "<br>" + 
 			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
 	}
-	decorate(this);
 }
 One.prototype = {
 	animationForKey: function(key,value,previous,presentation) {
 		if (key === "transform") return {
-			type: typeForStyle("transform"),
-			duration:5.0
+			property: "transform",
+			type: transformType,
+			duration:1.0,
+			from:previous,
+			to:value
 		}
 		return 1.0;
 	},
 	input:function(key,value) {
+		if (key === "transform") return transformType.fromCssValue(value);
 		return value;
 	},
 	output:function(key,value) {
+		if (key === "transform") return transformType.toCssValue(value);
 		return Math.round(value);
 	}
 };
-var one = new One("one");
+const one = new One("one");
 one.registerAnimatableProperty("x");
+one.registerAnimatableProperty("a");
 one.layer["a"] = 1;
 one.layer["b"] = 2;
+one.transform = "translate3d(0px, 0px, 0px)";
+one.registerAnimatableProperty("transform");
 one.layer = {
-	c: 3
+	c: 3,
+	//transform :"translate3d(0px, 0px, 0px)"
 }
-var e = {
+//one.transform = "translate3d(100px, 100px, 0px)";
+
+
+const e = {
 	property:"e",
 	duration: 5,
 	from: 5,
 	to: 0,
 	onend: function(finished) {
-		console.log("onend:%s; two:%s;",JSON.stringify(this),JSON.stringify(two));
+		console.log("basic onend:%s; one:%s; animations:%s;",JSON.stringify(this),JSON.stringify(one),JSON.stringify(one.animations));
 	}
 }
 one.addAnimation(e);
 
-console.log("animations:%s;",JSON.stringify(one.animations));
+console.log("basic one.animations:%s;",JSON.stringify(one.animations));
 
 
 function Two(element) {
@@ -64,35 +78,47 @@ function Two(element) {
 }
 Two.prototype = {
 	animationForKey: function(key,value,previous,presentation) {
+		if (key === "transform") return {
+			property: "transform",
+			type: typeForStyle("transform"),
+			duration:1.0,
+			from:previous,
+			to:value
+		}
 		return 1.0;
 	},
 	input:function(key,value) {
+		if (key === "transform") return transformType.fromCssValue(value);
 		return value;
 	},
 	output:function(key,value) {
+		if (key === "transform") return transformType.toCssValue(value);
 		if (key === "x") return Number(value).toFixed(1);
 		return value;
 	}
 };
-var two = new Two("two");
+const two = new Two("two");
 two.registerAnimatableProperty("x");
 two.layer["a"] = 1;
 two.layer["b"] = 2;
+two.registerAnimatableProperty("transform");
 two.layer = {
-	c: 3
+	c: 3,
+	transform :"translate3d(100px, 100px, 0px)"
 }
 
-var three = {
+const three = {
 	animationForKey: function(key,value,previous,presentation) {
+		if (key === "transform") return {
+			property: "transform",
+			type: typeForStyle("transform"),
+			duration:1.0,
+			from:previous,
+			to:value
+		}
 		return 1.0;
 	},
 	display:function() {
-// 		console.log("three display");
-// 		console.log("three keys:%s;",JSON.stringify(Object.keys(this)));
-// 		console.log("three own:%s;",JSON.stringify(Object.getOwnPropertyNames(this)));
-// 		console.log("three this:%s;",JSON.stringify(this));
-		
-		
 		document.getElementById("three").innerHTML = "three:<br>" +
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
 			"own&nbsp;" + JSON.stringify(Object.getOwnPropertyNames(this)) + "<br>" + 
@@ -103,28 +129,33 @@ var three = {
 			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
 	},
 	input:function(key,value) {
+		if (key === "transform") return transformType.fromCssValue(value);
 		if (key === "x" && value && value.length > 4 && value.substring(value.length-4) === " !!!") value = Number(value.substring(0, value.length-4));
 		return value;
 	},
 	output:function(key,value) {
+		if (key === "transform") return transformType.toCssValue(value);
 		if (key === "x" && value) return Math.round(value) + " !!!";
 		return value;
 	}
 }
-// console.log("three pre");
 decorate(three);
-// console.log("three decorated");
-three.display();
-// console.log("three displayed");
 three.registerAnimatableProperty("x");
-// console.log("three registered");
+three.registerAnimatableProperty("transform");
 three.layer = {
-	c: 3
+	c: 3,
+	transform: "translate3d(100px, 100px, 0px)"
 }
-console.log("three!");
 
-var four = {
+const four = {
 	animationForKey: function(key,value,previous,presentation) {
+		if (key === "transform") return {
+			property: "transform",
+			type: typeForStyle("transform"),
+			duration:1.0,
+			from:previous,
+			to:value
+		}
 		return 1.0;
 	},
 	display:function() {
@@ -136,13 +167,20 @@ var four = {
 			"this.model:" + JSON.stringify(this.model) + "<br>" + 
 			"this.presentation:" + JSON.stringify(this.presentation) + "<br>" + 
 			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
+	},
+	input:function(key,value) {
+		if (key === "transform") return transformType.fromCssValue(value);
+	},
+	output:function(key,value) {
+		if (key === "transform") return transformType.toCssValue(value);
 	}
 }
-
 decorate(four,four,{scale:1});
 four.registerAnimatableProperty("x");
+four.registerAnimatableProperty("transform");
 four.layer = {
-	c: 3
+	c: 3,
+	transform:"translate3d(100px, 100px, 0px)"
 }
 four.registerAnimatableProperty("scale", {
 	type: new HyperScale(),
@@ -155,9 +193,11 @@ document.addEventListener("mousemove",function(e) {
 	two.layer.x = e.clientX;
 	three.x = e.clientX;
 	four.layer.x = e.clientX;
+	one.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
+	three.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
 });
 
-var c = {
+const cc = {
 	property: "c",
 	duration:1.0,
 	from:1,
@@ -165,14 +205,14 @@ var c = {
 	blend:"absolute",
 	additive:false
 }
-var cc = {
+const ccc = {
 	property: "c",
 	duration:1.0,
 	from:1,
 	to:1,
 	blend:"absolute"
 }
-var d = {
+const dd = {
 	property: "d",
 	duration:1.0,
 	from:1,
@@ -180,14 +220,14 @@ var d = {
 	blend:"absolute",
 	additive:false
 }
-var dd = {
+const ddd = {
 	property: "d",
 	duration:1.0,
 	from:1,
 	to:1,
 	blend:"absolute"
 }
-var e = {
+const ee = {
 	property: "e",
 	duration:1.0,
 	from:1,
@@ -197,18 +237,56 @@ var e = {
 }
 
 document.addEventListener("mousedown",function(event) {
-	one.addAnimation(c);
-	two.addAnimation(cc);
-	three.addAnimation(cc);
-	four.addAnimation(c);
 
-	one.addAnimation(d);
-	two.addAnimation(dd);
-	three.addAnimation(dd);
-	four.addAnimation(d);
+	one.addAnimation(cc);
+	two.addAnimation(ccc);
+	three.addAnimation(ccc);
+	four.addAnimation(cc);
 
-	one.addAnimation(e);
-	two.addAnimation(e);
-	three.addAnimation(e);
-	four.addAnimation(e);
+	one.addAnimation(dd);
+	two.addAnimation(ddd);
+	three.addAnimation(ddd);
+	four.addAnimation(dd);
+
+	one.addAnimation(ee);
+	two.addAnimation(ee);
+	three.addAnimation(ee);
+	four.addAnimation(ee);
+
+	two.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
+	four.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
+
+	one.addAnimation([
+		{
+			property:"transform",
+			type:transformType,
+			from:"translate3d(0px, 0px, 1px)",
+			to:"translate3d(0px, 0px, 1px)",
+			delta:"translate3d(0px, 0px, 0px)",
+			duration:2.0,
+			blend:"absolute"
+		},
+		{
+			property:"a",
+			from:1,
+			to:1,
+			duration:2.0,
+			blend:"absolute"
+		},
+		{
+			property:"b",
+			from:1,
+			to:1,
+			duration:2.0,
+			blend:"absolute"
+		},
+		{
+			property:"c",
+			from:1,
+			to:1,
+			duration:2.0,
+			blend:"absolute"
+		}
+	]);
+
 });

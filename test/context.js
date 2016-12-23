@@ -31,7 +31,7 @@ describe("context", function() {
 		});
 	});
 
-	describe("one", function() {
+	describe("one", function() { // public interface
 
 		var context;
 
@@ -59,7 +59,7 @@ describe("context", function() {
 			context.commitTransaction();
 		});
 	});
-	describe("two", function() { // testing private implementation details
+	describe("two", function() { // private implementation details
 		let context;
 		let target;
 		beforeEach( function() {

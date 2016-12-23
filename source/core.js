@@ -37,9 +37,47 @@ function prepAnimationObjectFromAddAnimation(animation, delegate) {
 			});
 		}
 	} else if (animation instanceof HyperAnimation) {
-		var type = delegate.typeOfProperty.call(delegate, animation.property, animation.to);
-		if (type) animation.type = type;
+		convertPropertiesAsPropertyOfObjectWithFunction(["from","to","delta"],animation,delegate.input);
+		if (delegate.typeOfProperty) {
+			var type = delegate.typeOfProperty.call(delegate, animation.property, animation.to);
+			if (type) animation.type = type;
+		}
 	} else throw new Error("not an animation");
+}
+
+function convertedKey(property,funky) { // DELEGATE_DOUBLE_WHAMMY // from addAnimation
+	if (isFunction(funky)) return funky(property);
+	return property;
+}
+function convertedValueOfPropertyWithFunction(value,property,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates // from register, modelLayer, and previousBacking
+	if (isFunction(funky)) return funky(property,value);
+	return value;
+}
+function convertPropertyOfLayerWithFunction(property,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates
+	if (object && isFunction(funky)) {
+		var value = object[property];
+		if (value !== null && typeof value !== "undefined") object[property] = funky(property,value);
+		if (property === null || typeof property === "undefined") throw new Error("convert property undefined");
+		
+	}
+}
+function convertPropertiesOfLayerWithFunction(properties,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates
+	properties.forEach( function(property) {
+		if (property === null || typeof property === "undefined") throw new Error("convert properties undefined");
+		convertPropertyOfLayerWithFunction(property,object,funky);
+	});
+}
+function convertPropertiesAsPropertyOfObjectWithFunction(properties,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates // animation from, to, and delta
+	// ["from","to","delta"],animation,delegate.input
+// 	if (object && object.property === "transform") console.log("convert pre:%s;",JSON.stringify(object));
+// 	if (object && isFunction(funky)) {
+// 		var property = object.property;
+// 		properties.forEach( function(item) {
+// 			var value = object[item];
+// 			if (value !== null && typeof value !== "undefined") object[item] = funky(property,value);
+// 		});
+// 	}
+// 	if (object && object.property === "transform") console.log("convert post:%s;",JSON.stringify(object));
 }
 
 function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnimations,presentationBacking) { // COMPOSITING
@@ -91,9 +129,9 @@ export function decorate(controller, delegate, layerInstance) {
 
 	controller.registerAnimatableProperty = function(property, defaultAnimation) { // Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
 		if (controller === delegate && isFunction(layerInstance[property]) && delegateMethods.indexOf(property) > -1) return; // Can't animate functions that you depend on. // TODO: better rules
-		var initial = false;
-		if (registeredProperties.indexOf(property) === -1) initial = true;
-		if (initial) registeredProperties.push(property);
+		var firstTime = false;
+		if (registeredProperties.indexOf(property) === -1) firstTime = true;
+		if (firstTime) registeredProperties.push(property);
 		var descriptor = Object.getOwnPropertyDescriptor(layerInstance, property);
 		defaultAnimation = animationFromDescription(defaultAnimation);
 		if (DELEGATE_MASSAGE_INPUT_OUTPUT) convertPropertiesAsPropertyOfObjectWithFunction(["from","to","delta"],defaultAnimation,delegate.input);
@@ -101,9 +139,9 @@ export function decorate(controller, delegate, layerInstance) {
 		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
 		if (!descriptor || descriptor.configurable === true) {
 			var modelValue = layerInstance[property];
-			if (DELEGATE_MASSAGE_INPUT_OUTPUT) modelValue = convertedValueOfPropertyWithFunction(modelValue,property,delegate.input);
+			if (DELEGATE_MASSAGE_INPUT_OUTPUT) modelValue = convertedValueOfPropertyWithFunction(modelValue, property, delegate.input);
 			modelBacking[property] = modelValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
-			if (initial) Object.defineProperty(layerInstance, property, { // ACCESSORS
+			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
 				get: function() {
 					return valueForKey(property);
 				},
@@ -154,7 +192,7 @@ export function decorate(controller, delegate, layerInstance) {
 		var value = activeBacking[property];
 		if (DELEGATE_MASSAGE_INPUT_OUTPUT) value = convertedValueOfPropertyWithFunction(value,property,delegate.output);
 		return value;
-	}; // re-entrant
+	}; // don't let this become re-entrant
 
 	var setValueForKey = function(value,property) {
 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyInput);
@@ -173,39 +211,6 @@ export function decorate(controller, delegate, layerInstance) {
 		presentationBacking = null;
 		activeBacking = modelBacking;
 		if (!animation) controller.needsDisplay();
-	};
-
-	var convertedKey = function(property,funky) { // DELEGATE_DOUBLE_WHAMMY // from addAnimation
-		if (isFunction(funky)) return funky(property);
-		return property;
-	};
-	var convertedValueOfPropertyWithFunction = function(value,property,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates // from register, modelLayer, and previousBacking
-		if (isFunction(funky)) return funky(property,value);
-		return value;
-	};
-	var convertPropertyOfObjectWithFunction = function(property,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates
-		if (object && isFunction(funky)) {
-			var value = object[property];
-			if (value !== null && typeof value !== "undefined") object[property] = funky(property,value);
-			if (property === null || typeof property === "undefined") throw new Error("convert property undefined");
-			
-		}
-	};
-	var convertPropertiesOfObjectWithFunction = function(properties,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates
-		properties.forEach( function(property) {
-			if (property === null || typeof property === "undefined") throw new Error("convert properties undefined");
-			convertPropertyOfObjectWithFunction(property,object,funky);
-		});
-	};
-	var convertPropertiesAsPropertyOfObjectWithFunction = function(properties,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates // animation from, to, and delta
-		// ["from","to","delta"],animation,delegate.input
-		if (object && isFunction(funky)) {
-			var property = object.property;
-			properties.forEach( function(item) {
-				var value = object[item];
-				if (value !== null && typeof value !== "undefined") object[item] = funky(property,value);
-			});
-		}
 	};
 
 	Object.defineProperty(controller, "animationCount", { // Performs better than asking for animations.length, especially when called from tick
@@ -278,6 +283,7 @@ export function decorate(controller, delegate, layerInstance) {
 
 	var animationCleanup = function() {
 		var i = allAnimations.length;
+		var finishedWithCallback = [];
 		while (i--) {
 			var animation = allAnimations[i];
 			if (animation.finished) {
@@ -285,7 +291,7 @@ export function decorate(controller, delegate, layerInstance) {
 				var name = allNames[i];
 				allNames.splice(i,1);
 				delete namedAnimations[name];
-				if (isFunction(animation.onend)) animation.onend.call(animation,true);
+				if (isFunction(animation.onend)) finishedWithCallback.push(animation);
 			}
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
@@ -296,6 +302,9 @@ export function decorate(controller, delegate, layerInstance) {
 		if (!allAnimations.length) { // Ensure one last time
 			presentationBacking = modelBacking;
 		}
+		finishedWithCallback.forEach( function(animation) {
+			animation.onend.call(animation,true);
+		});
 	};
 
 	Object.defineProperty(controller, "presentation", {
@@ -309,7 +318,7 @@ export function decorate(controller, delegate, layerInstance) {
 			if (controller !== layerInstance && delegate !== layerInstance) baseLayer = Object.assign({},layerInstance);
 			var sourceLayer = Object.assign(baseLayer, modelBacking);
 			var presentationLayer = presentationTransform(sourceLayer,allAnimations,time,shouldSortAnimations,presentationBacking);//,finishedAnimations); // not modelBacking for first argument (need non animated properties), but it requires that properties like "presentationLayer" are not enumerable
-			if (DELEGATE_MASSAGE_INPUT_OUTPUT && presentationLayer !== presentationBacking) convertPropertiesOfObjectWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output);
+			if (DELEGATE_MASSAGE_INPUT_OUTPUT && presentationLayer !== presentationBacking) convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output);
 			presentationBacking = presentationLayer;
 			shouldSortAnimations = false;
 			return presentationLayer;
@@ -336,10 +345,10 @@ export function decorate(controller, delegate, layerInstance) {
 		var animation = animationFromDescription(description);
 		if (!(animation instanceof HyperAnimation) && !(animation instanceof HyperGroup)) throw new Error("Animations must be a Hyper.Animation or Group subclass.",JSON.stringify(animation));
 		if (DELEGATE_MASSAGE_INPUT_OUTPUT) {
-			convertPropertiesAsPropertyOfObjectWithFunction(["from","to","delta"],animation,delegate.input);
-			if (isFunction(delegate.typeOfProperty)) { // TODO: handle groups
-				prepAnimationObjectFromAddAnimation(animation,delegate);
-			}
+			//convertPropertiesAsPropertyOfObjectWithFunction(["from","to","delta"],animation,delegate.input);
+			//if (isFunction(delegate.typeOfProperty)) { // TODO: handle groups
+			prepAnimationObjectFromAddAnimation(animation,delegate);
+			//}
 		}
 		if (!allAnimations.length) registerWithContext();
 		var copy = animation.copy.call(animation);
