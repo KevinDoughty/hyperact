@@ -722,144 +722,144 @@ describe("core", function() {
 
 
 
-	describe("seven", function() {
-		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
-			const view = {};
-			core.decorate(view);
-			assert(typeof view.presentation === "undefined");
-			assert(typeof view.previous === "undefined");
-			assert(typeof view.model === "undefined");
-			assert(typeof view.presentationLayer !== "undefined");
-			assert(typeof view.previousLayer !== "undefined");
-			assert(typeof view.modelLayer !== "undefined");
-		});
-		it("input output !!!", function() {
-			var view = {
-				a:1,
-				b:2,
-				c:3,
-				input:function(key,value) {
-					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") value = Number(value.substring(0, value.length-4));
-					return value;
-				},
-				output:function(key,value) {
-					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") throw new Error(" !!!");
-					if (value) return Math.round(value) + " !!!";
-					return value;
-				}
-			};
-			core.decorate(view);
-			view.registerAnimatableProperty("a");
-			view.addAnimation({
-				property:"a",
-				duration:duration,
-				from:2,
-				to:2,
-				blend:"absolute"
-			});
-			assert(false);
-		});
-		it("animationForKey presentation argument", function() {
-			assert(false);
-		});
-		it("previousLayer values are correct", function() {
-			assert(false);
-		});
-	});
-	describe("eight", function() {
-		var one;
-		var view;
-		beforeEach( function() {
-			one = {};
-			core.decorate(one);
-			view = {};
-			core.decorate(view);
-		});
-		it("registered presentation, unflushed", function() {
-			one.layer.zxcv = 0;
-			one.registerAnimatableProperty("zxcv");
-			one.layer.zxcv = 1;
-			assert(one.presentation.zxcv === 0);
-		});
-		it("unregistered animation presentation, unflushed", function() {
-			one.uiop = 2;
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute",
-				additive:false
-			});
-			assert(one.presentation.uiop === 2);
-		});
-		it("registered before animation presentation, unflushed", function() {
-			one.registerAnimatableProperty("uiop");
-			one.uiop = 2;
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute",
-				additive:false
-			});
-			assert(one.presentation.uiop === 2);
-		});
-		it("registered after animation presentation, unflushed", function() {
-			one.uiop = 2;
-			one.registerAnimatableProperty("uiop");
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute",
-				additive:false
-			});
-			assert(one.presentation.uiop === 2);
-		});
-		it("registered animation effect, unflushed", function() {
-			one.uiop = 2;
-			one.registerAnimatableProperty("uiop");
-			one.addAnimation({
-				property:"uiop",
-				duration:duration,
-				from: 1,
-				to: 1,
-				blend:"absolute"
-			});
-			assert(one.presentation.uiop === 2);
-		});
-		it("group presentation unflushed", function() {
-			var view = {};
-			core.decorate(view);
-			view.layer = {a:1, b:2, c:3};
-			view.addAnimation([
-				{
-					property:"a",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute"
-				},
-				{
-					property:"b",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute"
-				},
-				{
-					property:"c",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute",
-					additive:false
-				}
-			]);
-			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
-		});
-	});
+// 	describe("seven", function() {
+// 		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
+// 			const view = {};
+// 			core.decorate(view);
+// 			assert(typeof view.presentation === "undefined");
+// 			assert(typeof view.previous === "undefined");
+// 			assert(typeof view.model === "undefined");
+// 			assert(typeof view.presentationLayer !== "undefined");
+// 			assert(typeof view.previousLayer !== "undefined");
+// 			assert(typeof view.modelLayer !== "undefined");
+// 		});
+// 		it("input output !!!", function() {
+// 			var view = {
+// 				a:1,
+// 				b:2,
+// 				c:3,
+// 				input:function(key,value) {
+// 					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") value = Number(value.substring(0, value.length-4));
+// 					return value;
+// 				},
+// 				output:function(key,value) {
+// 					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") throw new Error(" !!!");
+// 					if (value) return Math.round(value) + " !!!";
+// 					return value;
+// 				}
+// 			};
+// 			core.decorate(view);
+// 			view.registerAnimatableProperty("a");
+// 			view.addAnimation({
+// 				property:"a",
+// 				duration:duration,
+// 				from:2,
+// 				to:2,
+// 				blend:"absolute"
+// 			});
+// 			assert(false);
+// 		});
+// 		it("animationForKey presentation argument", function() {
+// 			assert(false);
+// 		});
+// 		it("previousLayer values are correct", function() {
+// 			assert(false);
+// 		});
+// 	});
+// 	describe("eight", function() {
+// 		var one;
+// 		var view;
+// 		beforeEach( function() {
+// 			one = {};
+// 			core.decorate(one);
+// 			view = {};
+// 			core.decorate(view);
+// 		});
+// 		it("registered presentation, unflushed", function() {
+// 			one.layer.zxcv = 0;
+// 			one.registerAnimatableProperty("zxcv");
+// 			one.layer.zxcv = 1;
+// 			assert(one.presentation.zxcv === 0);
+// 		});
+// 		it("unregistered animation presentation, unflushed", function() {
+// 			one.uiop = 2;
+// 			one.addAnimation({
+// 				property:"uiop",
+// 				duration:duration,
+// 				from: 1,
+// 				to: 1,
+// 				blend:"absolute",
+// 				additive:false
+// 			});
+// 			assert(one.presentation.uiop === 2);
+// 		});
+// 		it("registered before animation presentation, unflushed", function() {
+// 			one.registerAnimatableProperty("uiop");
+// 			one.uiop = 2;
+// 			one.addAnimation({
+// 				property:"uiop",
+// 				duration:duration,
+// 				from: 1,
+// 				to: 1,
+// 				blend:"absolute",
+// 				additive:false
+// 			});
+// 			assert(one.presentation.uiop === 2);
+// 		});
+// 		it("registered after animation presentation, unflushed", function() {
+// 			one.uiop = 2;
+// 			one.registerAnimatableProperty("uiop");
+// 			one.addAnimation({
+// 				property:"uiop",
+// 				duration:duration,
+// 				from: 1,
+// 				to: 1,
+// 				blend:"absolute",
+// 				additive:false
+// 			});
+// 			assert(one.presentation.uiop === 2);
+// 		});
+// 		it("registered animation effect, unflushed", function() {
+// 			one.uiop = 2;
+// 			one.registerAnimatableProperty("uiop");
+// 			one.addAnimation({
+// 				property:"uiop",
+// 				duration:duration,
+// 				from: 1,
+// 				to: 1,
+// 				blend:"absolute"
+// 			});
+// 			assert(one.presentation.uiop === 2);
+// 		});
+// 		it("group presentation unflushed", function() {
+// 			var view = {};
+// 			core.decorate(view);
+// 			view.layer = {a:1, b:2, c:3};
+// 			view.addAnimation([
+// 				{
+// 					property:"a",
+// 					duration:duration,
+// 					from:1,
+// 					to:1,
+// 					blend:"absolute"
+// 				},
+// 				{
+// 					property:"b",
+// 					duration:duration,
+// 					from:1,
+// 					to:1,
+// 					blend:"absolute"
+// 				},
+// 				{
+// 					property:"c",
+// 					duration:duration,
+// 					from:1,
+// 					to:1,
+// 					blend:"absolute",
+// 					additive:false
+// 				}
+// 			]);
+// 			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
+// 		});
+// 	});
 });

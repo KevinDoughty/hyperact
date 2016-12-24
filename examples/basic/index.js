@@ -20,7 +20,7 @@ One.prototype = {
 		if (key === "transform") return {
 			property: "transform",
 			type: transformType,
-			duration:1.0,
+			duration:5.0,
 			from:previous,
 			to:value
 		}
@@ -256,14 +256,22 @@ document.addEventListener("mousedown",function(event) {
 	two.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
 	four.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
 
-	one.addAnimation([
+	if (true) one.addAnimation({
+		property:"transform",
+		type:transformType,
+		from:"translate3d(0px, 0px, 1px)",
+		to:"translate3d(0px, 0px, 1px)",
+		duration:20.0,
+		blend:"absolute"
+	});
+
+	if (false) one.addAnimation([
 		{
 			property:"transform",
 			type:transformType,
 			from:"translate3d(0px, 0px, 1px)",
 			to:"translate3d(0px, 0px, 1px)",
-			delta:"translate3d(0px, 0px, 0px)",
-			duration:2.0,
+			duration:10.0,
 			blend:"absolute"
 		},
 		{
@@ -288,5 +296,7 @@ document.addEventListener("mousedown",function(event) {
 			blend:"absolute"
 		}
 	]);
+	
+	console.log(one.animations);
 
 });

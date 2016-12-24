@@ -234,7 +234,7 @@ view.x = 1;
 *Parameters*
   - `property {string}`
   - `from {any}` Type specific
-  - `to; {any}` Type specific
+  - `to {any}` Type specific
   - `type {object}` Must implement `zero`, `add`, `subtract` and `interpolate`. Default is `HyperNumber`.
   - `duration {number}` In seconds!
   - `easing {function}` currently callback function only, need cubic bezier and presets. Defaults to linear

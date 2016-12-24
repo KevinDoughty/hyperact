@@ -1,3 +1,5 @@
+let animationNumber = 0;
+
 const wetNumberType = { // WET
 	zero: function() {
 		return 0;
@@ -27,7 +29,7 @@ function isObject(w) {
 
 function prepAnimationObjectFromDescription(animation) { // animation can be a group, to allow for recursive groups
 	if (animation instanceof HyperGroup) { // recursive
-		var childAnimations = animation.group;
+		const childAnimations = animation.group;
 		if (childAnimations !== null && typeof childAnimations !== "undefined") {
 			if (!Array.isArray(childAnimations)) throw new Error("childAnimations is not an array");
 			childAnimations.forEach( function(childAnimation) {
@@ -43,7 +45,7 @@ function prepAnimationObjectFromDescription(animation) { // animation can be a g
 }
 
 export function animationFromDescription(description) {
-	var animation;
+	let animation;
 	if (!description) return description;
 	else if (description instanceof HyperGroup || description instanceof HyperAnimation) {
 		animation = description.copy.call(description);
@@ -63,21 +65,16 @@ function HyperAction() {}
 
 export function HyperGroup(children) {
 	HyperAction.call(this);
-	if (!Array.isArray(children)) throw new Error("actions group constructor children not array");
-	//this.finished = false;
-	//var groupDuration = 0;
-	//console.log("actions group:",children);
-	var result = [];
-	children.forEach( function(animation) {
-		var copy = animationFromDescription(animation);
-		//var copyDuration = copy.delay + copy.duration * copy.iterations / copy.speed;
-		//groupDuration = Math.max(copyDuration,groupDuration);
-		result.push(copy);
+	if (!Array.isArray(children)) children = [];
+	this.group = children.map( function(animation) {
+		return animationFromDescription(animation);
 	});
-	this.group = result;
+	this.sortIndex;
+	this.startTime;
+	
 	Object.defineProperty(this, "finished", {
 		get: function() {
-			var result = true;
+			let result = true;
 			this.group.forEach( function(animation) {
 				if (!animation.finished) result = false;
 			});
@@ -91,14 +88,14 @@ export function HyperGroup(children) {
 HyperGroup.prototype = {
 	constructor: HyperGroup,
 	copy: function() {
-		var constructor = this.constructor;
-		var copy = new constructor(this.group);
-		return copy;
+		return new this.constructor(this.group);
 	},
-	runAnimation: function(layer,key) {
+	runAnimation: function(layer,key,time) {
+		this.sortIndex = animationNumber++;
+		this.startTime = time;
 		this.group.forEach( function(animation) {
-			animation.runAnimation.call(animation,layer,key);
-		}.bind(this));
+			animation.runAnimation.call(animation,layer,key,time);
+		});
 	},
 	composite: function(onto,now) {
 		this.group.forEach( function(animation) {
@@ -142,24 +139,22 @@ export function HyperAnimation(settings) {
 HyperAnimation.prototype = {
 	constructor: HyperAnimation,
 	copy: function() { // TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
-		var constructor = this.constructor;
-		var copy = new constructor(this.settings);
-		var keys = Object.getOwnPropertyNames(this);
-		var length = keys.length;
-		for (var i = 0; i < length; i++) {
+		const copy = new this.constructor(this.settings);
+		const keys = Object.getOwnPropertyNames(this);
+		const length = keys.length;
+		for (let i = 0; i < length; i++) {
 			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
 		}
 		return copy;
 	},
 	composite: function(onto,now) {
 		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
-		var elapsed = Math.max(0, now - (this.startTime + this.delay));
-
-		var speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy yet. Part of GraphicsLayer.
-		var iterationProgress = 1;
-		var combinedProgress = 1;
-		var iterationDuration = this.duration;
-		var combinedDuration = iterationDuration * this.iterations;
+		const elapsed = Math.max(0, now - (this.startTime + this.delay));
+		const speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy yet. Part of GraphicsLayer.
+		let iterationProgress = 1;
+		let combinedProgress = 1;
+		const iterationDuration = this.duration;
+		const combinedDuration = iterationDuration * this.iterations;
 		if (combinedDuration) {
 			iterationProgress = elapsed * speed / iterationDuration;
 			combinedProgress = elapsed * speed / combinedDuration;
@@ -168,7 +163,7 @@ HyperAnimation.prototype = {
 			iterationProgress = 1;
 			this.finished = true;
 		}
-		var inReverse = 0; // falsy
+		let inReverse = 0; // falsy
 		if (!this.finished) {
 			if (this.autoreverse === true) inReverse = Math.floor(iterationProgress) % 2;
 			iterationProgress = iterationProgress % 1; // modulus for iterations
@@ -182,12 +177,12 @@ HyperAnimation.prototype = {
 			// TODO: match web-animations syntax
 			// TODO: refine regex, perform once in runAnimation
 			// FIXME: step-end displays twice (actually thrice). Should I just display once, not at the start?
-			var rounded = 0.5-(Math.cos(iterationProgress * Math.PI) / 2);
+			const rounded = 0.5-(Math.cos(iterationProgress * Math.PI) / 2);
 			if (this.easing) {
-				var steps = /(step-start|step-middle|step-end|steps)\((\d+)\)/.exec(this.easing);
+				const steps = /(step-start|step-middle|step-end|steps)\((\d+)\)/.exec(this.easing);
 				if (steps) {
-					var desc = steps[1];
-					var count = steps[2];
+					const desc = steps[1];
+					const count = steps[2];
 					if (count > 0) {
 						if (desc === "step-start") iterationProgress = Math.ceil(iterationProgress * count) / count;
 						else if (desc === "step-middle") iterationProgress = Math.round(iterationProgress * count) / count;
@@ -196,11 +191,11 @@ HyperAnimation.prototype = {
 				} else if (this.easing !== "linear") iterationProgress = rounded;
 			} else iterationProgress = rounded;
 		}
-		var value = (this.blend === "absolute") ? this.type.interpolate(this.from,this.to,iterationProgress) : this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms
-		var property = this.property;
+		const value = (this.blend === "absolute") ? this.type.interpolate(this.from,this.to,iterationProgress) : this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms
+		const property = this.property;
 		if (typeof property !== "undefined" && property !== null) { // allow animating without declaring property
-			var result = value;
-			var underlying = onto[property];
+			let result = value;
+			let underlying = onto[property];
 			if (typeof underlying === "undefined" || underlying === null) {
 				underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
 			}
@@ -208,20 +203,18 @@ HyperAnimation.prototype = {
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
-		var changed = (iterationProgress !== this.progress);
+		const changed = (iterationProgress !== this.progress);
 		this.progress = iterationProgress;
 
 		return changed;
 	},
-	runAnimation: function(layer,key) {
+	runAnimation: function(layer,key,time) {
 		if (this.type && isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
 			if (!this.from) this.from = this.type.zero(this.to);
 			if (!this.to) this.to = this.type.zero(this.from);
-			if (this.blend !== "absolute") {
-				this.delta = this.type.subtract(this.from,this.to);
-			}
-			if (this.startTime === null || this.startTime === undefined) throw new Error("no start time");
-
+			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
+			this.startTime = time;
+			this.sortIndex = animationNumber++;
 		} else throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 	}
 };

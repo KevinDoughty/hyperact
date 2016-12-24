@@ -31,8 +31,6 @@ var integerType = createObject(numberType, {
 	}
 });
 
-
-
 var opacityType = createObject(numberType, {
 	zero: function() {
 		return 0.0; // zero is definitely zero, I need to expose initialValue from propertyValueAliases

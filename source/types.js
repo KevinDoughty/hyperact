@@ -105,7 +105,7 @@ HyperSet.prototype = {
 				var A = a[i];
 				var B = b[j];
 				var sort = this.sort(A,B);
-				if (sort === 0) {
+				if (sort === 0) { // sort is used to determine identity, not just equality.
 					array.push(A);
 					i++;
 					j++;
@@ -146,7 +146,7 @@ HyperSet.prototype = {
 				var A = a[i];
 				var B = b[j];
 				var sort = this.sort(A,B);
-				if (sort === 0) {
+				if (sort === 0) { // sort is used to determine identity, not just equality.
 					i++;
 					j++;
 				} else if (sort < 0) {

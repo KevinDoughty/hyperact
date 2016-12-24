@@ -395,7 +395,7 @@ function multiplyMatrices(a, b) {
 	];
 }
 
-function convertItemToMatrix(item) { // !!!
+function convertItemToMatrix(item) {
 	switch (item.t) { // TODO: lots of types to implement:
 		case 'rotate':
 			var amount = item.d * Math.PI / 180;
@@ -565,7 +565,7 @@ const transformType = {
 	},
 	inverse: function(value) { // KxDx // TODO: SVG mode! see toCssValue // Using numberType not lengthType for transforms and perspective, probably should revert back
 		// TODO: fix this :) matrix is way off // need SVG mode! see toCssValue // Using numberType not lengthType for transforms and perspective, probably should revert back
-		if (!value) { // This happens often...
+		if (!value || !value.length) { // This happens often...
 			//console.log("transformType inverse with no base!");
 			value = this.zero();
 		}
@@ -617,10 +617,8 @@ const transformType = {
 	},
 
 	add: function(base, delta) {
-		if (!base) { // This happens often...
-			//console.log("transformType add with no base!");
-			base = this.zero(delta);
-		}
+		if (!base || !base.length) return delta;
+		if (!delta || !delta.length) return base;
 		var baseLength = base.length;
 		var deltaLength = delta.length;
 		if (baseLength && deltaLength && baseLength >= deltaLength) {
