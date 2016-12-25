@@ -27,22 +27,18 @@ function isObject(w) {
 	return w && typeof w === "object";
 }
 
-function prepAnimationObjectFromDescription(animation) { // animation can be a group, to allow for recursive groups
-	if (animation instanceof HyperGroup) { // recursive
-		const childAnimations = animation.group;
-		if (childAnimations !== null && typeof childAnimations !== "undefined") {
-			if (!Array.isArray(childAnimations)) throw new Error("childAnimations is not an array");
-			childAnimations.forEach( function(childAnimation) {
-				prepAnimationObjectFromDescription(childAnimation);
-			});
-		}
-	} else if (animation instanceof HyperAnimation) { // prep
-		if (isFunction(animation.type)) animation.type = new animation.type();
-		if (!animation.duration) animation.duration = 0.0; // TODO: need better validation. Currently split across constructor, setter, and here
-		if (animation.speed === null || typeof animation.speed === "undefined") animation.speed = 1; // need better validation
-		if (animation.iterations === null || typeof animation.iterations === "undefined") animation.iterations = 1; // negative values have no effect
-	} else throw new Error("not an animation object");
-}
+// function prepAnimationObjectFromDescription(animation) { // animation can be a group, to allow for recursive groups
+// 	if (animation instanceof HyperGroup) { // recursive
+// 		animation.group.forEach( function(childAnimation) {
+// 			prepAnimationObjectFromDescription(childAnimation);
+// 		});
+// 	} else if (animation instanceof HyperAnimation) { // prep
+// 		if (isFunction(animation.type)) animation.type = new animation.type();
+// 		if (!animation.duration) animation.duration = 0.0; // TODO: need better validation. Currently split across constructor, setter, and here
+// 		if (animation.speed === null || typeof animation.speed === "undefined") animation.speed = 1; // need better validation
+// 		if (animation.iterations === null || typeof animation.iterations === "undefined") animation.iterations = 1; // negative values have no effect
+// 	} else throw new Error("not an animation object");
+// }
 
 export function animationFromDescription(description) {
 	let animation;
@@ -54,8 +50,9 @@ export function animationFromDescription(description) {
 	} else if (isObject(description)) {
 		animation = new HyperAnimation(description);
 	} else if (isNumber(description)) animation = new HyperAnimation({duration:description});
+	else if (description === true) animation = new HyperAnimation({});
 	else throw new Error("is this an animation:"+JSON.stringify(description));
-	prepAnimationObjectFromDescription(animation);
+	//prepAnimationObjectFromDescription(animation);
 	return animation;
 }
 
@@ -90,11 +87,11 @@ HyperGroup.prototype = {
 	copy: function() {
 		return new this.constructor(this.group);
 	},
-	runAnimation: function(layer,key,time) {
+	runAnimation: function(layer,key,transaction) {
 		this.sortIndex = animationNumber++;
-		this.startTime = time;
+		this.startTime = transaction.time;
 		this.group.forEach( function(animation) {
-			animation.runAnimation.call(animation,layer,key,time);
+			animation.runAnimation.call(animation,layer,key,transaction);
 		});
 	},
 	composite: function(onto,now) {
@@ -112,10 +109,10 @@ export function HyperAnimation(settings) {
 	this.type = wetNumberType; // Default
 	this.delta; // Should this be private?
 
-	this.duration = 0.0; // float. In seconds. Need to validate/ensure >= 0.
-	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear
-	this.speed = 1.0; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset!
-	this.iterations = 1; // float >= 0.
+	this.duration; // float. In seconds. Need to validate/ensure >= 0. Initialized in runAnimation
+	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear. Initialized in runAnimation
+	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
+	this.iterations; // float >= 0. Initialized in runAnimation
 	this.autoreverse; // boolean. When iterations > 1. Easing also reversed. Maybe should be named "autoreverses", maybe should be camelCased
 	this.fillMode; // string. Defaults to "none". NOT FINISHED. "forwards" and "backwards" are "both". maybe should be named "fill". maybe should just be a boolean. // I'm unsure of the effect of combining a forward fill with additive // TODO: implement removedOnCompletion
 	this.index = 0; // float. Custom compositing order.
@@ -125,7 +122,7 @@ export function HyperAnimation(settings) {
 	this.sort;
 	this.finished = false;
 	this.startTime; // float // Should this be private?
-	this.progress = 0;//null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers
+	this.progress;//null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers. Initialized in runAnimation
 	this.onend; // NOT FINISHED. callback function, fires regardless of fillMode. Should rename. Should also implement didStart, maybe didTick, etc.
 	//this.naming; // "default","exact","increment","nil" // why not a key property?
 	this.remove = true;
@@ -133,7 +130,6 @@ export function HyperAnimation(settings) {
 	if (settings) Object.keys(settings).forEach( function(key) {
 		this[key] = settings[key];
 	}.bind(this));
-
 }
 
 HyperAnimation.prototype = {
@@ -208,12 +204,18 @@ HyperAnimation.prototype = {
 
 		return changed;
 	},
-	runAnimation: function(layer,key,time) {
+	runAnimation: function(layer,key,transaction) {
+		if (isFunction(this.type)) this.type = new this.type();
 		if (this.type && isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
 			if (!this.from) this.from = this.type.zero(this.to);
 			if (!this.to) this.to = this.type.zero(this.from);
 			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
-			this.startTime = time;
+			if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // TODO: need better validation. Currently split across constructor, setter, and here
+			if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // TODO: need better validation. Currently split across constructor, setter, and here
+			if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
+			if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
+			this.progress = 0.0;
+			this.startTime = transaction.time;
 			this.sortIndex = animationNumber++;
 		} else throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 	}

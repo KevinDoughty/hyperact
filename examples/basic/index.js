@@ -256,13 +256,14 @@ document.addEventListener("mousedown",function(event) {
 	two.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
 	four.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
 
+
 	one.addAnimation([
 		{
 			property:"transform",
 			type:transformType,
 			from:"translate3d(0px, 0px, 1px)",
 			to:"translate3d(0px, 0px, 1px)",
-			duration:10.0,
+			duration:1.0,
 			blend:"absolute"
 		},
 		{

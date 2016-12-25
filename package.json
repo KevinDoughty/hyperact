@@ -1,6 +1,6 @@
 {
   "name": "hyperact",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Hyperactive animation layers",
   "main": "hyperact.js",
   "scripts": {
