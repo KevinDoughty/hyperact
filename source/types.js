@@ -47,28 +47,28 @@ export function HyperArray(type,length,settings) {
 HyperArray.prototype = {
 	constructor: HyperArray,
 	zero: function() {
-		var array = [];
-		var i = this.length;
+		const array = [];
+		let i = this.length;
 		while (i--) array.push(this.type.zero());
 		return array;
 	},
 	add: function(a,b) {
-		var array = [];
-		for (var i = 0; i < this.length; i++) {
+		const array = [];
+		for (let i = 0; i < this.length; i++) {
 			array.push(this.type.add(a[i],b[i]));
 		}
 		return array;
 	},
 	subtract: function(a,b) { // subtract b from a
-		var array = [];
-		for (var i = 0; i < this.length; i++) {
+		const array = [];
+		for (let i = 0; i < this.length; i++) {
 			array.push(this.type.subtract(a[i],b[i]));
 		}
 		return array;
 	},
 	interpolate: function(a,b,progress) {
-		var array = [];
-		for (var i = 0; i < this.length; i++) {
+		const array = [];
+		for (let i = 0; i < this.length; i++) {
 			array.push(this.type.interpolate(a[i],b[i],progress));
 		}
 		return array;
@@ -89,11 +89,11 @@ HyperSet.prototype = {
 		if (!Array.isArray(a)) return b;
 		if (!Array.isArray(b)) return a;
 
-		var array = [];
-		var aLength = a.length;
-		var bLength = b.length;
-		var i = 0;
-		var j = 0;
+		let array = [];
+		const aLength = a.length;
+		const bLength = b.length;
+		let i = 0;
+		let j = 0;
 		if (isFunction(this.sort)) while (i < aLength || j < bLength) {
 			if (i === aLength) {
 				array.push(b[j]);
@@ -102,9 +102,9 @@ HyperSet.prototype = {
 				array.push(a[i]);
 				i++;
 			} else {
-				var A = a[i];
-				var B = b[j];
-				var sort = this.sort(A,B);
+				const A = a[i];
+				const B = b[j];
+				const sort = this.sort(A,B);
 				if (sort === 0) { // sort is used to determine identity, not just equality.
 					array.push(A);
 					i++;
@@ -131,11 +131,11 @@ HyperSet.prototype = {
 		if (!Array.isArray(a)) return b;
 		if (!Array.isArray(b)) return a;
 
-		var array = [];
-		var aLength = a.length;
-		var bLength = b.length;
-		var i = 0;
-		var j = 0;
+		let array = [];
+		const aLength = a.length;
+		const bLength = b.length;
+		let i = 0;
+		let j = 0;
 		if (isFunction(this.sort)) while (i < aLength || j < bLength) {
 			if (i === aLength) {
 				break;
@@ -143,9 +143,9 @@ HyperSet.prototype = {
 				array.push(a[i]);
 				i++;
 			} else {
-				var A = a[i];
-				var B = b[j];
-				var sort = this.sort(A,B);
+				const A = a[i];
+				const B = b[j];
+				const sort = this.sort(A,B);
 				if (sort === 0) { // sort is used to determine identity, not just equality.
 					i++;
 					j++;
@@ -160,7 +160,7 @@ HyperSet.prototype = {
 			array = a.slice(0);
 			i = b.length;
 			while (i--) {
-				var loc = array.indexOf(b[i]);
+				const loc = array.indexOf(b[i]);
 				if (loc > -1) array.splice(loc,1);
 			}
 		}
@@ -248,13 +248,13 @@ HyperRange.prototype = {
 		if (a.length === 0 && b.length === 0) return HyperNullRange();
 		if (a.location === HyperNotFound || a.length === 0) return b;
 		if (b.location === HyperNotFound || b.length === 0) return a;
-		var finalLocation = Math.min( a.location, b.location );
-		var finalEnd = Math.max( a.location + a.length, b.location + b.length );
-		var result = HyperMakeRange(finalLocation, finalEnd - finalLocation );
+		const finalLocation = Math.min( a.location, b.location );
+		const finalEnd = Math.max( a.location + a.length, b.location + b.length );
+		const result = HyperMakeRange(finalLocation, finalEnd - finalLocation );
 		return result;
 	},
 	subtract: function(a,b) { // Subtraction is completely different.
-		var result = a;
+		let result = a;
 		if (a.location === HyperNotFound && b.location === HyperNotFound) result = HyperNullRange();
 		else if (a.length === 0 && b.length === 0) result = HyperNullRange();
 		else if (a.location === HyperNotFound || a.length === 0) result = HyperNullRange();
@@ -271,8 +271,8 @@ HyperRange.prototype = {
 	intersection: function(a,b) { // 0,1 and 1,1 do not intersect
 		if (a.location === HyperNotFound || b.location === HyperNotFound || a.length === 0 || b.length === 0) return HyperNullRange();
 		if (a.location + a.length <= b.location || b.location + b.length <= a.location) return HyperNullRange(); // TODO: Consider location should be NSNotFound (INT_MAX) not zero.
-		var finalLocation = Math.max( a.location, b.location );
-		var finalEnd = Math.min( a.location + a.length, b.location + b.length );
+		const finalLocation = Math.max( a.location, b.location );
+		const finalEnd = Math.min( a.location + a.length, b.location + b.length );
 		return HyperMakeRange(finalLocation, finalEnd - finalLocation);
 	}
 };
@@ -338,7 +338,7 @@ export function HyperEqualRanges(a,b) {
 }
 export function HyperIntersectionRange(a,b) {
 	if (a.location + a.length <= b.location || b.location + b.length <= a.location) return HyperNullRange();
-	var location = Math.max( a.location, b.location );
-	var end = Math.min( a.location + a.length, b.location + b.length );
+	const location = Math.max( a.location, b.location );
+	const end = Math.min( a.location + a.length, b.location + b.length );
 	return { location: location, length: end - location };
 }
