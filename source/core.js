@@ -414,6 +414,6 @@ export function decorate(controller, delegate, layerInstance) {
 		modelBacking[key] = layerInstance[key];
 		controller.registerAnimatableProperty(key);
 	});
-	controller.needsDisplay(); // I think it's best
+	//controller.needsDisplay(); // Can't display on decorate
 	return controller;
 }
