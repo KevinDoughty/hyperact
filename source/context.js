@@ -15,7 +15,7 @@ if (Date.now) now = Date.now;
 if (typeof window !== "undefined" && typeof window.performance !== "undefined" && typeof window.performance.now !== "undefined") now = window.performance.now.bind(window.performance);
 
 export function HyperTransaction(settings) {
-	this.time = now() / 1000; // value should probably be inherited from parent transaction
+	this.time;// set in createTransaction so value is same as parent transaction and can be frozen
 	this.disableAnimation = false; // value should probably be inherited from parent transaction
 	this.duration;
 	this.easing;
@@ -39,9 +39,15 @@ HyperContext.prototype = {
 	createTransaction: function(settings,automaticallyCommit) {
 		const transaction = new HyperTransaction(settings);
 		const length = this.transactions.length;
-		if (length) { // Time freezes in transactions. A time getter should return transaction time if within one.
-			transaction.time = this.transactions[length-1].representedObject.time;
-		}
+		let time = now() / 1000;
+		if (length) time = this.transactions[length-1].representedObject.time; // Clock stops in the outermost transaction.
+		Object.defineProperty(transaction, "time", { // Manually set time of transaction here to be not configurable
+			get: function() {
+				return time;
+			},
+			enumerable: true,
+			configurable: false
+		});
 		this.transactions.push({ representedObject:transaction, automaticallyCommit:automaticallyCommit });
 		if (automaticallyCommit) this.startTicking(); // Automatic transactions will otherwise not be closed if there is no animation or value set.
 		return transaction;

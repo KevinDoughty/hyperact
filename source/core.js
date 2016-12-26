@@ -1,7 +1,6 @@
 import { HyperContext } from "./context.js";
 import { HyperAnimation, HyperGroup, animationFromDescription } from "./actions.js";
 
-const DELEGATE_MASSAGE_INPUT_OUTPUT = true; // allow delegate the ability to convert values to and from private internal representation ("ugly" values)
 const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
 
@@ -15,8 +14,8 @@ const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time aft
 
 const delegateMethods = ["display","animationForKey","input","output"];
 
-
 const hyperContext = new HyperContext();
+
 export const beginTransaction = hyperContext.beginTransaction.bind(hyperContext);
 export const commitTransaction = hyperContext.commitTransaction.bind(hyperContext);
 export const flushTransaction = hyperContext.flushTransaction.bind(hyperContext);
@@ -45,26 +44,26 @@ function convertedKey(property,funky) { // DELEGATE_DOUBLE_WHAMMY // from addAni
 	if (isFunction(funky)) return funky(property);
 	return property;
 }
-function convertedValueOfPropertyWithFunction(value,property,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates // from register, modelLayer, and previousBacking
-	if (DELEGATE_MASSAGE_INPUT_OUTPUT && isFunction(funky)) return funky(property,value);
+function convertedValueOfPropertyWithFunction(value,property,funky) { // mutates // from register, modelLayer, and previousBacking
+	if (isFunction(funky)) return funky(property,value);
 	return value;
 }
-function convertPropertyOfLayerWithFunction(property,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates
+function convertPropertyOfLayerWithFunction(property,object,funky) { // mutates
 	if (object && isFunction(funky)) {
 		const value = object[property];
 		if (value !== null && typeof value !== "undefined") object[property] = funky(property,value);
 		if (property === null || typeof property === "undefined") throw new Error("convert property undefined");
 	}
 }
-function convertPropertiesOfLayerWithFunction(properties,object,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates
-	if (DELEGATE_MASSAGE_INPUT_OUTPUT) properties.forEach( function(property) {
+function convertPropertiesOfLayerWithFunction(properties,object,funky) { // mutates
+	properties.forEach( function(property) {
 		if (property === null || typeof property === "undefined") throw new Error("convert properties undefined");
 		convertPropertyOfLayerWithFunction(property,object,funky);
 	});
 }
-function convertPropertiesOfAnimationWithFunction(properties,animation,funky) { // DELEGATE_MASSAGE_INPUT_OUTPUT // mutates // animation from, to, and delta
+function convertPropertiesOfAnimationWithFunction(properties,animation,funky) { // mutates // animation from, to, and delta
 	// ["from","to","delta"],animation,delegate.input
-	if (DELEGATE_MASSAGE_INPUT_OUTPUT && animation && isFunction(funky)) {
+	if (animation && isFunction(funky)) {
 		if (animation instanceof HyperGroup) { // recursive
 			animation.group.forEach( function(childAnimation) {
 				convertPropertiesOfAnimationWithFunction(properties,childAnimation,funky);
@@ -78,10 +77,8 @@ function convertPropertiesOfAnimationWithFunction(properties,animation,funky) { 
 
 function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnimations,presentationBacking) { // COMPOSITING
 	const presentationLayer = Object.assign({},sourceLayer); // Need to make sure display has non animated properties for example this.element
-	if (!sourceAnimations || !sourceAnimations.length) {
-		return presentationLayer;
-	}
-	if (shouldSortAnimations) { // no argument means it will sort // animation index. No connection to setType animation sorting
+	if (!sourceAnimations || !sourceAnimations.length) return presentationLayer;
+	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
 		sourceAnimations.sort( function(a,b) {
 			const A = a.index || 0;
 			const B = b.index || 0;
@@ -91,7 +88,6 @@ function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnima
 			return result;
 		});
 	}
-
 	let progressChanged = false;
 	sourceAnimations.forEach( function(animation) {
 		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
@@ -100,6 +96,27 @@ function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnima
 		if (presentationBacking) return presentationBacking; // presentationBacking is not an optimization per se. It is so step timing functions return the same object.
 	}
 	return presentationLayer;
+}
+
+function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimation,transaction) { // TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
+	let description;
+	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
+	let animation = animationFromDescription(description);
+	if (!animation) animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
+	if (animation) {
+		// TODO: These are not correct if animation is a group !!!
+		// Not part of animationFromDescription because of accessing controller and modelBacking
+		if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
+		if (animation.from === null || typeof animation.from === "undefined") {
+			if (animation.blend === "absolute") animation.from = prettyPresentation;
+			else animation.from = prettyPrevious;
+		}
+		if (animation.to === null || typeof animation.to === "undefined") animation.to = prettyValue;
+		if (animation.easing === null || typeof animation.easing === "undefined") animation.easing = transaction.easing;
+		if (animation.duration === null || typeof animation.duration === "undefined") animation.duration = transaction.duration;
+		if (!animation.duration) animation.duration = 0.0;
+	}
+	return animation;
 }
 
 export function decorate(controller, delegate, layerInstance) {
@@ -121,6 +138,83 @@ export function decorate(controller, delegate, layerInstance) {
 	const initialLayerKeys = Object.keys(layerInstance);
 // 	const initialControllerOwnProperties = Object.getOwnPropertyNames(controller);
 // 	const initialControllerKeys = Object.keys(controller);
+
+	function valueForKey(property) { // don't let this become re-entrant (do not animate delegate.output)
+		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyOutput);
+		const prettyValue = convertedValueOfPropertyWithFunction(activeBacking[property],property,delegate.output);
+		return prettyValue;
+	}
+
+	function setValueForKey(prettyValue,property) { // don't let this become re-entrant
+		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyInput);
+		const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,property,delegate.input);
+		if (uglyValue === modelBacking[property]) return; // No animation if no change. This filters out repeat setting of unchanging model values while animating. Function props are always not equal (if you're not careful)
+		const uglyPrevious = modelBacking[property];
+		const prettyPrevious = convertedValueOfPropertyWithFunction(uglyPrevious,property,delegate.output);
+		if (prettyValue === prettyPrevious) return; // No animation if no change, better version
+		previousBacking[property] = uglyPrevious;
+		const transaction = hyperContext.currentTransaction(); // Careful! This transaction might not get closed.
+		if (!transaction.disableAnimation) {
+			const prettyPresentation = controller.presentation;
+			const animation = implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[property],transaction);
+			if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
+			else controller.needsDisplay();
+		}
+		modelBacking[property] = uglyValue;
+		presentationBacking = null;
+		activeBacking = modelBacking;
+	}
+
+	function animationCleanup() { // animations contained within groups ignore remove (removedOnCompletion) and do not fire onend
+		let i = allAnimations.length;
+		const finishedWithCallback = [];
+		while (i--) {
+			const animation = allAnimations[i];
+			if (animation.finished) {
+				allAnimations.splice(i,1);
+				const name = allNames[i];
+				allNames.splice(i,1);
+				delete namedAnimations[name];
+				if (isFunction(animation.onend)) finishedWithCallback.push(animation);
+			}
+		}
+		if (!ENSURE_ONE_MORE_TICK) {
+			if (!allAnimations.length) {
+				hyperContext.deregisterTarget(controller);
+			}
+		}
+		if (!allAnimations.length) {
+			presentationBacking = modelBacking;
+		}
+		finishedWithCallback.forEach( function(animation) {
+			animation.onend.call(animation,true);
+		});
+	}
+
+	function registerWithContext() {
+		let display = function() {};
+		if (isFunction(delegate.display)) display = function() {
+			activeBacking = controller.presentation;
+			delegate.display.call(delegate);
+			activeBacking = modelBacking;
+		};
+		hyperContext.registerTarget(controller, display, animationCleanup);
+	}
+
+	function removeAnimationInstance(animation) {
+		const index = allAnimations.indexOf(animation);
+		if (index > -1) {
+			allAnimations.splice(index,1);
+			const name = allNames[index];
+			allNames.splice(index,1);
+			delete namedAnimations[name];
+		}
+		if (!ENSURE_ONE_MORE_TICK) {
+			if (!allAnimations.length) {
+				hyperContext.deregisterTarget(controller);
+			}
+		}
+	}
 
 	controller.registerAnimatableProperty = function(property, defaultAnimation) { // Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
 		if (controller === delegate && isFunction(layerInstance[property]) && delegateMethods.indexOf(property) > -1) return; // Can't animate functions that you depend on. // TODO: better rules
@@ -162,55 +256,6 @@ export function decorate(controller, delegate, layerInstance) {
 		enumerable: false,
 		configurable: false
 	});
-
-	const implicitAnimation = function(property,prettyValue,prettyPrevious,prettyPresentation,transactionDuration,transactionEasing) { // TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
-		let description;
-		if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
-		let animation = animationFromDescription(description);
-		if (!animation) animation = animationFromDescription(defaultAnimations[property]); // default is not converted to ugly in registerAnimatableProperty
-		if (animation) {
-			// TODO: These are not correct if animation is a group !!!
-			// Not part of animationFromDescription because of accessing controller and modelBacking
-			if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
-			if (animation.from === null || typeof animation.from === "undefined") {
-				if (animation.blend === "absolute") animation.from = controller.presentation[property]; // use presentation layer pretty value
-				else animation.from = convertedValueOfPropertyWithFunction(modelBacking[property],property,delegate.output); // convert to pretty
-			}
-			if (animation.to === null || typeof animation.to === "undefined") animation.to = prettyValue;
-			if (animation.easing === null || typeof animation.easing === "undefined") animation.easing = transactionEasing;
-			if (animation.duration === null || typeof animation.duration === "undefined") animation.duration = transactionDuration;
-			if (!animation.duration) animation.duration = 0.0;
-		}
-		return animation;
-	};
-
-	const valueForKey = function(property) {
-		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyOutput);
-		const prettyValue = convertedValueOfPropertyWithFunction(activeBacking[property],property,delegate.output);
-		return prettyValue;
-	}; // don't let this become re-entrant
-
-	const setValueForKey = function(prettyValue,property) {
-		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyInput);
-		const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,property,delegate.input);
-		if (uglyValue === modelBacking[property]) return; // No animation if no change. This filters out repeat setting of unchanging model values while animating. Function props are always not equal (if you're not careful)
-		const uglyPrevious = modelBacking[property];
-		const prettyPrevious = convertedValueOfPropertyWithFunction(uglyPrevious,property,delegate.output);
-		if (prettyValue === prettyPrevious) return; // No animation if no change, better version
-		previousBacking[property] = uglyPrevious;
-		const transaction = hyperContext.currentTransaction(); // Careful! This transaction might not get closed.
-		if (!transaction.disableAnimation) {
-			const duration = transaction.duration;
-			const easing = transaction.easing;
-			const prettyPresentation = controller.presentation;
-			const animation = implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,duration,easing);
-			if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-			else controller.needsDisplay();
-		}
-		modelBacking[property] = uglyValue;
-		presentationBacking = null;
-		activeBacking = modelBacking;
-	};
 
 	Object.defineProperty(controller, "animationCount", { // Performs better than asking for animations.length, especially with delegate.input and delegate.output
 		get: function() {
@@ -278,32 +323,6 @@ export function decorate(controller, delegate, layerInstance) {
 		configurable: false
 	});
 
-	const animationCleanup = function() {
-		let i = allAnimations.length;
-		const finishedWithCallback = [];
-		while (i--) {
-			const animation = allAnimations[i];
-			if (animation.finished) {
-				allAnimations.splice(i,1);
-				const name = allNames[i];
-				allNames.splice(i,1);
-				delete namedAnimations[name];
-				if (isFunction(animation.onend)) finishedWithCallback.push(animation);
-			}
-		}
-		if (!ENSURE_ONE_MORE_TICK) {
-			if (!allAnimations.length) {
-				hyperContext.deregisterTarget(controller);
-			}
-		}
-		if (!allAnimations.length) {
-			presentationBacking = modelBacking;
-		}
-		finishedWithCallback.forEach( function(animation) {
-			animation.onend.call(animation,true);
-		});
-	};
-
 	Object.defineProperty(controller, "presentation", {
 		get: function() {
 			let time = 0; // Temporary workaround. Not sure if still needed. It should be safe to create transactions.
@@ -320,17 +339,7 @@ export function decorate(controller, delegate, layerInstance) {
 		enumerable: false,
 		configurable: false
 	});
-	
-	const registerWithContext = function() {
-		let display = function() {};
-		if (isFunction(delegate.display)) display = function() {
-			activeBacking = controller.presentation;
-			delegate.display.call(delegate);
-			activeBacking = modelBacking;
-		};
-		hyperContext.registerTarget(controller, display, animationCleanup);
-	};
-	
+
 	controller.needsDisplay = function() { // This should be used instead of directly calling display
 		registerWithContext();
 	};
@@ -353,21 +362,6 @@ export function decorate(controller, delegate, layerInstance) {
 		
 		const transaction = hyperContext.currentTransaction();
 		copy.runAnimation(controller, name, transaction);
-	};
-
-	const removeAnimationInstance = function(animation) {
-		const index = allAnimations.indexOf(animation);
-		if (index > -1) {
-			allAnimations.splice(index,1);
-			const name = allNames[index];
-			allNames.splice(index,1);
-			delete namedAnimations[name];
-		}
-		if (!ENSURE_ONE_MORE_TICK) {
-			if (!allAnimations.length) {
-				hyperContext.deregisterTarget(controller);
-			}
-		}
 	};
 
 	controller.removeAnimation = function(name) {

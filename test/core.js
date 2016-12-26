@@ -402,38 +402,6 @@ describe("core", function() {
 			core.flushTransaction();
 			assert.deepEqual(view.presentation, { a:2, b:3, c:1 });
 		});
-
-		it("group presentation flushed", function() {
-			var view = {a:1, b:2, c:3};
-			core.decorate(view);
-			//view.layer = {a:1, b:2, c:3};
-			view.addAnimation([
-				{
-					property:"a",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute"
-				},
-				{
-					property:"b",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute"
-				},
-				{
-					property:"c",
-					duration:duration,
-					from:1,
-					to:1,
-					blend:"absolute",
-					additive:false
-				}
-			]);
-			core.flushTransaction();
-			assert.deepEqual(view.presentation, { a:2, b:3, c:1 });
-		});
 	});
 
 	describe("four", function() {
@@ -666,7 +634,78 @@ describe("core", function() {
 
 	});
 
+
 	describe("six", function() {
+		it("group presentation flushed", function() {
+			var view = {a:1, b:2, c:3};
+			core.decorate(view);
+			view.addAnimation([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"b",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"c",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute",
+					additive:false
+				}
+			]);
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, { a:2, b:3, c:1 });
+		});
+
+// 		it("group children onend", function(done) { // Expected. For now. Group child animation onend is not called. Also group child animations are not removed
+// 			let count = 0;
+// 			const view = { a:0, b:0, c:0, display: function() {
+// 				if (count > 2) done();
+// 			}};
+// 			core.decorate(view);
+// 			const animation = [
+// 				{
+// 					duration:duration / 2,
+// 					property:"a",
+// 					from:0,
+// 					to:1,
+// 					onend: function() {
+// 						console.log("first");
+// 						count++;
+// 					}
+// 				},
+// 				{
+// 					duration:duration,
+// 					onend: function() {
+// 						console.log("second");
+// 						count++;
+// 					}
+// 				},
+// 				{
+// 					duration:duration * 2,
+// 					onend: function() {
+// 						console.log("third");
+// 						count++;
+// 					}
+// 				}
+// 			];
+// 			view.addAnimation(animation);
+// 		});
+
+	});
+
+
+	describe("seven", function() {
 
 		it("added animations not apparent in presentation until transaction flush, not flushed, explicit transaction", function() {
 			core.beginTransaction();
@@ -721,8 +760,7 @@ describe("core", function() {
 	});
 
 
-
-// 	describe("seven", function() {
+// 	describe("eight", function() {
 // 		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
 // 			const view = {};
 // 			core.decorate(view);
@@ -765,8 +803,17 @@ describe("core", function() {
 // 		it("previousLayer values are correct", function() {
 // 			assert(false);
 // 		});
+// 		it("speed and pause", function() {
+// 			assert(false);
+// 		});
+// 		it("delegate animationDidStop like CAAnimationDelegate", function() {
+// 			assert(false);
+// 		});
 // 	});
-// 	describe("eight", function() {
+//
+//
+//
+// 	describe("nine", function() {
 // 		var one;
 // 		var view;
 // 		beforeEach( function() {

@@ -55,13 +55,10 @@ const e = {
 	from: 5,
 	to: 0,
 	onend: function(finished) {
-		console.log("basic onend:%s; one:%s; animations:%s;",JSON.stringify(this),JSON.stringify(one),JSON.stringify(one.animations));
+		console.log("onend:",this);
 	}
 }
 one.addAnimation(e);
-
-console.log("basic one.animations:%s;",JSON.stringify(one.animations));
-
 
 function Two(element) {
 	decorate(this,this,{});

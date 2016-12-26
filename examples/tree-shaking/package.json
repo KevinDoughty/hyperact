@@ -10,9 +10,6 @@
   },
   "author": "Kevin Doughty",
   "license": "Apache-2.0",
-  "dependencies": {
-    "hyperact": "0.0.4"
-  },
   "devDependencies": {
     "webpack": "^2.1.0-beta.28",
     "webpack-dev-server": "^2.2.0-rc.0",

@@ -27,19 +27,6 @@ function isObject(w) {
 	return w && typeof w === "object";
 }
 
-// function prepAnimationObjectFromDescription(animation) { // animation can be a group, to allow for recursive groups
-// 	if (animation instanceof HyperGroup) { // recursive
-// 		animation.group.forEach( function(childAnimation) {
-// 			prepAnimationObjectFromDescription(childAnimation);
-// 		});
-// 	} else if (animation instanceof HyperAnimation) { // prep
-// 		if (isFunction(animation.type)) animation.type = new animation.type();
-// 		if (!animation.duration) animation.duration = 0.0; // TODO: need better validation. Currently split across constructor, setter, and here
-// 		if (animation.speed === null || typeof animation.speed === "undefined") animation.speed = 1; // need better validation
-// 		if (animation.iterations === null || typeof animation.iterations === "undefined") animation.iterations = 1; // negative values have no effect
-// 	} else throw new Error("not an animation object");
-// }
-
 export function animationFromDescription(description) {
 	let animation;
 	if (!description) return description;
@@ -52,7 +39,6 @@ export function animationFromDescription(description) {
 	} else if (isNumber(description)) animation = new HyperAnimation({duration:description});
 	else if (description === true) animation = new HyperAnimation({});
 	else throw new Error("is this an animation:"+JSON.stringify(description));
-	//prepAnimationObjectFromDescription(animation);
 	return animation;
 }
 
@@ -68,7 +54,6 @@ export function HyperGroup(children) {
 	});
 	this.sortIndex;
 	this.startTime;
-	
 	Object.defineProperty(this, "finished", {
 		get: function() {
 			let result = true;
@@ -89,15 +74,17 @@ HyperGroup.prototype = {
 	},
 	runAnimation: function(layer,key,transaction) {
 		this.sortIndex = animationNumber++;
-		this.startTime = transaction.time;
+		if (this.startTime === null || typeof this.startTime === "undefined") this.startTime = transaction.time;
 		this.group.forEach( function(animation) {
 			animation.runAnimation.call(animation,layer,key,transaction);
 		});
 	},
 	composite: function(onto,now) {
+		let changed = false;
 		this.group.forEach( function(animation) {
-			animation.composite.call(animation,onto,now);
+			changed = animation.composite.call(animation,onto,now) || changed;
 		});
+		return changed;
 	}
 };
 
@@ -210,8 +197,8 @@ HyperAnimation.prototype = {
 			if (!this.from) this.from = this.type.zero(this.to);
 			if (!this.to) this.to = this.type.zero(this.from);
 			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
-			if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // TODO: need better validation. Currently split across constructor, setter, and here
-			if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // TODO: need better validation. Currently split across constructor, setter, and here
+			if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
+			if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 			if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
 			if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
 			this.progress = 0.0;
