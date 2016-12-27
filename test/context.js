@@ -71,36 +71,40 @@ describe("context", function() {
 			const display = () => {
 				done();
 			};
+			const invalidate = function() {};
 			const cleanup = function() {};
-			context.registerTarget(target, display, cleanup);
+			context.registerTarget(target, display, invalidate, cleanup);
 		});
 		it("cleanup to remove animations", function(done) {
 			target.animationCount = 10;
 			const display = () => {};
+			const invalidate = function() {};
 			const cleanup = () => {
 				target.animationCount--;
 				if (!target.animationCount) done();
 			};
-			context.registerTarget(target, display, cleanup);
+			context.registerTarget(target, display, invalidate, cleanup);
 		});
 		it("two targets registered", function() {
 			target.animationCount = 0;
 			const display = () => {};
+			const invalidate = function() {};
 			const cleanup = () => {};
-			context.registerTarget(target, display, cleanup);
+			context.registerTarget(target, display, invalidate,cleanup);
 			
 			const secondTarget = new Target();
 			secondTarget.animationCount = 0;
-			context.registerTarget(secondTarget, display, cleanup);
+			context.registerTarget(secondTarget, display, invalidate, cleanup);
 			assert(context.targets && context.targets.length === 2);
 		});
 		it("targets are deregistered", function(done) {
 			target.animationCount = 10;
 			const display = () => {};
+			const invalidate = function() {};
 			const cleanup = () => {
 				target.animationCount--;
 			};
-			context.registerTarget(target, display, cleanup);
+			context.registerTarget(target, display, invalidate, cleanup);
 			const secondTarget = new Target();
 			secondTarget.animationCount = target.animationCount + 1;
 			const secondDisplay = () => {
@@ -109,7 +113,7 @@ describe("context", function() {
 			const secondCleanup = () => {
 				secondTarget.animationCount--;
 			};
-			context.registerTarget(secondTarget, secondDisplay, secondCleanup);
+			context.registerTarget(secondTarget, secondDisplay, invalidate, secondCleanup);
 		});
 
 	});

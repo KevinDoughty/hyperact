@@ -4,14 +4,6 @@ import { HyperAnimation, HyperGroup, animationFromDescription } from "./actions.
 const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
 
-//const FAKE_RUN_LOOP_TRANSACTION = true;
-// context caches presentation layers
-// they get generated lazily
-// If an object has no animations or presentationLayer, you will need to generate one.
-// I need to generate one to emulate the core animation run loop transaction.
-// presentationLayer will have to be generated before any change is made to registered layer properties.
-// An existing presentationLayer should not be invalidated.
-
 const delegateMethods = ["display","animationForKey","input","output"];
 
 const hyperContext = new HyperContext();
@@ -20,7 +12,6 @@ export const beginTransaction = hyperContext.beginTransaction.bind(hyperContext)
 export const commitTransaction = hyperContext.commitTransaction.bind(hyperContext);
 export const flushTransaction = hyperContext.flushTransaction.bind(hyperContext);
 export const disableAnimation = hyperContext.disableAnimation.bind(hyperContext);
-
 
 function isFunction(w) { // WET
 	return w && {}.toString.call(w) === "[object Function]";
@@ -93,7 +84,7 @@ function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnima
 		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
 	});
 	if (!progressChanged && sourceAnimations.length) {
-		if (presentationBacking) return presentationBacking; // presentationBacking is not an optimization per se. It is so step timing functions return the same object.
+		if (presentationBacking) return presentationBacking;
 	}
 	return presentationLayer;
 }
@@ -134,10 +125,8 @@ export function decorate(controller, delegate, layerInstance) {
 	let presentationBacking = null; // This is nulled out to invalidate.
 	const registeredProperties = [];
 	let activeBacking = modelBacking;
-// 	const initialLayerOwnProperties = Object.getOwnPropertyNames(layerInstance);
 	const initialLayerKeys = Object.keys(layerInstance);
-// 	const initialControllerOwnProperties = Object.getOwnPropertyNames(controller);
-// 	const initialControllerKeys = Object.keys(controller);
+	let presentationTime = -1;
 
 	function valueForKey(property) { // don't let this become re-entrant (do not animate delegate.output)
 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyOutput);
@@ -145,7 +134,7 @@ export function decorate(controller, delegate, layerInstance) {
 		return prettyValue;
 	}
 
-	function setValueForKey(prettyValue,property) { // don't let this become re-entrant
+	function setValueForKey(prettyValue,property) {
 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyInput);
 		const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,property,delegate.input);
 		if (uglyValue === modelBacking[property]) return; // No animation if no change. This filters out repeat setting of unchanging model values while animating. Function props are always not equal (if you're not careful)
@@ -161,8 +150,21 @@ export function decorate(controller, delegate, layerInstance) {
 			else controller.needsDisplay();
 		}
 		modelBacking[property] = uglyValue;
+	}
+
+	function invalidate() {
 		presentationBacking = null;
-		activeBacking = modelBacking;
+		presentationTime = -1;
+	}
+
+	function registerWithContext() {
+		let display = function() {};
+		if (isFunction(delegate.display)) display = function() {
+			activeBacking = controller.presentation;
+			delegate.display.call(delegate);
+			activeBacking = modelBacking;
+		};
+		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
 	}
 
 	function animationCleanup() { // animations contained within groups ignore remove (removedOnCompletion) and do not fire onend
@@ -191,16 +193,6 @@ export function decorate(controller, delegate, layerInstance) {
 		});
 	}
 
-	function registerWithContext() {
-		let display = function() {};
-		if (isFunction(delegate.display)) display = function() {
-			activeBacking = controller.presentation;
-			delegate.display.call(delegate);
-			activeBacking = modelBacking;
-		};
-		hyperContext.registerTarget(controller, display, animationCleanup);
-	}
-
 	function removeAnimationInstance(animation) {
 		const index = allAnimations.indexOf(animation);
 		if (index > -1) {
@@ -208,6 +200,7 @@ export function decorate(controller, delegate, layerInstance) {
 			const name = allNames[index];
 			allNames.splice(index,1);
 			delete namedAnimations[name];
+			if (isFunction(animation.onend)) animation.onend.call(animation,false);
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
 			if (!allAnimations.length) {
@@ -229,6 +222,7 @@ export function decorate(controller, delegate, layerInstance) {
 		if (!descriptor || descriptor.configurable === true) {
 			const uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input);
 			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
+			if (typeof uglyValue === "undefined") modelBacking[property] = null;
 			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
 				get: function() {
 					return valueForKey(property);
@@ -286,6 +280,24 @@ export function decorate(controller, delegate, layerInstance) {
 		configurable: false
 	});
 
+	Object.defineProperty(controller, "presentation", {
+		get: function() {
+			const time = hyperContext.currentTransaction().time;
+			if (time === presentationTime) return presentationBacking;
+			let baseLayer = {};
+			if (controller !== layerInstance && delegate !== layerInstance) baseLayer = Object.assign({},layerInstance);
+			const sourceLayer = Object.assign({}, baseLayer, modelBacking);
+			const presentationLayer = presentationTransform(sourceLayer,allAnimations,time,shouldSortAnimations,presentationBacking);//,finishedAnimations); // not modelBacking for first argument (need non animated properties), but it requires that properties like "presentationLayer" are not enumerable
+			if (presentationLayer !== presentationBacking) convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output);
+			presentationBacking = presentationLayer;
+			presentationTime = time;
+			shouldSortAnimations = false;
+			return presentationLayer;
+		},
+		enumerable: false,
+		configurable: false
+	});
+
 	Object.defineProperty(controller, "model", {
 		get: function() {
 			const layer = {};
@@ -323,23 +335,6 @@ export function decorate(controller, delegate, layerInstance) {
 		configurable: false
 	});
 
-	Object.defineProperty(controller, "presentation", {
-		get: function() {
-			let time = 0; // Temporary workaround. Not sure if still needed. It should be safe to create transactions.
-			if (allAnimations.length) time = hyperContext.currentTransaction().time;// Do not create a transaction if there are no animations else the transaction will not be automatically closed.
-			let baseLayer = {};
-			if (controller !== layerInstance && delegate !== layerInstance) baseLayer = Object.assign({},layerInstance);
-			const sourceLayer = Object.assign(baseLayer, modelBacking);
-			const presentationLayer = presentationTransform(sourceLayer,allAnimations,time,shouldSortAnimations,presentationBacking);//,finishedAnimations); // not modelBacking for first argument (need non animated properties), but it requires that properties like "presentationLayer" are not enumerable
-			if (presentationLayer !== presentationBacking) convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output);
-			presentationBacking = presentationLayer;
-			shouldSortAnimations = false;
-			return presentationLayer;
-		},
-		enumerable: false,
-		configurable: false
-	});
-
 	controller.needsDisplay = function() { // This should be used instead of directly calling display
 		registerWithContext();
 	};
@@ -362,6 +357,7 @@ export function decorate(controller, delegate, layerInstance) {
 		
 		const transaction = hyperContext.currentTransaction();
 		copy.runAnimation(controller, name, transaction);
+		
 	};
 
 	controller.removeAnimation = function(name) {
@@ -393,21 +389,9 @@ export function decorate(controller, delegate, layerInstance) {
 		return null;
 	};
 
-// 	const hyperOwnProperties = Object.getOwnPropertyNames(layerInstance);
-// 	initialLayerOwnProperties.forEach( (key) => { // API fluctuation
-// 		const index = hyperOwnProperties.indexOf(key);
-// 		if (index > -1) hyperOwnProperties.splice(index,1);
-// 	});
-// 	const hyperKeys = Object.keys(layerInstance);
-// 	initialLayerKeys.forEach( (key) => { // API fluctuation
-// 		const index = hyperKeys.indexOf(key);
-// 		if (index > -1) hyperKeys.splice(index,1);
-// 	});
-
 	initialLayerKeys.forEach( function(key) { // More initialization // decorate automatically registers pre-existing properties.
 		modelBacking[key] = layerInstance[key];
 		controller.registerAnimatableProperty(key);
 	});
-	//controller.needsDisplay(); // Can't display on decorate
 	return controller;
 }

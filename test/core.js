@@ -37,7 +37,7 @@ describe("core", function() {
 		});
 
 		it("controller and layer are the same object", function() {
-			assert(one === one.layer);
+			assert.equal(one,one.layer);
 		});
 
 	// 	it("unregistered presentation", function() { // expected. Can't do this if layer and controller are the same
@@ -56,7 +56,7 @@ describe("core", function() {
 			one.registerAnimatableProperty("zxcv");
 			one.layer.zxcv = 1;
 			core.flushTransaction();
-			assert(one.presentation.zxcv === 1);
+			assert.equal(one.presentation.zxcv,1);
 		});
 
 		it("callback", function(done) {
@@ -105,7 +105,7 @@ describe("core", function() {
 				blend:"absolute",
 				additive:false
 			});
-			assert(one.uiop === 2);
+			assert.equal(one.uiop,2);
 		});
 
 		it("unregistered animation presentation, flushed", function() {
@@ -119,7 +119,7 @@ describe("core", function() {
 				additive:false
 			});
 			core.flushTransaction();
-			assert(one.presentation.uiop === 1);
+			assert.equal(one.presentation.uiop,1);
 		});
 
 		it("registered before animation presentation, flushed", function() {
@@ -134,7 +134,7 @@ describe("core", function() {
 				additive:false
 			});
 			core.flushTransaction();
-			assert(one.presentation.uiop === 1);
+			assert.equal(one.presentation.uiop,1); // still generates presentation before addAnimation
 		});
 
 		it("registered after animation presentation, flushed", function() {
@@ -149,19 +149,19 @@ describe("core", function() {
 				additive:false
 			});
 			core.flushTransaction();
-			assert(one.presentation.uiop === 1);
+			assert.equal(one.presentation.uiop,1);
 		});
 
 		it("registered property with existing value", function() {
 			one.uiop = 2;
 			one.registerAnimatableProperty("uiop");
-			assert(one.uiop === 2);
+			assert.equal(one.uiop, 2);
 		});
 
 		it("register property then assign value", function() {
 			one.registerAnimatableProperty("uiop");
 			one.uiop = 2;
-			assert(one.uiop === 2);
+			assert.equal(one.uiop, 2);
 		});
 
 		it("registered animation effect, flushed", function() {
@@ -175,7 +175,7 @@ describe("core", function() {
 				blend:"absolute"
 			});
 			core.flushTransaction();
-			assert(one.presentation.uiop === 3);
+			assert.equal(one.presentation.uiop,3);
 		});
 
 		it("registered implicit presentation", function() {
@@ -185,7 +185,7 @@ describe("core", function() {
 			one.layer.zxcv = 1;
 			one.registerAnimatableProperty("zxcv");
 			one.layer.zxcv = 2;
-			assert(one.presentation.zxcv === 1);
+			assert.equal(one.presentation.zxcv,1);
 		});
 	});
 
@@ -208,13 +208,15 @@ describe("core", function() {
 
 		it("unregistered presentation", function() {
 			two.layer.qwer = 1;
-			assert(two.presentation.qwer === 1);
+			core.flushTransaction();
+			assert.equal(two.presentation.qwer,1);
 		});
 
 		it("registered presentation", function() {
 			two.registerAnimatableProperty("zxcv");
 			two.layer.zxcv = 1;
-			assert(two.presentation.zxcv === 1);
+			core.flushTransaction();
+			assert.equal(two.presentation.zxcv,1);
 		});
 
 		it("callback", function(done) {
@@ -276,6 +278,10 @@ describe("core", function() {
 		});
 		it("implicit constant, presentation", function() {
 			const animationForKey = function(key,value,previous) {
+				// console.log("animationForKey:%s; value:%s; previous:%s;",key,value,previous);
+				// animationForKey:a; value:4; previous:1;
+				// animationForKey:b; value:5; previous:2;
+				// animationForKey:c; value:6; previous:3;
 				return {
 					duration:duration,
 					from:1,
@@ -293,6 +299,7 @@ describe("core", function() {
 			};
 			core.decorate(view,view,layer);
 			view.layer = {a:4, b:5, c:6};
+			core.flushTransaction();
 			assert.deepEqual(view.presentation, { a:5, b:6, c:7 });
 		});
 		it("implicit duration only, model", function() {
@@ -449,9 +456,9 @@ describe("core", function() {
 			const presentation = view.presentation;
 			const model = view.model;
 			
-			assert(layer.a === 1);
-			assert(model.a === 1);
-			assert(presentation.a === 3);
+			assert.equal(layer.a,1);
+			assert.equal(model.a,1);
+			assert.equal(presentation.a,3);
 		
 		});
 		it("should not reflect presentation outside of display, decorate(view)", function() {
@@ -470,9 +477,9 @@ describe("core", function() {
 			const presentation = view.presentation;
 			const model = view.model;
 			
-			assert(view.a === 1);
-			assert(model.a === 1);
-			assert(presentation.a === 3);
+			assert.equal(view.a,1);
+			assert.equal(model.a,1);
+			assert.equal(presentation.a,3);
 		});
 		it("decorate automatically sets underlying value of existing properties, decorate(view)", function() {
 			const view = {
@@ -506,12 +513,12 @@ describe("core", function() {
 			]);
 			core.flushTransaction();
 			const presentation = view.presentation;
-			assert(view.a === 1);
-			assert(view.b === 2);
-			assert(view.c === 3);
-			assert(presentation.a === 2);
-			assert(presentation.b === 3);
-			assert(presentation.c === 4);
+			assert.equal(view.a,1);
+			assert.equal(view.b,2);
+			assert.equal(view.c,3);
+			assert.equal(presentation.a,2);
+			assert.equal(presentation.b,3);
+			assert.equal(presentation.c,4);
 		});
 		it("decorate automatically registers existing properties, decorate(view)", function(done) {
 			const view = {
@@ -716,7 +723,7 @@ describe("core", function() {
 				to:1,
 				duration:duration
 			});
-			assert(view.presentation.a === 0);
+			assert.equal(view.presentation.a, 0);
 			core.commitTransaction();
 		});
 
@@ -730,7 +737,7 @@ describe("core", function() {
 				duration:duration
 			});
 			core.flushTransaction();
-			assert(view.presentation.a === 1);
+			assert.equal(view.presentation.a,1);
 			core.commitTransaction();
 		});
 
@@ -742,7 +749,7 @@ describe("core", function() {
 				to:1,
 				duration:duration
 			});
-			assert(view.presentation.a === 0);
+			assert.equal(view.presentation.a,0);
 		});
 
 		it("added animations not apparent in presentation until transaction flush, flushed, implicit transaction", function() {
@@ -754,7 +761,7 @@ describe("core", function() {
 				duration:duration
 			});
 			core.flushTransaction();
-			assert(view.presentation.a === 1);
+			assert.equal(view.presentation.a,1);
 		});
 
 	});

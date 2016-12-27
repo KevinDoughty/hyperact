@@ -66,21 +66,33 @@ int main () {
     if (CGPointEqualToPoint(fourPost,fourDestination)) NSLog(@"animation flushed out of an explicit transaction");
     else NSLog(@"animation NOT flushed out of an explicit transaction");
 
+    CFTimeInterval fiveStart = CACurrentMediaTime();
+    [NSThread sleepForTimeInterval:duration];
+    CFTimeInterval fiveMid = CACurrentMediaTime();
+    if (fiveStart == fiveMid) NSLog(@"time is the same inside implicit transaction");
+    else NSLog(@"time is NOT the same inside implicit transaction");
+    [NSThread sleepForTimeInterval:duration];
+    [CATransaction begin];
+    CFTimeInterval sixMid = CACurrentMediaTime();
+    if (fiveMid == sixMid) NSLog(@"time is the same from one transaction to the next");
+    else NSLog(@"time is NOT the same from one transaction to the next");
+    [CATransaction commit];
+
     __block BOOL run = YES;
-    CFTimeInterval start = CACurrentMediaTime();
-    CABasicAnimation *five = [CABasicAnimation animationWithKeyPath:@"position"];
-    five.fromValue = [NSValue valueWithPoint:NSMakePoint(567.0,567.0)];
-    five.toValue = [NSValue valueWithPoint:NSMakePoint(567.0,567.0)];
+    CFTimeInterval sevenStart = CACurrentMediaTime();
+    CABasicAnimation *seven = [CABasicAnimation animationWithKeyPath:@"position"];
+    seven.fromValue = [NSValue valueWithPoint:NSMakePoint(567.0,567.0)];
+    seven.toValue = [NSValue valueWithPoint:NSMakePoint(567.0,567.0)];
 
     [CATransaction begin];
     [CATransaction setAnimationDuration:duration * 2];
     [CATransaction setCompletionBlock: ^void {
-      CFTimeInterval end = CACurrentMediaTime();
-      if (end - start > duration) NSLog(@"transaction duration used when explicit animations have none");
+      CFTimeInterval sevenEnd = CACurrentMediaTime();
+      if (sevenEnd - sevenStart > duration) NSLog(@"transaction duration used when explicit animations have none");
       else NSLog(@"transaction duration NOT used when explicit animations have none");
       run = NO;
     }];
-    [layer addAnimation:five forKey:@"five"];
+    [layer addAnimation:seven forKey:@"seven"];
     [CATransaction commit];
 
     NSRunLoop *loop = [NSRunLoop currentRunLoop];

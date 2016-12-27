@@ -6,7 +6,7 @@
   "scripts": {
     "build": "WEBPACK_ENV=build webpack",
     "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch",
-    "test": "eslint source/*.js && eslint test/*.js --rule 'no-undef:0' && mocha --compilers js:babel-core/register --colors",
+    "test": "eslint source/*.js --rule 'no-undef:0' && eslint test/*.js --rule 'no-undef:0' && mocha --compilers js:babel-core/register --colors",
     "gcc": "gcc -framework Cocoa -framework QuartzCore -x objective-c -o ./test/objc ./test/objc.m ; ./test/objc ; rm ./test/objc"
   },
   "repository": {

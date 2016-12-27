@@ -33,6 +33,7 @@ export function HyperContext() {
 	this.displayLayers = []; // renderLayer
 	this.displayFunctions = []; // strange new implementation // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
 	this.cleanupFunctions = [];
+	this.invalidateFunctions = [];
 }
 
 HyperContext.prototype = {
@@ -67,6 +68,9 @@ HyperContext.prototype = {
 		//if (this.animationFrame) cAF(this.animationFrame); // Unsure if cancelling animation frame is needed.
 		//this.ticker(); // This is completely wrong, or at least is nothing like CATransaction -(void)flush;
 		//this.displayLayers = this.displayLayers.map( function(item) { return null; });
+		this.invalidateFunctions.forEach( function(invalidate) {
+			invalidate();
+		});
 	},
 	disableAnimation: function(disable) { // If this is false, it enables animation
 		if (disable !== false) disable = true; // because the function name is misleading
@@ -75,7 +79,7 @@ HyperContext.prototype = {
 		this.startTicking();
 	},
 
-	registerTarget: function(target,display,cleanup) {
+	registerTarget: function(target,display,invalidate,cleanup) {
 		this.startTicking();
 		const index = this.targets.indexOf(target);
 		if (index < 0) {
@@ -83,6 +87,7 @@ HyperContext.prototype = {
 			this.displayLayers.push(null); // cachedPresentationLayer
 			this.displayFunctions.push(display);
 			this.cleanupFunctions.push(cleanup);
+			this.invalidateFunctions.push(invalidate);
 		}
 	},
 
@@ -93,6 +98,7 @@ HyperContext.prototype = {
 			this.displayLayers.splice(index, 1); // cachedPresentationLayer
 			this.displayFunctions.splice(index, 1);
 			this.cleanupFunctions.splice(index, 1);
+			this.invalidateFunctions.splice(index,1);
 		}
 	},
 	startTicking: function() { // TODO: consider cancelling previous animation frame.
@@ -110,6 +116,7 @@ HyperContext.prototype = {
 					//const presentationLayer = target.presentation;
 					display(); // new ensure one last time
 				}
+				this.invalidateFunctions[i](); // even stranger implementation
 				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
 			} else {
 				if (isFunction(display)) {
@@ -120,6 +127,7 @@ HyperContext.prototype = {
 						display();
 					}
 				}
+				this.invalidateFunctions[i](); // even stranger implementation
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
 			}
 		}
