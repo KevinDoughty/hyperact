@@ -783,6 +783,7 @@ const transformType = {
 		// TODO: fix this :)
 		//console.log("toCssValue:%s;",JSON.stringify(value));
 		//if (typeof value === "string") throw new Error("this should not be a string");
+		if (value === null || typeof value === "undefined") return "";
 		if (typeof value === "string") return value;
 		var out = '';
 		for (var i = 0; i < value.length; i++) {
