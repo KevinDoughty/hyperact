@@ -29,10 +29,6 @@ var plugins = [
 export default {
 	entry: "source/hyperact.js",
 	plugins: plugins,
-	external: [
-// 		"react",
-// 		"react-dom"
-	],
 // 	targets: [
 // 		{
 			dest: "hyperact.mjs",

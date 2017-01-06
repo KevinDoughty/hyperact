@@ -1,6 +1,6 @@
-import { activate } from "../../source/core.js";
-import { HyperScale } from "../../source/types.js";
-
+// import { activate } from "../../source/core.js";
+// import { HyperScale } from "../../source/types.js";
+import { activate, HyperScale } from "../../hyperact.mjs";
 
 function One(element) {
 	activate(this);

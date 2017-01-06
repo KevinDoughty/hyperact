@@ -36,25 +36,6 @@ if (process.env.HYPERACT === "build") {
 }
 module.exports = [
 	{
-// 		entry:[
-// 			"./source/core.js",
-// 			"./source/types.js",
-// 			
-// 			"./source/style/style.js"
-// 			
-// // 			"./source/style/color.js",
-// // 			"./source/style/fontWeight.js",
-// // 			"./source/style/length.js",
-// // 			"./source/style/nonNumeric.js",
-// // 			"./source/style/number.js",
-// // 			"./source/style/position.js",
-// // 			"./source/style/positionList.js",
-// // 			"./source/style/rectangle.js",
-// // 			"./source/style/shadow.js",
-// // 			"./source/style/transform.js",
-// // 			"./source/style/visibility.js"
-// 			
-// 		],
 		entry: "./source/hyperact.js",
 		output: {
 			path: __dirname,
@@ -72,32 +53,6 @@ module.exports = [
 						presets: [
 							["es2015", { "modules": false }]
 						]
-					}
-				}
-			]
-		},
-		plugins: modulesPlugins
-	},
-	{
-		entry: "./source/hyperreact.js",
-		output: {
-			path: __dirname,
-			filename: "hyperreact.js",
-			library: "Hyperact",
-			libraryTarget: "umd"
-		},
-		externals: {
-			"react": "React",
-			"react-dom" : "ReactDOM"
-		},
-		module: {
-			loaders: [
-				{
-					test: /\.js$/,
-					loader: "babel-loader",
-					exclude: /node_modules/,
-					query: {
-						presets: [["es2015", { "modules": false }]]
 					}
 				}
 			]

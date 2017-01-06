@@ -1,13 +1,6 @@
 import { activate, HyperScale, transformType } from "../../hyperact.js";
-//import * as Hyperact from "../../hyperact.js";
-
-//console.log(Hyperact);
-//const transformType = typeForStyle("transform");
 
 function One(element) {
-	console.log(activate);
-	console.log(HyperScale);
-	console.log(transformType);
 	activate(this);
 	this.display = function() {
 		document.getElementById(element).innerHTML = element +":<br>" +
@@ -67,7 +60,7 @@ one.addAnimation(e);
 
 
 
-/*
+
 function Two(element) {
 	activate(this,this,{});
 	this.display = function() {
@@ -85,7 +78,7 @@ Two.prototype = {
 	animationForKey: function(key,value,previous,presentation) {
 		if (key === "transform") return {
 			property: "transform",
-			type: typeForStyle("transform"),
+			type: transformType,
 			duration:1.0,
 			from:previous,
 			to:value
@@ -93,11 +86,11 @@ Two.prototype = {
 		return 1.0;
 	},
 	input:function(key,value) {
-		if (key === "transform") return transformType.fromCssValue(value);
+		if (key === "transform") return transformType.input(value);
 		return value;
 	},
 	output:function(key,value) {
-		if (key === "transform") return transformType.toCssValue(value);
+		if (key === "transform") return transformType.output(value);
 		if (key === "x") return Number(value).toFixed(1);
 		return value;
 	}
@@ -116,7 +109,7 @@ const three = {
 	animationForKey: function(key,value,previous,presentation) {
 		if (key === "transform") return {
 			property: "transform",
-			type: typeForStyle("transform"),
+			type: transformType,
 			duration:1.0,
 			from:previous,
 			to:value
@@ -134,12 +127,12 @@ const three = {
 			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
 	},
 	input:function(key,value) {
-		if (key === "transform") return transformType.fromCssValue(value);
+		if (key === "transform") return transformType.input(value);
 		if (key === "x" && value && value.length > 4 && value.substring(value.length-4) === " !!!") value = Number(value.substring(0, value.length-4));
 		return value;
 	},
 	output:function(key,value) {
-		if (key === "transform") return transformType.toCssValue(value);
+		if (key === "transform") return transformType.output(value);
 		if (key === "x" && value) return Math.round(value) + " !!!";
 		return value;
 	}
@@ -156,7 +149,7 @@ const four = {
 	animationForKey: function(key,value,previous,presentation) {
 		if (key === "transform") return {
 			property: "transform",
-			type: typeForStyle("transform"),
+			type: transformType,
 			duration:1.0,
 			from:previous,
 			to:value
@@ -174,10 +167,10 @@ const four = {
 			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
 	},
 	input:function(key,value) {
-		if (key === "transform") return transformType.fromCssValue(value);
+		if (key === "transform") return transformType.input(value);
 	},
 	output:function(key,value) {
-		if (key === "transform") return transformType.toCssValue(value);
+		if (key === "transform") return transformType.output(value);
 	}
 }
 activate(four,four,{scale:1});
@@ -192,16 +185,16 @@ four.registerAnimatableProperty("scale", {
 	duration: 5.0
 });
 four.layer.scale = 2;
-*/
+
 
 
 document.addEventListener("mousemove",function(e) {
 	one.x = e.clientX;
 	one.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
-// 	two.layer.x = e.clientX;
-// 	three.x = e.clientX;
-// 	three.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
-// 	four.layer.x = e.clientX;
+	two.layer.x = e.clientX;
+	three.x = e.clientX;
+	three.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
+	four.layer.x = e.clientX;
 });
 
 const cc = {
@@ -249,7 +242,7 @@ document.addEventListener("mousedown",function(event) {
 	one.addAnimation(dd);
 	one.addAnimation(ee);
 
-/*
+
 	two.addAnimation(ccc);
 	two.addAnimation(ddd);
 	two.addAnimation(ee);
@@ -267,7 +260,7 @@ document.addEventListener("mousedown",function(event) {
 	four.addAnimation(ee);
 
 	four.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
-*/
+
 
 	one.addAnimation([
 		{
