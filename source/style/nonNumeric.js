@@ -3,7 +3,7 @@
 
 import { isDefined } from "./shared.js";
 
-const nonNumericType = {
+export const nonNumericType = {
 	toString: function() {
 		return "nonNumericType";
 	},
@@ -26,11 +26,10 @@ const nonNumericType = {
 	interpolate: function(from, to, f) {
 		return f < 0.5 ? from : to;
 	},
-	toCssValue: function(value) {
+	output: function(value) {
 		return value;
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		return value;
 	}
 };
-export default nonNumericType;

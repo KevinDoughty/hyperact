@@ -1,9 +1,14 @@
-import { decorate, HyperScale, typeForStyle } from "../../hyperact.js";
+import { activate, HyperScale, transformType } from "../../hyperact.js";
+//import * as Hyperact from "../../hyperact.js";
 
-const transformType = typeForStyle("transform");
+//console.log(Hyperact);
+//const transformType = typeForStyle("transform");
 
 function One(element) {
-	decorate(this);
+	console.log(activate);
+	console.log(HyperScale);
+	console.log(transformType);
+	activate(this);
 	this.display = function() {
 		document.getElementById(element).innerHTML = element +":<br>" +
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
@@ -27,11 +32,11 @@ One.prototype = {
 		return 1.0;
 	},
 	input:function(key,value) {
-		if (key === "transform") return transformType.fromCssValue(value);
+		if (key === "transform") return transformType.input(value);
 		return value;
 	},
 	output:function(key,value) {
-		if (key === "transform") return transformType.toCssValue(value);
+		if (key === "transform") return transformType.output(value);
 		return Math.round(value);
 	}
 };
@@ -60,8 +65,11 @@ const e = {
 }
 one.addAnimation(e);
 
+
+
+/*
 function Two(element) {
-	decorate(this,this,{});
+	activate(this,this,{});
 	this.display = function() {
 		document.getElementById(element).innerHTML = element+":" + "<br>" + 
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
@@ -136,7 +144,7 @@ const three = {
 		return value;
 	}
 }
-decorate(three);
+activate(three);
 three.registerAnimatableProperty("x");
 three.registerAnimatableProperty("transform");
 three.layer = {
@@ -172,7 +180,7 @@ const four = {
 		if (key === "transform") return transformType.toCssValue(value);
 	}
 }
-decorate(four,four,{scale:1});
+activate(four,four,{scale:1});
 four.registerAnimatableProperty("x");
 four.registerAnimatableProperty("transform");
 four.layer = {
@@ -184,14 +192,16 @@ four.registerAnimatableProperty("scale", {
 	duration: 5.0
 });
 four.layer.scale = 2;
+*/
+
 
 document.addEventListener("mousemove",function(e) {
 	one.x = e.clientX;
-	two.layer.x = e.clientX;
-	three.x = e.clientX;
-	four.layer.x = e.clientX;
 	one.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
-	three.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
+// 	two.layer.x = e.clientX;
+// 	three.x = e.clientX;
+// 	three.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
+// 	four.layer.x = e.clientX;
 });
 
 const cc = {
@@ -236,23 +246,28 @@ const ee = {
 document.addEventListener("mousedown",function(event) {
 
 	one.addAnimation(cc);
-	two.addAnimation(ccc);
-	three.addAnimation(ccc);
-	four.addAnimation(cc);
-
 	one.addAnimation(dd);
-	two.addAnimation(ddd);
-	three.addAnimation(ddd);
-	four.addAnimation(dd);
-
 	one.addAnimation(ee);
+
+/*
+	two.addAnimation(ccc);
+	two.addAnimation(ddd);
 	two.addAnimation(ee);
-	three.addAnimation(ee);
-	four.addAnimation(ee);
 
 	two.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
-	four.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
 
+
+	three.addAnimation(ccc);
+	three.addAnimation(ddd);
+	three.addAnimation(ee);
+
+
+	four.addAnimation(cc);
+	four.addAnimation(dd);
+	four.addAnimation(ee);
+
+	four.layer.transform = "translate3d("+event.clientX+"px, "+event.clientY+"px, 0px)";
+*/
 
 	one.addAnimation([
 		{

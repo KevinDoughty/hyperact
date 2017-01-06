@@ -1,2 +1,1125 @@
-!function(t){function e(r){if(n[r])return n[r].exports;var i=n[r]={i:r,l:!1,exports:{}};return t[r].call(i.exports,i,i.exports,e),i.l=!0,i.exports}var n={};return e.m=t,e.c=n,e.i=function(t){return t},e.d=function(t,n,r){e.o(t,n)||Object.defineProperty(t,n,{configurable:!1,enumerable:!0,get:r})},e.n=function(t){var n=t&&t.__esModule?function(){return t.default}:function(){return t};return e.d(n,"a",n),n},e.o=function(t,e){return Object.prototype.hasOwnProperty.call(t,e)},e.p="",e(e.s=2)}([function(t,e,n){"use strict";(function(t){var n,r,i,o="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&"function"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?"symbol":typeof t};!function(a,u){"object"==o(e)&&"object"==o(t)?t.exports=u():(r=[],n=u,i="function"==typeof n?n.apply(e,r):n,!(void 0!==i&&(t.exports=i)))}(void 0,function(){return function(t){function e(r){if(n[r])return n[r].exports;var i=n[r]={i:r,l:!1,exports:{}};return t[r].call(i.exports,i,i.exports,e),i.l=!0,i.exports}var n={};return e.m=t,e.c=n,e.i=function(t){return t},e.d=function(t,n,r){e.o(t,n)||Object.defineProperty(t,n,{configurable:!1,enumerable:!0,get:r})},e.n=function(t){var n=t&&t.__esModule?function(){return t.default}:function(){return t};return e.d(n,"a",n),n},e.o=function(t,e){return Object.prototype.hasOwnProperty.call(t,e)},e.p="",e(e.s=17)}([function(t,e){function n(t,e){var n;if(1===t.length){var i=t[0];n=function(t){return t===i}}else n=function(e){return t.indexOf(e)>=0};return r(e,{add:function(t,r){return n(t)||n(r)?r:e.add(t,r)},subtract:function(t,r){return n(t)||n(r)?t:e.subtract(t,r)},zero:function(t){return""},interpolate:function(t,r,i){return n(t)||n(r)?nonNumericType.interpolate(t,r,i):e.interpolate(t,r,i)},toCssValue:function(t,r){return n(t)?t:e.toCssValue(t,r)},fromCssValue:function(t){return n(t)?t:e.fromCssValue(t)}})}function r(t,e){if(null===t||"undefined"==typeof t)throw new Error("HyperStyle createObject no proto damn it");var n=Object.create(t);return Object.getOwnPropertyNames(e).forEach(function(t){Object.defineProperty(n,t,Object.getOwnPropertyDescriptor(e,t))}),n}function i(t,e,n){return Math.max(Math.min(t,n),e)}function o(t,e,n,r){if(Array.isArray(t)||Array.isArray(e))return a(t,e,n,r);var i="scale"===r?1:0;return e=u(e)?e:i,t=u(t)?t:i,e*n+t*(1-n)}function a(t,e,n,r){for(var i=t?t.length:e.length,a=[],u=0;u<i;u++)a[u]=o(t?t[u]:null,e?e[u]:null,n,r);return a}function u(t){return s(t)&&null!==t}function s(t){return"undefined"!=typeof t}function l(){if("undefined"==typeof document)return{calcFunction:"calc",transformProperty:"transform"};var t=f();t.style.cssText="width: calc(0px);width: -webkit-calc(0px);";var e=t.style.width.split("(")[0],n=["transform","webkitTransform","msTransform"],r=n.filter(function(e){return e in t.style})[0];return{calcFunction:e,transformProperty:r}}function f(){return document.documentElement.namespaceURI==c?document.createElementNS(c,"g"):document.createElement("div")}Object.defineProperty(e,"__esModule",{value:!0}),e.typeWithKeywords=n,e.createObject=r,e.clamp=i,e.interp=o,e.interpArray=a,e.isDefinedAndNotNull=u,e.isDefined=s,e.detectFeatures=l;var c="http://www.w3.org/2000/svg"},function(t,e,n){Object.defineProperty(e,"__esModule",{value:!0});var r,i=n(0),o=/^\s*(-webkit-)?calc\s*\(\s*([^)]*)\)/,a=/^\s*(-?[0-9]+(\.[0-9])?[0-9]*)([a-zA-Z%]*)/,u=/^\s*([+-])/,s=/^\s*auto/i,l={toString:function(){return"lengthType"},toJSON:function(){return this.toString()},zero:function(){return{px:0}},add:function(t,e){null!==e&&void 0!==e||(e={}),null!==t&&void 0!==t||(t={});var n={};for(var r in t)n[r]=t[r]+(e[r]||0);for(r in e)r in t||(n[r]=e[r]);return n},subtract:function(t,e){var n=this.inverse(e),r=this.add(t,n);return r},interpolate:function(t,e,n){var r={};for(var o in t)r[o]=(0,i.interp)(t[o],e[o],n);for(var o in e)o in r||(r[o]=(0,i.interp)(0,e[o],n));return r},toCssValue:function(t){r||(r=(0,i.detectFeatures)());var e="",n=!0;for(var o in t)""===e?e=t[o]+o:n?0!==t[o]&&(e=r.calcFunction+"("+e+" + "+t[o]+o+")",n=!1):0!==t[o]&&(e=e.substring(0,e.length-1)+" + "+t[o]+o+")");return e},fromCssValue:function(t){var e=l.consumeValueFromString(t);if(e)return e.value},consumeValueFromString:function(t){if((0,i.isDefinedAndNotNull)(t)){var e=s.exec(t);if(e)return{value:{auto:!0},remaining:t.substring(e[0].length)};var n={},r=o.exec(t);if(r)for(var l=t.substring(r[0].length),f=r[2],c=!0;;){var d=!1;if(c)c=!1;else{var p=u.exec(f);if(!p)return;"-"===p[1]&&(d=!0),f=f.substring(p[0].length)}if(t=a.exec(f),!t)return;var h=t[3],g=Number(t[1]);if((0,i.isDefinedAndNotNull)(n[h])||(n[h]=0),d?n[h]-=g:n[h]+=g,f=f.substring(t[0].length),/\s*/.exec(f)[0].length===f.length)return{value:n,remaining:l}}else{var y=a.exec(t);if(y&&4===y.length)return n[y[3]]=Number(y[1]),{value:n,remaining:t.substring(y[0].length)}}}},inverse:function(t){var e={};for(var n in t)e[n]=-t[n];return e}};e.default=l},function(t,e,n){Object.defineProperty(e,"__esModule",{value:!0});var r=n(0),i={toString:function(){return"nonNumericType"},toJSON:function(){return this.toString()},zero:function(){return""},inverse:function(t){return t},add:function(t,e){return(0,r.isDefined)(e)?e:t},subtract:function(t,e){return t},interpolate:function(t,e,n){return n<.5?t:e},toCssValue:function(t){return t},fromCssValue:function(t){return t}};e.default=i},function(t,e,n){function r(t,e,n){function r(t,e,n){return n<0&&(n+=1),n>1&&(n-=1),6*n<1?t+(e-t)*n*6:2*n<1?e:3*n<2?t+(e-t)*(2/3-n)*6:t}t=(t%360+360)%360/360,e/=100,n/=100;var i;i=n<=.5?n*(e+1):n+e-n*e;var o=2*n-i,a=Math.ceil(255*r(o,i,t+1/3)),u=Math.ceil(255*r(o,i,t)),s=Math.ceil(255*r(o,i,t-1/3));return[a,u,s]}Object.defineProperty(e,"__esModule",{value:!0});var i=n(0),o=new RegExp("(hsla?|rgba?)\\(([\\-0-9]+%?),?\\s*([\\-0-9]+%?),?\\s*([\\-0-9]+%?)(?:,?\\s*([\\-0-9\\.]+%?))?\\)"),a=new RegExp("#([0-9A-Fa-f][0-9A-Fa-f]?)([0-9A-Fa-f][0-9A-Fa-f]?)([0-9A-Fa-f][0-9A-Fa-f]?)"),u={aliceblue:[240,248,255,1],antiquewhite:[250,235,215,1],aqua:[0,255,255,1],aquamarine:[127,255,212,1],azure:[240,255,255,1],beige:[245,245,220,1],bisque:[255,228,196,1],black:[0,0,0,1],blanchedalmond:[255,235,205,1],blue:[0,0,255,1],blueviolet:[138,43,226,1],brown:[165,42,42,1],burlywood:[222,184,135,1],cadetblue:[95,158,160,1],chartreuse:[127,255,0,1],chocolate:[210,105,30,1],coral:[255,127,80,1],cornflowerblue:[100,149,237,1],cornsilk:[255,248,220,1],crimson:[220,20,60,1],cyan:[0,255,255,1],darkblue:[0,0,139,1],darkcyan:[0,139,139,1],darkgoldenrod:[184,134,11,1],darkgray:[169,169,169,1],darkgreen:[0,100,0,1],darkgrey:[169,169,169,1],darkkhaki:[189,183,107,1],darkmagenta:[139,0,139,1],darkolivegreen:[85,107,47,1],darkorange:[255,140,0,1],darkorchid:[153,50,204,1],darkred:[139,0,0,1],darksalmon:[233,150,122,1],darkseagreen:[143,188,143,1],darkslateblue:[72,61,139,1],darkslategray:[47,79,79,1],darkslategrey:[47,79,79,1],darkturquoise:[0,206,209,1],darkviolet:[148,0,211,1],deeppink:[255,20,147,1],deepskyblue:[0,191,255,1],dimgray:[105,105,105,1],dimgrey:[105,105,105,1],dodgerblue:[30,144,255,1],firebrick:[178,34,34,1],floralwhite:[255,250,240,1],forestgreen:[34,139,34,1],fuchsia:[255,0,255,1],gainsboro:[220,220,220,1],ghostwhite:[248,248,255,1],gold:[255,215,0,1],goldenrod:[218,165,32,1],gray:[128,128,128,1],green:[0,128,0,1],greenyellow:[173,255,47,1],grey:[128,128,128,1],honeydew:[240,255,240,1],hotpink:[255,105,180,1],indianred:[205,92,92,1],indigo:[75,0,130,1],ivory:[255,255,240,1],khaki:[240,230,140,1],lavender:[230,230,250,1],lavenderblush:[255,240,245,1],lawngreen:[124,252,0,1],lemonchiffon:[255,250,205,1],lightblue:[173,216,230,1],lightcoral:[240,128,128,1],lightcyan:[224,255,255,1],lightgoldenrodyellow:[250,250,210,1],lightgray:[211,211,211,1],lightgreen:[144,238,144,1],lightgrey:[211,211,211,1],lightpink:[255,182,193,1],lightsalmon:[255,160,122,1],lightseagreen:[32,178,170,1],lightskyblue:[135,206,250,1],lightslategray:[119,136,153,1],lightslategrey:[119,136,153,1],lightsteelblue:[176,196,222,1],lightyellow:[255,255,224,1],lime:[0,255,0,1],limegreen:[50,205,50,1],linen:[250,240,230,1],magenta:[255,0,255,1],maroon:[128,0,0,1],mediumaquamarine:[102,205,170,1],mediumblue:[0,0,205,1],mediumorchid:[186,85,211,1],mediumpurple:[147,112,219,1],mediumseagreen:[60,179,113,1],mediumslateblue:[123,104,238,1],mediumspringgreen:[0,250,154,1],mediumturquoise:[72,209,204,1],mediumvioletred:[199,21,133,1],midnightblue:[25,25,112,1],mintcream:[245,255,250,1],mistyrose:[255,228,225,1],moccasin:[255,228,181,1],navajowhite:[255,222,173,1],navy:[0,0,128,1],oldlace:[253,245,230,1],olive:[128,128,0,1],olivedrab:[107,142,35,1],orange:[255,165,0,1],orangered:[255,69,0,1],orchid:[218,112,214,1],palegoldenrod:[238,232,170,1],palegreen:[152,251,152,1],paleturquoise:[175,238,238,1],palevioletred:[219,112,147,1],papayawhip:[255,239,213,1],peachpuff:[255,218,185,1],peru:[205,133,63,1],pink:[255,192,203,1],plum:[221,160,221,1],powderblue:[176,224,230,1],purple:[128,0,128,1],red:[255,0,0,1],rosybrown:[188,143,143,1],royalblue:[65,105,225,1],saddlebrown:[139,69,19,1],salmon:[250,128,114,1],sandybrown:[244,164,96,1],seagreen:[46,139,87,1],seashell:[255,245,238,1],sienna:[160,82,45,1],silver:[192,192,192,1],skyblue:[135,206,235,1],slateblue:[106,90,205,1],slategray:[112,128,144,1],slategrey:[112,128,144,1],snow:[255,250,250,1],springgreen:[0,255,127,1],steelblue:[70,130,180,1],tan:[210,180,140,1],teal:[0,128,128,1],thistle:[216,191,216,1],tomato:[255,99,71,1],transparent:[0,0,0,0],turquoise:[64,224,208,1],violet:[238,130,238,1],wheat:[245,222,179,1],white:[255,255,255,1],whitesmoke:[245,245,245,1],yellow:[255,255,0,1],yellowgreen:[154,205,50,1]},s=(0,i.typeWithKeywords)(["currentColor"],{inverse:function(t){return this.subtract(t,[255,255,255,1])},zero:function(){return[0,0,0,0]},_premultiply:function(t){var e=t[3];return[t[0]*e,t[1]*e,t[2]*e]},add:function(t,e){var n=Math.min(t[3]+e[3],1);return 0===n?[0,0,0,0]:(t=this._premultiply(t),e=this._premultiply(e),[(t[0]+e[0])/n,(t[1]+e[1])/n,(t[2]+e[2])/n,n])},subtract:function(t,e){return t=this._premultiply(t),e=this._premultiply(e),[(t[0]-e[0])/alpha,(t[1]-e[1])/alpha,(t[2]-e[2])/alpha,alpha]},interpolate:function(t,e,n){var r=(0,i.clamp)((0,i.interp)(t[3],e[3],n),0,1);return 0===r?[0,0,0,0]:(t=this._premultiply(t),e=this._premultiply(e),[(0,i.interp)(t[0],e[0],n)/r,(0,i.interp)(t[1],e[1],n)/r,(0,i.interp)(t[2],e[2],n)/r,r])},toCssValue:function(t){return"rgba("+Math.round(t[0])+", "+Math.round(t[1])+", "+Math.round(t[2])+", "+t[3]+")"},fromCssValue:function(t){var e=[],n=a.exec(t);if(n){if(4!==t.length&&7!==t.length)return;var e=[];n.shift();for(var s=0;s<3;s++){1===n[s].length&&(n[s]=n[s]+n[s]);var l=Math.max(Math.min(parseInt(n[s],16),255),0);e[s]=l}e.push(1)}var n=o.exec(t);if(n){n.shift();for(var f=n.shift().substr(0,3),s=0;s<3;s++){var c=1;"%"===n[s][n[s].length-1]&&(n[s]=n[s].substr(0,n[s].length-1),c=2.55),"rgb"===f?e[s]=(0,i.clamp)(Math.round(parseInt(n[s],10)*c),0,255):e[s]=parseInt(n[s],10)}"hsl"===f&&(e=r.apply(null,e)),"undefined"!=typeof n[3]?e[3]=Math.max(Math.min(parseFloat(n[3]),1),0):e.push(1)}if(!e.some(isNaN))return e.length>0?e:u[t]}});e.default=s},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(e,"__esModule",{value:!0});var i=n(2),o=r(i),a={toString:function(){return"numberType"},toJSON:function(){return this.toString()},inverse:function(t){if("auto"===t)return o.default.inverse(t);var e=t*-1;return e},zero:function(){return 0},add:function(t,e){if(Number(t)!==t&&Number(e)!==e)return 0;if(Number(t)!==t?t=0:Number(e)!==e&&(e=0),"auto"===t||"auto"===e)return o.default.add(t,e);var n=t+e;return n},subtract:function(t,e){return Number(t)!==t&&Number(e)!==e?0:(Number(t)!==t?t=0:Number(e)!==e&&(e=0),this.add(t,this.inverse(e)))},interpolate:function(t,e,n){return"auto"===t||"auto"===e?o.default.interpolate(t,e):interp(t,e,n)},toCssValue:function(t){return t},fromCssValue:function(t){if("auto"===t)return"auto";var e=Number(t);return isNaN(e)?void 0:e}};e.default=a},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(e,"__esModule",{value:!0});var i=n(1),o=r(i),a=/^\s*left|^\s*center|^\s*right|^\s*top|^\s*bottom/i,u={toString:function(){return"positionType"},toJSON:function(){return this.toString()},inverse:function(t){return[o.default.inverse(t[0]),o.default.add(t[1])]},zero:function(){return[{px:0},{px:0}]},add:function(t,e){return[o.default.add(t[0],e[0]),o.default.add(t[1],e[1])]},subtract:function(t,e){return this.add(t,this.inverse(e))},interpolate:function(t,e,n){return[o.default.interpolate(t[0],e[0],n),o.default.interpolate(t[1],e[1],n)]},toCssValue:function(t){return t.map(o.default.toCssValue).join(" ")},fromCssValue:function(t){for(var e=[],n=t;;){var r=u.consumeTokenFromString(n);if(!r)return;if(e.push(r.value),n=r.remaining,!r.remaining.trim())break;if(e.length>=4)return}if(1===e.length){var i=e[0];return(u.isHorizontalToken(i)?[i,"center"]:["center",i]).map(u.resolveToken)}if(2===e.length&&u.isHorizontalToken(e[0])&&u.isVerticalToken(e[1]))return e.map(u.resolveToken);if(2===e.filter(u.isKeyword).length){for(var a=[void 0,void 0],s=!1,l=0;l<e.length;l++){var i=e[l];if(!u.isKeyword(i))return;if("center"!==i){var f=Number(u.isVerticalToken(i));if(a[f])return;if(l===e.length-1||u.isKeyword(e[l+1]))a[f]=u.resolveToken(i);else{var c=e[++l];"bottom"!==i&&"right"!==i||(c=o.default.inverse(c),c["%"]=(c["%"]||0)+100),a[f]=c}}else{if(s)return;s=!0}}if(s)if(a[0]){if(a[1])return;a[1]=u.resolveToken("center")}else a[0]=u.resolveToken("center");return a.every(isDefinedAndNotNull)?a:void 0}},consumeTokenFromString:function(t){var e=a.exec(t);return e?{value:e[0].trim().toLowerCase(),remaining:t.substring(e[0].length)}:o.default.consumeValueFromString(t)},resolveToken:function(t){return"string"==typeof t?o.default.fromCssValue({left:"0%",center:"50%",right:"100%",top:"0%",bottom:"100%"}[t]):t},isHorizontalToken:function(t){return"string"!=typeof t||t in{left:!0,center:!0,right:!0}},isVerticalToken:function(t){return"string"!=typeof t||t in{top:!0,center:!0,bottom:!0}},isKeyword:function(t){return"string"==typeof t}};e.default=u},function(t,e,n){function r(t){return t&&"[object Function]"==={}.toString.call(t)}function i(t,e){if(t instanceof h.HyperGroup)t.group.forEach(function(t){i(t,e)});else{if(!(t instanceof h.HyperAnimation))throw new Error("not an animation");if(e.typeOfProperty){var n=e.typeOfProperty.call(e,t.property,t.to);n&&(t.type=n)}}}function o(t,e){return r(e)?e(t):t}function a(t,e,n){return r(n)?n(e,t):t}function u(t,e,n){if(e&&r(n)){var i=e[t];if(null!==i&&"undefined"!=typeof i&&(e[t]=n(t,i)),null===t||"undefined"==typeof t)throw new Error("convert property undefined")}}function s(t,e,n){t.forEach(function(t){if(null===t||"undefined"==typeof t)throw new Error("convert properties undefined");u(t,e,n)})}function l(t,e,n){e&&r(n)&&(e instanceof h.HyperGroup?e.group.forEach(function(e){l(t,e,n)}):t.forEach(function(t){var r=e[t];null!==r&&"undefined"!=typeof r&&(e[t]=n(e.property,r))}))}function f(t,e,n,r,i){var o=Object.assign({},t);if(!e||!e.length)return o;r&&e.sort(function(t,e){var n=t.index||0,r=e.index||0,i=n-r;return i||(i=t.startTime-e.startTime),i||(i=t.sortIndex-e.sortIndex),i});var a=!1;return e.forEach(function(t){a=t.composite(o,n)||a}),!a&&e.length&&i?i:o}function c(t,e,n,i,o,a,u){var s=void 0;r(o.animationForKey)&&(s=o.animationForKey.call(o,t,e,n,i));var l=(0,h.animationFromDescription)(s);return l||(l=(0,h.animationFromDescription)(a)),l&&(null!==l.property&&"undefined"!=typeof l.property||(l.property=t),null!==l.from&&"undefined"!=typeof l.from||("absolute"===l.blend?l.from=i:l.from=n),null!==l.to&&"undefined"!=typeof l.to||(l.to=e),null!==l.easing&&"undefined"!=typeof l.easing||(l.easing=u.easing),null!==l.duration&&"undefined"!=typeof l.duration||(l.duration=u.duration),l.duration||(l.duration=0)),l}function d(t,e,n){function u(t){g&&(t=o(t,e.keyOutput));var n=a(_[t],t,e.output);return n}function d(n,r){g&&(r=o(r,e.keyInput));var i=a(n,r,e.input);if(i!==T[r]){var u=T[r],s=a(u,r,e.output);if(n!==s){j[r]=u;var l=b.currentTransaction();if(!l.disableAnimation){var f=t.presentation,d=c(r,n,s,f,e,A[r],l);d?t.addAnimation(d):t.needsDisplay()}T[r]=i}}}function p(){N=null,C=-1}function v(){var n=function(){};r(e.display)&&(n=function(){_=t.presentation,e.display.call(e),_=T}),b.registerTarget(t,n,p,w)}function w(){for(var e=O.length,n=[];e--;){var i=O[e];if(i.finished){O.splice(e,1);var o=k[e];k.splice(e,1),delete S[o],r(i.onend)&&n.push(i)}}y||O.length||b.deregisterTarget(t),O.length||(N=T),n.forEach(function(t){t.onend.call(t,!0)})}function x(e){var n=O.indexOf(e);if(n>-1){O.splice(n,1);var i=k[n];k.splice(n,1),delete S[i],r(e.onend)&&e.onend.call(e,!1)}y||O.length||b.deregisterTarget(t)}if(!t)throw new Error("Nothing to hyperactivate.");if(t.registerAnimatableProperty||t.addAnimation)throw new Error("Already hyperactive");e||(e=t),n||(n=t);var O=[],k=[],S={},A={},M=!1,T={},j={},N=null,z=[],_=T,P=Object.keys(n),C=-1;return t.registerAnimatableProperty=function(i,o){if(!(t===e&&r(n[i])&&m.indexOf(i)>-1)){var s=!1;z.indexOf(i)===-1&&(s=!0),s&&z.push(i);var l=Object.getOwnPropertyDescriptor(n,i);if(o?A[i]=o:null===A[i]&&delete A[i],!l||l.configurable===!0){var f=a(n[i],i,e.input);T[i]=f,"undefined"==typeof f&&(T[i]=null),s&&Object.defineProperty(n,i,{get:function(){return u(i)},set:function(t){d(t,i)},enumerable:!0,configurable:!0})}if("animations"===i)throw new Error("I don't think so")}},Object.defineProperty(t,"layer",{get:function(){return n},set:function(e){e&&Object.keys(e).forEach(function(n){t.registerAnimatableProperty(n),d(e[n],n)})},enumerable:!1,configurable:!1}),Object.defineProperty(t,"animationCount",{get:function(){return O.length},enumerable:!1,configurable:!1}),Object.defineProperty(t,"animations",{get:function(){var t=O.map(function(t){var n=t.copy.call(t);return l(["from","to","delta"],n,e.output),n});return t},enumerable:!1,configurable:!1}),Object.defineProperty(t,"animationNames",{get:function(){return Object.keys(S)},enumerable:!1,configurable:!1}),Object.defineProperty(t,"presentation",{get:function(){var r=b.currentTransaction().time;if(r===C)return N;var i={};t!==n&&e!==n&&(i=Object.assign({},n));var o=Object.assign({},i,T),a=f(o,O,r,M,N);return a!==N&&s(Object.keys(a),a,e.output),N=a,C=r,M=!1,a},enumerable:!1,configurable:!1}),Object.defineProperty(t,"model",{get:function(){var t={};return z.forEach(function(n){var r=a(T[n],n,e.output);Object.defineProperty(t,n,{value:r,enumerable:!0,configurable:!1})}),Object.freeze(t),t},enumerable:!1,configurable:!1}),Object.defineProperty(t,"previous",{get:function(){var t=Object.assign({},T);return Object.keys(j).forEach(function(n){var r=a(j[n],n,e.output);Object.defineProperty(t,n,{value:r,enumerable:!0,configurable:!1}),j[n]=T[n]}),Object.freeze(t),t},enumerable:!1,configurable:!1}),t.needsDisplay=function(){v()},t.addAnimation=function(n,r){var o=(0,h.animationFromDescription)(n);if(!(o instanceof h.HyperAnimation||o instanceof h.HyperGroup))throw new Error("Animations must be a Hyper.Animation or Group subclass:"+JSON.stringify(o));if(l(["from","to"],o,e.input),i(o,e),O.length||v(),O.push(o),null!==r&&"undefined"!=typeof r){var a=S[r];a&&x(a),S[r]=o}"undefined"==typeof r||null===r||r===!1?k.push(null):k.push(r),M=!0;var u=b.currentTransaction();o.runAnimation(t,r,u)},t.removeAnimation=function(t){var e=S[t];e&&x(e)},t.removeAllAnimations=function(){O.length=0,k.length=0,S={},O.forEach(function(t){r(t.onend)&&t.onend.call(t,!1)}),y||b.deregisterTarget(t)},t.animationNamed=function(t){var n=S[t];if(n){var r=n.copy.call(n);return l(["from","to","delta"],r,e.output),r}return null},P.forEach(function(e){T[e]=n[e],t.registerAnimatableProperty(e)}),t}Object.defineProperty(e,"__esModule",{value:!0}),e.disableAnimation=e.flushTransaction=e.commitTransaction=e.beginTransaction=void 0,e.decorate=d;var p=n(10),h=n(9),g=!0,y=!0,m=["display","animationForKey","input","output"],b=new p.HyperContext;e.beginTransaction=b.beginTransaction.bind(b),e.commitTransaction=b.commitTransaction.bind(b),e.flushTransaction=b.flushTransaction.bind(b),e.disableAnimation=b.disableAnimation.bind(b)},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}function i(t){return z[t]||c.default}Object.defineProperty(e,"__esModule",{value:!0}),e.typeForStyle=i;var o=n(0),a=n(15),u=r(a),s=n(3),l=r(s),f=n(2),c=r(f),d=n(4),p=r(d),h=n(1),g=r(h),y=n(5),m=(r(y),n(12)),b=r(m),v=n(13),w=r(v),x=n(14),O=r(x),k=n(11),S=r(k),A=n(16),M=r(A),T=(0,o.createObject)(p.default,{interpolate:function(t,e,n){return"auto"===t||"auto"===e?c.default.interpolate(t,e):Math.floor(interp(t,e,n))}}),j=(0,o.createObject)(p.default,{zero:function(){return 0},unspecified:function(t){return 1}}),N=(0,o.typeWithKeywords)(["auto"],g.default),z={backgroundColor:l.default,backgroundPosition:b.default,borderBottomColor:l.default,borderBottomLeftRadius:g.default,borderBottomRightRadius:g.default,borderBottomWidth:g.default,borderLeftColor:l.default,borderLeftWidth:g.default,borderRightColor:l.default,borderRightWidth:g.default,borderSpacing:g.default,borderTopColor:l.default,borderTopLeftRadius:g.default,borderTopRightRadius:g.default,borderTopWidth:g.default,bottom:N,boxShadow:O.default,clip:(0,o.typeWithKeywords)(["auto"],w.default),color:l.default,cx:g.default,fontSize:(0,o.typeWithKeywords)(["smaller","larger"],g.default),fontWeight:(0,o.typeWithKeywords)(["lighter","bolder"],S.default),height:N,left:N,letterSpacing:(0,o.typeWithKeywords)(["normal"],g.default),lineHeight:g.default,marginBottom:N,marginLeft:N,marginRight:N,marginTop:N,maxHeight:(0,o.typeWithKeywords)(["none","max-content","min-content","fill-available","fit-content"],g.default),maxWidth:(0,o.typeWithKeywords)(["none","max-content","min-content","fill-available","fit-content"],g.default),minHeight:(0,o.typeWithKeywords)(["max-content","min-content","fill-available","fit-content"],g.default),minWidth:(0,o.typeWithKeywords)(["max-content","min-content","fill-available","fit-content"],g.default),opacity:j,outlineColor:(0,o.typeWithKeywords)(["invert"],l.default),outlineOffset:g.default,outlineWidth:g.default,paddingBottom:g.default,paddingLeft:g.default,paddingRight:g.default,paddingTop:g.default,right:N,textIndent:(0,o.typeWithKeywords)(["each-line","hanging"],g.default),textShadow:O.default,top:N,transform:u.default,WebkitTransform:u.default,webkitTransform:u.default,msTransform:u.default,verticalAlign:(0,o.typeWithKeywords)(["baseline","sub","super","text-top","text-bottom","middle","top","bottom"],g.default),visibility:M.default,width:(0,o.typeWithKeywords)(["border-box","content-box","auto","max-content","min-content","available","fit-content"],g.default),wordSpacing:(0,o.typeWithKeywords)(["normal"],g.default),x:g.default,y:g.default,zIndex:(0,o.typeWithKeywords)(["auto"],T)}},function(t,e){function n(t){return t&&"[object Function]"==={}.toString.call(t)}function r(t){}function i(t){}function o(t,e,r){this.type=t,n(t)&&(this.type=new t(r)),this.length=e}function a(t){n(t)?this.sort=t:t&&n(t.sort)&&(this.sort=t.sort)}function u(t){}function s(t){}function l(t){}function f(t){throw new Error("HyperRange not supported")}function c(t,e,n,r){return{origin:h(t,e),size:m(n,r)}}function d(){return c(0,0,0,0)}function p(t,e){return y(t.origin,e.origin)&&v(t.size,e.size)}function h(t,e){return{x:t,y:e}}function g(){return h(0,0)}function y(t,e){return t.x===e.x&&t.y===e.y}function m(t,e){return{width:t,height:e}}function b(){return m(0,0)}function v(t,e){return t.width===e.width&&t.height&&e.height}function w(t,e){return{location:t,length:e}}function x(){return w(0,0)}function O(){return w(M,0)}function k(t,e){return t>e.location&&t<e.location+e.length}function S(t,e){return t.location===e.location&&t.length===e.length}function A(t,e){if(t.location+t.length<=e.location||e.location+e.length<=t.location)return O();var n=Math.max(t.location,e.location),r=Math.min(t.location+t.length,e.location+e.length);return{location:n,length:r-n}}Object.defineProperty(e,"__esModule",{value:!0}),e.HyperNumber=r,e.HyperScale=i,e.HyperArray=o,e.HyperSet=a,e.HyperPoint=u,e.HyperSize=s,e.HyperRect=l,e.HyperRange=f,e.HyperMakeRect=c,e.HyperZeroRect=d,e.HyperEqualRects=p,e.HyperMakePoint=h,e.HyperZeroPoint=g,e.HyperEqualPoints=y,e.HyperMakeSize=m,e.HyperZeroSize=b,e.HyperEqualSizes=v,e.HyperMakeRange=w,e.HyperZeroRange=x,e.HyperNullRange=O,e.HyperIndexInRange=k,e.HyperEqualRanges=S,e.HyperIntersectionRange=A,r.prototype={constructor:r,zero:function(){return 0},add:function(t,e){return t+e},subtract:function(t,e){return t-e},interpolate:function(t,e,n){return t+(e-t)*n}},i.prototype={constructor:i,zero:function(){return 1},add:function(t,e){return t*e},subtract:function(t,e){return 0===e?0:t/e},interpolate:function(t,e,n){return t+(e-t)*n}},o.prototype={constructor:o,zero:function(){for(var t=[],e=this.length;e--;)t.push(this.type.zero());return t},add:function(t,e){for(var n=[],r=0;r<this.length;r++)n.push(this.type.add(t[r],e[r]));return n},subtract:function(t,e){for(var n=[],r=0;r<this.length;r++)n.push(this.type.subtract(t[r],e[r]));return n},interpolate:function(t,e,n){for(var r=[],i=0;i<this.length;i++)r.push(this.type.interpolate(t[i],e[i],n));return r}},a.prototype={constructor:a,zero:function(){return[]},add:function(t,e){if(!Array.isArray(t)&&!Array.isArray(e))return[];if(!Array.isArray(t))return e;if(!Array.isArray(e))return t;var r=[],i=t.length,o=e.length,a=0,u=0;if(n(this.sort))for(;a<i||u<o;)if(a===i)r.push(e[u]),u++;else if(u===o)r.push(t[a]),a++;else{var s=t[a],l=e[u],f=this.sort(s,l);0===f?(r.push(s),a++,u++):f<0?(r.push(s),a++):f>0&&(r.push(l),u++)}else for(r=t.slice(0),a=e.length;a--;)t.indexOf(e[a])<0&&r.push(e[a]);return r},subtract:function(t,e){if(!Array.isArray(t)&&!Array.isArray(e))return[];if(!Array.isArray(t))return e;if(!Array.isArray(e))return t;var r=[],i=t.length,o=e.length,a=0,u=0;if(n(this.sort))for(;(a<i||u<o)&&a!==i;)if(u===o)r.push(t[a]),a++;else{var s=t[a],l=e[u],f=this.sort(s,l);0===f?(a++,u++):f<0?(r.push(s),a++):f>0&&u++}else for(r=t.slice(0),a=e.length;a--;){var c=r.indexOf(e[a]);c>-1&&r.splice(c,1)}return r},interpolate:function(t,e,n){return n>=1?e:t}},u.prototype={constructor:u,zero:function(){return g()},add:function(t,e){return h(t.x+e.x,t.y+e.y)},subtract:function(t,e){return h(t.x-e.x,t.y-e.y)},interpolate:function(t,e,n){return h(t.x+(e.x-t.x)*n,t.y+(e.y-t.y)*n)}},s.prototype={constructor:s,zero:function(){return b()},add:function(t,e){return m(t.width+e.width,t.height+e.height)},subtract:function(t,e){return m(t.width-e.width,t.height-e.height)},interpolate:function(t,e,n){return m(t.width+(e.width-t.width)*n,t.height+(e.height-t.height)*n)}},l.prototype={constructor:l,zero:function(){return d()},add:function(t,e){return{origin:u.prototype.add(t.origin,e.origin),size:s.prototype.add(t.size,e.size)}},subtract:function(t,e){return{origin:u.prototype.subtract(t.origin,e.origin),size:s.prototype.subtract(t.size,e.size)}},interpolate:function(t,e,n){return{origin:u.prototype.interpolate(t.origin,e.origin,n),size:s.prototype.interpolate(t.size,e.size,n)}}},f.prototype={constructor:f,zero:function(){return O()},add:function(t,e){if(t.location===M&&e.location===M)return O();if(0===t.length&&0===e.length)return O();if(t.location===M||0===t.length)return e;if(e.location===M||0===e.length)return t;var n=Math.min(t.location,e.location),r=Math.max(t.location+t.length,e.location+e.length),i=w(n,r-n);return i},subtract:function(t,e){var n=t;return t.location===M&&e.location===M?n=O():0===t.length&&0===e.length?n=O():t.location===M||0===t.length?n=O():e.location===M||0===e.length?n=t:e.location<=t.location&&e.location+e.length>=t.location+t.length?n=O():e.location<=t.location&&e.location+e.length>t.location&&e.location+e.length<t.location+t.length?n=w(e.location+e.length,t.location+t.length-(e.location+e.length)):e.location>t.location&&e.location<t.location+t.length&&e.location+e.length>=t.location+t.length&&(n=w(t.location,e.location+e.length-t.location)),n},interpolate:function(t,e,n){return n>=1?e:t},intersection:function(t,e){if(t.location===M||e.location===M||0===t.length||0===e.length)return O();if(t.location+t.length<=e.location||e.location+e.length<=t.location)return O();var n=Math.max(t.location,e.location),r=Math.min(t.location+t.length,e.location+e.length);return w(n,r-n)}};var M=e.HyperNotFound=Number.MAX_VALUE},function(t,e){function n(t){return t&&"[object Function]"==={}.toString.call(t)}function r(t){return!isNaN(parseFloat(t))&&isFinite(t)}function i(t){return t&&"object"===("undefined"==typeof t?"undefined":f(t))}function a(t){var e=void 0;if(!t)return t;if(t instanceof s||t instanceof l)e=t.copy.call(t);else if(Array.isArray(t))e=new s(t);else if(i(t))e=new l(t);else if(r(t))e=new l({duration:t});else{if(t!==!0)throw new Error("is this an animation:"+JSON.stringify(t));e=new l({})}return e}function u(){}function s(t){u.call(this),Array.isArray(t)||(t=[]),this.group=t.map(function(t){return a(t)}),this.sortIndex,this.startTime,Object.defineProperty(this,"finished",{get:function(){var t=!0;return this.group.forEach(function(e){e.finished||(t=!1)}),t},enumerable:!1,configurable:!1})}function l(t){u.call(this),this.property,this.from,this.to,this.type=d,this.delta,this.duration,this.easing,this.speed,this.iterations,this.autoreverse,this.fillMode,this.index=0,this.delay=0,this.blend="relative",this.additive=!0,this.sort,this.finished=!1,this.startTime,this.progress,this.onend,this.remove=!0,t&&Object.keys(t).forEach(function(e){this[e]=t[e]}.bind(this))}Object.defineProperty(e,"__esModule",{value:!0});var f="function"==typeof Symbol&&"symbol"==o(Symbol.iterator)?function(t){return"undefined"==typeof t?"undefined":o(t)}:function(t){return t&&"function"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?"symbol":"undefined"==typeof t?"undefined":o(t)};e.animationFromDescription=a,e.HyperGroup=s,e.HyperAnimation=l;var c=0,d={zero:function(){return 0},add:function(t,e){return t+e},subtract:function(t,e){return t-e},interpolate:function(t,e,n){return t+(e-t)*n}};s.prototype={constructor:s,copy:function(){return new this.constructor(this.group)},runAnimation:function(t,e,n){this.sortIndex=c++,null!==this.startTime&&"undefined"!=typeof this.startTime||(this.startTime=n.time),this.group.forEach(function(r){r.runAnimation.call(r,t,e,n)})},composite:function(t,e){var n=!1;return this.group.forEach(function(r){n=r.composite.call(r,t,e)||n}),n}},l.prototype={constructor:l,copy:function t(){for(var t=new this.constructor(this.settings),e=Object.getOwnPropertyNames(this),n=e.length,r=0;r<n;r++)Object.defineProperty(t,e[r],Object.getOwnPropertyDescriptor(this,e[r]));return t},composite:function(t,e){if(null===this.startTime||void 0===this.startTime)throw new Error("Cannot composite an animation that has not been started.");var r=Math.max(0,e-(this.startTime+this.delay)),i=this.speed,o=1,a=1,u=this.duration,s=u*this.iterations;s&&(o=r*i/u,a=r*i/s),a>=1&&(o=1,this.finished=!0);var l=0;if(this.finished||(this.autoreverse===!0&&(l=Math.floor(o)%2),o%=1),l&&(o=1-o),n(this.easing))o=this.easing(o);else if("step-start"===this.easing)o=Math.ceil(o);else if("step-middle"===this.easing)o=Math.round(o);else if("step-end"===this.easing)o=Math.floor(o);else{var f=.5-Math.cos(o*Math.PI)/2;if(this.easing){var c=/(step-start|step-middle|step-end|steps)\((\d+)\)/.exec(this.easing);if(c){var d=c[1],p=c[2];p>0?"step-start"===d?o=Math.ceil(o*p)/p:"step-middle"===d?o=Math.round(o*p)/p:"step-end"!==d&&"steps"!==d||(o=Math.floor(o*p)/p):"linear"!==this.easing&&(o=f)}else"linear"!==this.easing&&(o=f)}else o=f}var h="absolute"===this.blend?this.type.interpolate(this.from,this.to,o):this.type.interpolate(this.delta,this.type.zero(this.to),o),g=this.property;if("undefined"!=typeof g&&null!==g){var y=h,m=t[g];"undefined"!=typeof m&&null!==m||(m=this.type.zero(this.to)),this.additive&&(y=this.type.add(m,h)),this.sort&&Array.isArray(y)&&y.sort(this.sort),
-t[g]=y}var b=o!==this.progress;return this.progress=o,b},runAnimation:function(t,e,r){if(n(this.type)&&(this.type=new this.type),!(this.type&&n(this.type.zero)&&n(this.type.add)&&n(this.type.subtract)&&n(this.type.interpolate)))throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");this.from||(this.from=this.type.zero(this.to)),this.to||(this.to=this.type.zero(this.from)),"absolute"!==this.blend&&(this.delta=this.type.subtract(this.from,this.to)),null!==this.duration&&"undefined"!=typeof this.duration||(this.duration=r.duration),null!==this.easing&&"undefined"!=typeof this.easing||(this.easing=r.easing),null!==this.speed&&"undefined"!=typeof this.speed||(this.speed=1),null!==this.iterations&&"undefined"!=typeof this.iterations||(this.iterations=1),this.progress=0,this.startTime=r.time,this.sortIndex=c++}}},function(t,e){function n(t){return t&&"[object Function]"==={}.toString.call(t)}function r(t){this.time,this.disableAnimation=!1,this.duration,this.easing,t&&Object.keys(t).forEach(function(e){this[e]=t[e]}.bind(this))}function i(){this.targets=[],this.transactions=[],this.ticking=!1,this.animationFrame,this.displayLayers=[],this.displayFunctions=[],this.cleanupFunctions=[],this.invalidateFunctions=[]}Object.defineProperty(e,"__esModule",{value:!0}),e.HyperTransaction=r,e.HyperContext=i;var o="undefined"!=typeof window&&(window.requestAnimationFrame||window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame||window.msRequestAnimationFrame||window.oRequestAnimationFrame)||function(t){setTimeout(t,0)},a=Date.getTime;Date.now&&(a=Date.now),"undefined"!=typeof window&&"undefined"!=typeof window.performance&&"undefined"!=typeof window.performance.now&&(a=window.performance.now.bind(window.performance)),i.prototype={createTransaction:function(t,e){var n=new r(t),i=this.transactions.length,o=a()/1e3;return i&&(o=this.transactions[i-1].representedObject.time),Object.defineProperty(n,"time",{get:function(){return o},enumerable:!0,configurable:!1}),this.transactions.push({representedObject:n,automaticallyCommit:e}),e&&this.startTicking(),n},currentTransaction:function(){var t=this.transactions.length;return t?this.transactions[t-1].representedObject:this.createTransaction({},!0)},beginTransaction:function(t){return this.createTransaction(t,!1)},commitTransaction:function(){this.transactions.pop()},flushTransaction:function(){this.invalidateFunctions.forEach(function(t){t()})},disableAnimation:function(t){t!==!1&&(t=!0);var e=this.currentTransaction();e.disableAnimation=t,this.startTicking()},registerTarget:function(t,e,n,r){this.startTicking();var i=this.targets.indexOf(t);i<0&&(this.targets.push(t),this.displayLayers.push(null),this.displayFunctions.push(e),this.cleanupFunctions.push(r),this.invalidateFunctions.push(n))},deregisterTarget:function(t){var e=this.targets.indexOf(t);e>-1&&(this.targets.splice(e,1),this.displayLayers.splice(e,1),this.displayFunctions.splice(e,1),this.cleanupFunctions.splice(e,1),this.invalidateFunctions.splice(e,1))},startTicking:function(){this.animationFrame||(this.animationFrame=o(this.ticker.bind(this)))},ticker:function(){this.animationFrame=void 0;for(var t=this.targets,e=t.length;e--;){var r=t[e],i=this.displayFunctions[e];if(r.animationCount){if(n(i)){var o=r.presentation;this.displayLayers[e]!==o&&(r.animationCount&&(this.displayLayers[e]=o),i())}this.invalidateFunctions[e](),this.cleanupFunctions[e]()}else n(i)&&i(),this.invalidateFunctions[e](),this.deregisterTarget(r)}var a=this.transactions.length;if(a){var u=this.transactions[a-1];u.automaticallyCommit&&this.commitTransaction()}this.targets.length&&this.startTicking()}}},function(t,e,n){Object.defineProperty(e,"__esModule",{value:!0});var r=n(0),i={toString:function(){return"fontWeightType"},toJSON:function(){return this.toString()},inverse:function(t){return t*-1},add:function(t,e){return t+e},subtract:function(t,e){return this.add(t,this.inverse(e))},interpolate:function(t,e,n){return(0,r.interp)(t,e,n)},toCssValue:function(t){return t=100*Math.round(t/100),t=(0,r.clamp)(t,100,900),400===t?"normal":700===t?"bold":String(t)},fromCssValue:function(t){var e=Number(t);if(!(isNaN(e)||e<100||e>900||e%100!==0))return e}};e.default=i},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(e,"__esModule",{value:!0});var i=n(5),o=r(i),a=n(0),u={toString:function(){return"positionListType"},toJSON:function(){return this.toString()},inverse:function(t){for(var e=[],n=t.length,r=0;r<n;r++){var i=t[r]?t[r]:o.default.zero();e.push(o.default.inverse(i))}return e},zero:function(){return[o.default.zero()]},add:function(t,e){for(var n=[],r=Math.max(t.length,e.length),i=0;i<r;i++){var a=t[i]?t[i]:o.default.zero(),u=e[i]?e[i]:o.default.zero();n.push(o.default.add(a,u))}return n},subtract:function(t,e){return this.add(t,this.inverse(e))},interpolate:function(t,e,n){for(var r=[],i=Math.max(t.length,e.length),a=0;a<i;a++){var u=t[a]?t[a]:o.default.zero(),s=e[a]?e[a]:o.default.zero();r.push(o.default.interpolate(u,s,n))}return r},toCssValue:function(t){return t.map(o.default.toCssValue).join(", ")},fromCssValue:function(t){if((0,a.isDefinedAndNotNull)(t)){if(!t.trim())return[o.default.fromCssValue("0% 0%")];var e=t.split(","),n=e.map(o.default.fromCssValue);return n.every(a.isDefinedAndNotNull)?n:void 0}}};e.default=u},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(e,"__esModule",{value:!0});var i=n(1),o=r(i),a=/rect\(([^,]+),([^,]+),([^,]+),([^)]+)\)/,u={toString:function(){return"rectangleType"},toJSON:function(){return this.toString()},inverse:function(t){return{top:o.default.inverse(t.top),right:o.default.inverse(t.right),bottom:o.default.inverse(t.bottom),left:o.default.inverse(t.left)}},zero:function(){return{top:0,right:0,bottom:0,left:0}},add:function(t,e){return{top:o.default.add(t.top,e.top),right:o.default.add(t.right,e.right),bottom:o.default.add(t.bottom,e.bottom),left:o.default.add(t.left,e.left)}},subtract:function(t,e){return this.add(t,this.inverse(e))},interpolate:function(t,e,n){return{top:o.default.interpolate(t.top,e.top,n),right:o.default.interpolate(t.right,e.right,n),bottom:o.default.interpolate(t.bottom,e.bottom,n),left:o.default.interpolate(t.left,e.left,n)}},toCssValue:function(t){return"rect("+o.default.toCssValue(t.top)+","+o.default.toCssValue(t.right)+","+o.default.toCssValue(t.bottom)+","+o.default.toCssValue(t.left)+")"},fromCssValue:function(t){var e=a.exec(t);if(e){var n={top:o.default.fromCssValue(e[1]),right:o.default.fromCssValue(e[2]),bottom:o.default.fromCssValue(e[3]),left:o.default.fromCssValue(e[4])};return n.top&&n.right&&n.bottom&&n.left?n:void 0}}};e.default=u},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(e,"__esModule",{value:!0});var i=n(3),o=r(i),a=n(1),u=r(a),s=n(2),l=r(s),f={toString:function(){return"shadowType"},toJSON:function(){return this.toString()},inverse:function(t){return l.default.inverse(t)},zero:function(){return{hOffset:u.default.zero(),vOffset:u.default.zero()}},_addSingle:function(t,e){if(t&&e&&t.inset!==e.inset)return e;var n={inset:t?t.inset:e.inset,hOffset:u.default.add(t?t.hOffset:u.default.zero(),e?e.hOffset:u.default.zero()),vOffset:u.default.add(t?t.vOffset:u.default.zero(),e?e.vOffset:u.default.zero()),blur:u.default.add(t&&t.blur||u.default.zero(),e&&e.blur||u.default.zero())};return(t&&t.spread||e&&e.spread)&&(n.spread=u.default.add(t&&t.spread||u.default.zero(),e&&e.spread||u.default.zero())),(t&&t.color||e&&e.color)&&(n.color=o.default.add(t&&t.color||o.default.zero(),e&&e.color||o.default.zero())),n},add:function(t,e){for(var n=[],r=0;r<t.length||r<e.length;r++)n.push(this._addSingle(t[r],e[r]));return n},subtract:function(t,e){return this.add(t,this.inverse(e))},_interpolateSingle:function(t,e,n){if(t&&e&&t.inset!==e.inset)return n<.5?t:e;var r={inset:t?t.inset:e.inset,hOffset:u.default.interpolate(t?t.hOffset:u.default.zero(),e?e.hOffset:u.default.zero(),n),vOffset:u.default.interpolate(t?t.vOffset:u.default.zero(),e?e.vOffset:u.default.zero(),n),blur:u.default.interpolate(t&&t.blur||u.default.zero(),e&&e.blur||u.default.zero(),n)};return(t&&t.spread||e&&e.spread)&&(r.spread=u.default.interpolate(t&&t.spread||u.default.zero(),e&&e.spread||u.default.zero(),n)),(t&&t.color||e&&e.color)&&(r.color=o.default.interpolate(t&&t.color||o.default.zero(),e&&e.color||o.default.zero(),n)),r},interpolate:function(t,e,n){for(var r=[],i=0;i<t.length||i<e.length;i++)r.push(this._interpolateSingle(t[i],e[i],n));return r},_toCssValueSingle:function(t){return(t.inset?"inset ":"")+u.default.toCssValue(t.hOffset)+" "+u.default.toCssValue(t.vOffset)+" "+u.default.toCssValue(t.blur)+(t.spread?" "+u.default.toCssValue(t.spread):"")+(t.color?" "+o.default.toCssValue(t.color):"")},toCssValue:function(t){return t.map(this._toCssValueSingle).join(", ")},fromCssValue:function(t){for(var e,n=/(([^(,]+(\([^)]*\))?)+)/g,r=[];null!==(e=n.exec(t));)r.push(e[0]);var i=r.map(function(t){if("none"===t)return f.zero();t=t.replace(/^\s+|\s+$/g,"");for(var n=/([^ (]+(\([^)]*\))?)/g,r=[];null!==(e=n.exec(t));)r.push(e[0]);if(!(r.length<2||r.length>7)){for(var i={inset:!1},a=[];r.length;){var s=r.shift(),l=u.default.fromCssValue(s);if(l)a.push(l);else{var c=o.default.fromCssValue(s);c&&(i.color=c),"inset"===s&&(i.inset=!0)}}if(!(a.length<2||a.length>4))return i.hOffset=a[0],i.vOffset=a[1],a.length>2&&(i.blur=a[2]),a.length>3&&(i.spread=a[3]),i}});return i.every(isDefined)?i:void 0}};e.default=f},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}function i(t){return"("+t+")"}function o(t){return"(?:"+t+")?"}function a(t,e,n){for(var r=[P,M,t,C],i=0;i<e-1;i++)r.push(E),r.push(V);return r.push(E),n&&r.push(o([V,E].join(""))),r.push(F),new RegExp(r.join(""))}function u(t,e,n,r,i){var o=t;i&&("X"===t[t.length-1]||"Y"===t[t.length-1]?o=t.substring(0,t.length-1):"Z"===t[t.length-1]&&(o=t.substring(0,t.length-1)+"3d"));var u=function(o){var a=A(o,e,n,r);if(void 0!==i)if("X"===t[t.length-1])a.push(i);else if("Y"===t[t.length-1])a=[i].concat(a);else if("Z"===t[t.length-1])a=[i,i].concat(a);else if(n)for(;a.length<2;)"copy"===i?a.push(a[0]):a.push(i);return a};return[a(t,e,n),u,o]}function s(t,e,n,r){var i=u(t,e,n,!0,r),o=function(t){var e=i[1](t);return e.map(function(t){var e=0;for(var n in t)e+=k(t[n],n);return e})};return[i[0],o,i[2]]}function l(){var t=u("rotate3d",4,!1,!0),e=function(e){for(var n=t[1](e),r=[],i=0;i<3;i++)r.push(n[i].px);return r.push(n[3]),r};return[t[0],e,t[2]]}function f(t,e){for(var n=0,r=0;r<t.length;r++)n+=t[r]*e[r];return n}function c(t,e){return[t[0]*e[0]+t[2]*e[1],t[1]*e[0]+t[3]*e[1],t[0]*e[2]+t[2]*e[3],t[1]*e[2]+t[3]*e[3],t[0]*e[4]+t[2]*e[5]+t[4],t[1]*e[4]+t[3]*e[5]+t[5]]}function d(t){switch(t.t){case"rotate":var e=t.d*Math.PI/180;return[Math.cos(e),Math.sin(e),-Math.sin(e),Math.cos(e),0,0];case"scale":return[t.d[0],0,0,t.d[1],0,0];case"translate":return[1,0,0,1,t.d[0].px,t.d[1].px];case"translate3d":return[1,0,0,1,t.d[0].px,t.d[1].px];case"matrix":return t.d;default:throw new Error("HyperStyle convertItemToMatrix unimplemented type:%s;",t.t)}}function p(t){return t.map(d).reduce(c)}function h(t,e,n){var r=J(p(t)),i=J(p(e)),o=f(r.quaternion,i.quaternion);o=clamp(o,-1,1);var a=[];if(1===o)a=r.quaternion;else for(var u=Math.acos(o),s=1*Math.sin(n*u)/Math.sqrt(1-o*o),l=0;l<4;l++)a.push(r.quaternion[l]*(Math.cos(n*u)-o*s)+i.quaternion[l]*s);var c=interp(r.translate,i.translate,n),d=interp(r.scale,i.scale,n),h=interp(r.skew,i.skew,n),g=interp(r.perspective,i.perspective,n);return q(c,d,h,a,g)}function g(t,e,n){var r=t.t?t.t:e.t;switch(r){case"rotate":case"rotateX":case"rotateY":case"rotateZ":case"scale":case"scaleX":case"scaleY":case"scaleZ":case"scale3d":case"skew":case"skewX":case"skewY":case"matrix":return{t:r,d:interp(t.d,e.d,n,r)};default:var i=[],o=0;t.d&&e.d?o=Math.max(t.d.length,e.d.length):t.d?o=t.d.length:e.d&&(o=e.d.length);for(var a=0;a<o;a++){var u=t.d?t.d[a]:{},s=e.d?e.d[a]:{};i.push(v.default.interpolate(u,s,n))}return{t:r,d:i}}}function y(t){return Number(t).toFixed(4)}Object.defineProperty(e,"__esModule",{value:!0});var m=n(0),b=n(1),v=r(b),w=n(4),x=r(w),O=!1,k=function(t,e){switch(e){case"grad":return t/400*360;case"rad":return t/2/Math.PI*360;case"turn":return 360*t;default:return t}},S=function(t,e,n){var r=Number(t[e]);if(!n)return r;var i=t[e+1];""===i&&(i="px");var o={};return o[i]=r,o},A=function(t,e,n,r){for(var i=[],o=0;o<e;o++)i.push(S(t,1+2*o,r));return n&&t[1+2*e]&&i.push(S(t,1+2*e,r)),i},M="\\s*",T="[+-]?(?:\\d+|\\d*\\.\\d+)",j="\\(",N="\\)",z=",",_="[a-zA-Z%]*",P="^",C=[M,j,M].join(""),F=[M,N,M].join(""),V=[M,z,M].join(""),E=[i(T),i(_)].join(""),H=[s("rotate",1,!1),s("rotateX",1,!1),s("rotateY",1,!1),s("rotateZ",1,!1),l(),s("skew",1,!0,0),s("skewX",1,!1),s("skewY",1,!1),u("translateX",1,!1,!0,{px:0}),u("translateY",1,!1,!0,{px:0}),u("translateZ",1,!1,!0,{px:0}),u("translate",1,!0,!0,{px:0}),u("translate3d",3,!1,!0),u("scale",1,!0,!1,"copy"),u("scaleX",1,!1,!1,1),u("scaleY",1,!1,!1,1),u("scaleZ",1,!1,!1,1),u("scale3d",3,!1,!1),u("perspective",1,!1,!0),u("matrix",6,!1,!1)],J=function(){function t(t){return t[0][0]*t[1][1]*t[2][2]+t[1][0]*t[2][1]*t[0][2]+t[2][0]*t[0][1]*t[1][2]-t[0][2]*t[1][1]*t[2][0]-t[1][2]*t[2][1]*t[0][0]-t[2][2]*t[0][1]*t[1][0]}function e(e){for(var n=1/t(e),r=e[0][0],i=e[0][1],o=e[0][2],a=e[1][0],u=e[1][1],s=e[1][2],l=e[2][0],f=e[2][1],c=e[2][2],d=[[(u*c-s*f)*n,(o*f-i*c)*n,(i*s-o*u)*n,0],[(s*l-a*c)*n,(r*c-o*l)*n,(o*a-r*s)*n,0],[(a*f-u*l)*n,(l*i-r*f)*n,(r*u-i*a)*n,0]],p=[],h=0;h<3;h++){for(var g=0,y=0;y<3;y++)g+=e[3][y]*d[y][h];p.push(g)}return p.push(1),d.push(p),d}function n(t){return[[t[0][0],t[1][0],t[2][0],t[3][0]],[t[0][1],t[1][1],t[2][1],t[3][1]],[t[0][2],t[1][2],t[2][2],t[3][2]],[t[0][3],t[1][3],t[2][3],t[3][3]]]}function r(t,e){for(var n=[],r=0;r<4;r++){for(var i=0,o=0;o<4;o++)i+=t[o]*e[o][r];n.push(i)}return n}function i(t){var e=o(t);return[t[0]/e,t[1]/e,t[2]/e]}function o(t){return Math.sqrt(t[0]*t[0]+t[1]*t[1]+t[2]*t[2])}function a(t,e,n,r){return[n*t[0]+r*e[0],n*t[1]+r*e[1],n*t[2]+r*e[2]]}function u(t,e){return[t[1]*e[2]-t[2]*e[1],t[2]*e[0]-t[0]*e[2],t[0]*e[1]-t[1]*e[0]]}function s(s){var l=[[s[0],s[1],0,0],[s[2],s[3],0,0],[0,0,1,0],[s[4],s[5],0,1]];if(1!==l[3][3])throw"attempt to decompose non-normalized matrix";for(var c=l.concat(),d=0;d<3;d++)c[d][3]=0;if(0===t(c))return!1;var p,h=[];if(0!==l[0][3]||0!==l[1][3]||0!==l[2][3]){h.push(l[0][3]),h.push(l[1][3]),h.push(l[2][3]),h.push(l[3][3]);var g=e(c),y=n(g);p=r(h,y)}else p=[0,0,0,1];var m=l[3].slice(0,3),b=[];b.push(l[0].slice(0,3));var v=[];v.push(o(b[0])),b[0]=i(b[0]);var w=[];b.push(l[1].slice(0,3)),w.push(f(b[0],b[1])),b[1]=a(b[1],b[0],1,-w[0]),v.push(o(b[1])),b[1]=i(b[1]),w[0]/=v[1],b.push(l[2].slice(0,3)),w.push(f(b[0],b[2])),b[2]=a(b[2],b[0],1,-w[1]),w.push(f(b[1],b[2])),b[2]=a(b[2],b[1],1,-w[2]),v.push(o(b[2])),b[2]=i(b[2]),w[1]/=v[2],w[2]/=v[2];var x=u(b[1],b[2]);if(f(b[0],x)<0)for(var d=0;d<3;d++)v[d]*=-1,b[d][0]*=-1,b[d][1]*=-1,b[d][2]*=-1;var O,k,S=b[0][0]+b[1][1]+b[2][2]+1;return S>1e-4?(O=.5/Math.sqrt(S),k=[(b[2][1]-b[1][2])*O,(b[0][2]-b[2][0])*O,(b[1][0]-b[0][1])*O,.25/O]):b[0][0]>b[1][1]&&b[0][0]>b[2][2]?(O=2*Math.sqrt(1+b[0][0]-b[1][1]-b[2][2]),k=[.25*O,(b[0][1]+b[1][0])/O,(b[0][2]+b[2][0])/O,(b[2][1]-b[1][2])/O]):b[1][1]>b[2][2]?(O=2*Math.sqrt(1+b[1][1]-b[0][0]-b[2][2]),k=[(b[0][1]+b[1][0])/O,.25*O,(b[1][2]+b[2][1])/O,(b[0][2]-b[2][0])/O]):(O=2*Math.sqrt(1+b[2][2]-b[0][0]-b[1][1]),k=[(b[0][2]+b[2][0])/O,(b[1][2]+b[2][1])/O,.25*O,(b[1][0]-b[0][1])/O]),{translate:m,scale:v,skew:w,quaternion:k,perspective:p}}return s}(),q=function(){function t(t,e){for(var n=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],r=0;r<4;r++)for(var i=0;i<4;i++)for(var o=0;o<4;o++)n[r][i]+=e[r][o]*t[o][i];return n}function e(e,n,r,i,o){for(var a=[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],u=0;u<4;u++)a[u][3]=o[u];for(var u=0;u<3;u++)for(var s=0;s<3;s++)a[3][u]+=e[s]*a[s][u];var l=i[0],f=i[1],c=i[2],d=i[3],p=[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];p[0][0]=1-2*(f*f+c*c),p[0][1]=2*(l*f-c*d),p[0][2]=2*(l*c+f*d),p[1][0]=2*(l*f+c*d),p[1][1]=1-2*(l*l+c*c),p[1][2]=2*(f*c-l*d),p[2][0]=2*(l*c-f*d),p[2][1]=2*(f*c+l*d),p[2][2]=1-2*(l*l+f*f),a=t(a,p);var h=[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];r[2]&&(h[2][1]=r[2],a=t(a,h)),r[1]&&(h[2][1]=0,h[2][0]=r[0],a=t(a,h));for(var u=0;u<3;u++)for(var s=0;s<3;s++)a[u][s]*=n[u];return{t:"matrix",d:[a[0][0],a[0][1],a[1][0],a[1][1],a[3][0],a[3][1]]}}return e}(),R={toString:function(){return"transformType"},toJSON:function(){return this.toString()},inverse:function(t){t&&t.length||(t=this.zero());for(var e=this.zero(t),n=[],r=0;r<t.length;r++)switch(O&&assert(t[r].t,"transform type should be resolved by now"),t[r].t){case"rotate":case"rotateX":case"rotateY":case"rotateZ":case"skewX":case"skewY":n.push({t:t[r].t,d:[x.default.inverse(t[r].d[0])]});break;case"skew":n.push({t:t[r].t,d:[x.default.inverse(t[r].d[0]),x.default.inverse(t[r].d[1])]});break;case"translateX":case"translateY":case"translateZ":case"perspective":n.push({t:t[r].t,d:[x.default.inverse(t[r].d[0])]});break;case"translate":n.push({t:t[r].t,d:[{px:x.default.inverse(t[r].d[0].px)},{px:x.default.inverse(t[r].d[1].px)}]});break;case"translate3d":n.push({t:t[r].t,d:[{px:x.default.inverse(t[r].d[0].px)},{px:x.default.inverse(t[r].d[1].px)},{px:x.default.inverse(t[r].d[2].px)}]});break;case"scale":n.push({t:t[r].t,d:[e[r].d[0]/t[r].d[0],e[r].d[1]/t[r].d[1]]});break;case"scaleX":case"scaleY":case"scaleZ":n.push({t:t[r].t,d:[e[r].d[0]/t[r].d[0]]});break;case"scale3d":n.push({t:t[r].t,d:[e[r].d[0]/t[r].d[0],e[r].d[1]/t[r].d[1],-1/t[r].d[2]]});break;case"matrix":n.push({t:t[r].t,d:[x.default.inverse(t[r].d[0]),x.default.inverse(t[r].d[1]),x.default.inverse(t[r].d[2]),x.default.inverse(t[r].d[3]),x.default.inverse(t[r].d[4]),x.default.inverse(t[r].d[5])]})}return n},add:function(t,e){if(!t||!t.length)return e;if(!e||!e.length)return t;var n=t.length,r=e.length;if(n&&r&&n>=r){for(var i=n-r,o=!0,a=0,u=i;u<n;u++){if(t[u].t!=e[a].t){o=!1;break}a++}if(o)return this.sum(t,e)}return t.concat(e)},sum:function(t,e){for(var n=[],r=t.length,i=e.length,o=r-i,a=0,u=0;u<r;u++)if(O&&assert(t[u].t,"transform type should be resolved by now"),u<o)n.push(t[u]);else{switch(t[u].t){case"rotate":case"rotateX":case"rotateY":case"rotateZ":case"skewX":case"skewY":n.push({t:t[u].t,d:[x.default.add(t[u].d[0],e[a].d[0])]});break;case"skew":n.push({t:t[u].t,d:[x.default.add(t[u].d[0],e[a].d[0]),x.default.add(t[u].d[1],e[a].d[1])]});break;case"translateX":case"translateY":case"translateZ":case"perspective":n.push({t:t[u].t,d:[x.default.add(t[u].d[0],e[a].d[0])]});break;case"translate":n.push({t:t[u].t,d:[{px:x.default.add(t[u].d[0].px,e[a].d[0].px)},{px:x.default.add(t[u].d[1].px,e[a].d[1].px)}]});break;case"translate3d":n.push({t:t[u].t,d:[{px:x.default.add(t[u].d[0].px,e[a].d[0].px)},{px:x.default.add(t[u].d[1].px,e[a].d[1].px)},{px:x.default.add(t[u].d[2].px,e[a].d[2].px)}]});break;case"scale":n.push({t:t[u].t,d:[t[u].d[0]*e[a].d[0],t[u].d[1]*e[a].d[1]]});break;case"scaleX":case"scaleY":case"scaleZ":n.push({t:t[u].t,d:[t[u].d[0]*e[a].d[0]]});break;case"scale3d":n.push({t:t[u].t,d:[t[u].d[0]*e[a].d[0],t[u].d[1]*e[a].d[1],t[u].d[2]*e[a].d[2]]});break;case"matrix":n.push({t:t[u].t,d:[x.default.add(t[u].d[0],e[a].d[0]),x.default.add(t[u].d[1],e[a].d[1]),x.default.add(t[u].d[2],e[a].d[2]),x.default.add(t[u].d[3],e[a].d[3]),x.default.add(t[u].d[4],e[a].d[4]),x.default.add(t[u].d[5],e[a].d[5])]});break;case"matrix3d":console.warn("TransformType sum matrix3d not supported")}a++}return n},zero:function(t){var e=[1,0,0,1,0,0];if(!t)return[{t:"matrix",d:e}];for(var n=[],r=0;r<t.length;r++)switch(O&&assert(t[r].t,"transform type should be resolved by now"),t[r].t){case"rotate":case"rotateX":case"rotateY":case"rotateZ":case"skewX":case"skewY":n.push({t:t[r].t,d:[0]});break;case"skew":n.push({t:t[r].t,d:[0,0]});break;case"translateX":case"translateY":case"translateZ":case"perspective":n.push({t:t[r].t,d:[0]});break;case"translate":n.push({t:t[r].t,d:[{px:0},{px:0}]});break;case"translate3d":n.push({t:t[r].t,d:[{px:0},{px:0},{px:0}]});break;case"scale":n.push({t:t[r].t,d:[1,1]});break;case"scaleX":case"scaleY":case"scaleZ":n.push({t:t[r].t,d:[1]});break;case"scale3d":n.push({t:t[r].t,d:[1,1,1]});break;case"matrix":n.push({t:t[r].t,d:e})}return n},subtract:function(t,e){var n=this.inverse(e),r=this.add(t,n);return r},interpolate:function(t,e,n){for(var r=[],i=0;i<Math.min(t.length,e.length)&&t[i].t===e[i].t;i++)r.push(g(t[i],e[i],n));if(i<Math.min(t.length,e.length))return r.push(h(t.slice(i),e.slice(i),n)),r;for(;i<t.length;i++)r.push(g(t[i],{t:null,d:null},n));for(;i<e.length;i++)r.push(g({t:null,d:null},e[i],n));return r},toCssValue:function(t,e){if(null===t||"undefined"==typeof t)return"";if("string"==typeof t)return t;for(var n="",r=0;r<t.length;r++)switch(O&&assert(t[r].t,"transform type should be resolved by now"),t[r].t){case"rotate":case"rotateX":case"rotateY":case"rotateZ":case"skewX":case"skewY":var i=e?"":"deg";n+=t[r].t+"("+t[r].d[0]+i+") ";break;case"skew":var i=e?"":"deg";n+=t[r].t+"("+t[r].d[0]+i,n+=0===t[r].d[1]?") ":", "+t[r].d[1]+i+") ";break;case"translateX":case"translateY":case"translateZ":case"perspective":n+=t[r].t+"("+v.default.toCssValue(t[r].d[0])+") ";break;case"translate":if(e){n+=void 0===t[r].d[1]?t[r].t+"("+t[r].d[0].px+") ":t[r].t+"("+t[r].d[0].px+", "+t[r].d[1].px+") ";break}n+=void 0===t[r].d[1]?t[r].t+"("+v.default.toCssValue(t[r].d[0])+") ":t[r].t+"("+v.default.toCssValue(t[r].d[0])+", "+v.default.toCssValue(t[r].d[1])+") ";break;case"translate3d":var o=t[r].d.map(v.default.toCssValue);n+=t[r].t+"("+o[0]+", "+o[1]+", "+o[2]+") ";break;case"scale":n+=t[r].d[0]===t[r].d[1]?t[r].t+"("+t[r].d[0]+") ":t[r].t+"("+t[r].d[0]+", "+t[r].d[1]+") ";break;case"scaleX":case"scaleY":case"scaleZ":n+=t[r].t+"("+t[r].d[0]+") ";break;case"scale3d":n+=t[r].t+"("+t[r].d[0]+", "+t[r].d[1]+", "+t[r].d[2]+") ";break;case"matrix":n+=t[r].t+"("+y(t[r].d[0])+", "+y(t[r].d[1])+", "+y(t[r].d[2])+", "+y(t[r].d[3])+", "+y(t[r].d[4])+", "+y(t[r].d[5])+") "}var a=n.substring(0,n.length-1);return a},fromCssValue:function(t){for(var e=[];"string"==typeof t&&t.length>0;){for(var n,r=0;r<H.length;r++){var i=H[r];if(n=i[0].exec(t)){e.push({t:i[2],d:i[1](n)}),t=t.substring(n[0].length);break}}if(!(0,m.isDefinedAndNotNull)(n))return e}return e}};e.default=R},function(t,e,n){function r(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(e,"__esModule",{value:!0});var i=n(0),o=n(2),a=r(o),u=(0,i.createObject)(a.default,{toString:function(){return"visibilityType"},toJSON:function(){return this.toString()},zero:function(){return"hidden"},unspecified:function(){return"visible"},add:function(t,e){return"visible"!==t&&"visible"!==e?a.default.add(t,e):"visible"},subtract:function(t,e){return"visible"===e&&"visible"===t?"hidden":t},interpolate:function(t,e,n){return"visible"!==t&&"visible"!==e?a.default.interpolate(t,e,n):n<=0?t:n>=1?e:"visible"},fromCssValue:function(t){if(["visible","hidden","collapse"].indexOf(t)!==-1)return t}});e.default=u},function(t,e,n){function r(){}Object.defineProperty(e,"__esModule",{value:!0});var i=n(6);Object.keys(i).forEach(function(t){"default"!==t&&"__esModule"!==t&&Object.defineProperty(e,t,{enumerable:!0,get:function(){return i[t]}})});var o=n(8);Object.keys(o).forEach(function(t){"default"!==t&&"__esModule"!==t&&Object.defineProperty(e,t,{enumerable:!0,get:function(){return o[t]}})});var a=n(7);Object.defineProperty(e,"typeForStyle",{enumerable:!0,get:function(){return a.typeForStyle}}),e.whyDoTheOtherExportsHaveGettersButThisDoesNot=r}])})}).call(e,n(1)(t))},function(t,e){t.exports=function(t){return t.webpackPolyfill||(t.deprecate=function(){},t.paths=[],t.children||(t.children=[]),Object.defineProperty(t,"loaded",{enumerable:!0,configurable:!1,get:function(){return t.l}}),Object.defineProperty(t,"id",{enumerable:!0,configurable:!1,get:function(){return t.i}}),t.webpackPolyfill=1),t}},function(t,e,n){"use strict";function r(t){(0,o.decorate)(this),this.display=function(){document.getElementById(t).innerHTML=t+":<br>keys&nbsp;"+JSON.stringify(Object.keys(this))+"<br>this:"+JSON.stringify(this)+"<br>this.layer:"+JSON.stringify(this.layer)+"<br>this.model:"+JSON.stringify(this.model)+"<br>this.presentation:"+JSON.stringify(this.presentation)+"<br>this.previous:"+JSON.stringify(this.previous)+"<br><br>"}}function i(t){(0,o.decorate)(this,this,{}),this.display=function(){document.getElementById(t).innerHTML=t+":<br>keys&nbsp;"+JSON.stringify(Object.keys(this))+"<br>this:"+JSON.stringify(this)+"<br>this.layer:"+JSON.stringify(this.layer)+"<br>this.model:"+JSON.stringify(this.model)+"<br>this.presentation:"+JSON.stringify(this.presentation)+"<br>this.previous:"+JSON.stringify(this.previous)+"<br><br>"}}var o=n(0);r.prototype={animationForKey:function(t,e,n,r){return 1},input:function(t,e){return e},output:function(t,e){return Math.round(e)}};var a=new r("one");a.registerAnimatableProperty("x"),a.layer.a=1,a.layer.b=2,a.layer={c:3};var u={property:"e",duration:5,from:5,to:0,onend:function(t){console.log("onend:%s; two:%s;",JSON.stringify(this),JSON.stringify(s))}};a.addAnimation(u),console.log("animations:%s;",JSON.stringify(a.animations)),i.prototype={animationForKey:function(t,e,n,r){return 1},input:function(t,e){return e},output:function(t,e){return"x"===t?Number(e).toFixed(1):e}};var s=new i("two");s.registerAnimatableProperty("x"),s.layer.a=1,s.layer.b=2,s.layer={c:3};var l={animationForKey:function(t,e,n,r){return 1},display:function(){document.getElementById("three").innerHTML="three:<br>keys&nbsp;"+JSON.stringify(Object.keys(this))+"<br>this:"+JSON.stringify(this)+"<br>this.layer:"+JSON.stringify(this.layer)+"<br>this.model:"+JSON.stringify(this.model)+"<br>this.presentation:"+JSON.stringify(this.presentation)+"<br>this.previous:"+JSON.stringify(this.previous)+"<br><br>"},input:function(t,e){return"x"===t&&e&&e.length>4&&" !!!"===e.substring(e.length-4)&&(e=Number(e.substring(0,e.length-4))),e},output:function(t,e){return"x"===t&&e?Math.round(e)+" !!!":e}};(0,o.decorate)(l),l.display(),l.registerAnimatableProperty("x"),l.layer={c:3};var f={animationForKey:function(t,e,n,r){return 1},display:function(){document.getElementById("four").innerHTML="four:<br>keys&nbsp;"+JSON.stringify(Object.keys(f))+"<br>this:"+JSON.stringify(this)+"<br>this.layer:"+JSON.stringify(this.layer)+"<br>this.model:"+JSON.stringify(this.model)+"<br>this.presentation:"+JSON.stringify(this.presentation)+"<br>this.previous:"+JSON.stringify(this.previous)+"<br><br>"}};(0,o.decorate)(f,f,{scale:1}),f.registerAnimatableProperty("x"),f.layer={c:3},f.registerAnimatableProperty("scale",{type:new o.HyperScale,duration:5}),f.layer.scale=2,document.addEventListener("mousemove",function(t){a.x=t.clientX,s.layer.x=t.clientX,l.x=t.clientX,f.layer.x=t.clientX});var c={property:"c",duration:1,from:1,to:1,blend:"absolute",additive:!1},d={property:"c",duration:1,from:1,to:1,blend:"absolute"},p={property:"d",duration:1,from:1,to:1,blend:"absolute",additive:!1},h={property:"d",duration:1,from:1,to:1,blend:"absolute"},u={property:"e",duration:1,from:1,to:1,blend:"absolute",additive:!1};document.addEventListener("mousedown",function(t){a.addAnimation(c),s.addAnimation(d),l.addAnimation(d),f.addAnimation(c),a.addAnimation(p),s.addAnimation(h),l.addAnimation(h),f.addAnimation(p),a.addAnimation(u),s.addAnimation(u),l.addAnimation(u),f.addAnimation(u)})}]);
+const rAF = typeof window !== "undefined" && (
+		window.requestAnimationFrame ||
+		window.webkitRequestAnimationFrame ||
+		window.mozRequestAnimationFrame ||
+		window.msRequestAnimationFrame ||
+		window.oRequestAnimationFrame
+	) || function(callback) { setTimeout(callback, 0); }; // node has setTimeout
+
+function isFunction$1(w) { // WET
+	return w && {}.toString.call(w) === "[object Function]";
+}
+
+let now = Date.getTime;
+if (Date.now) now = Date.now;
+if (typeof window !== "undefined" && typeof window.performance !== "undefined" && typeof window.performance.now !== "undefined") now = window.performance.now.bind(window.performance);
+
+function HyperTransaction(settings) {
+	this.time;// set in createTransaction so value is same as parent transaction and can be frozen
+	this.disableAnimation = false; // value should probably be inherited from parent transaction
+	this.duration;
+	this.easing;
+	//this.completionHandler; // would be nice
+	if (settings) Object.keys(settings).forEach( function(key) {
+		this[key] = settings[key];
+	}.bind(this));
+}
+
+function HyperContext() {
+	this.targets = [];
+	this.transactions = [];
+	this.ticking = false;
+	this.animationFrame;
+	this.displayLayers = []; // renderLayer
+	this.displayFunctions = []; // strange new implementation // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
+	this.cleanupFunctions = [];
+	this.invalidateFunctions = [];
+}
+
+HyperContext.prototype = {
+	createTransaction: function(settings,automaticallyCommit) {
+		const transaction = new HyperTransaction(settings);
+		const length = this.transactions.length;
+		let time = now() / 1000;
+		if (length) time = this.transactions[length-1].representedObject.time; // Clock stops in the outermost transaction.
+		//console.log("]]] begin transaction");
+		Object.defineProperty(transaction, "time", { // Manually set time of transaction here to be not configurable
+			get: function() {
+				return time;
+			},
+			enumerable: true,
+			configurable: false
+		});
+		this.transactions.push({ representedObject:transaction, automaticallyCommit:automaticallyCommit });
+		if (automaticallyCommit) this.startTicking(); // Automatic transactions will otherwise not be closed if there is no animation or value set.
+		return transaction;
+	},
+	currentTransaction: function() {
+		const length = this.transactions.length;
+		if (length) return this.transactions[length-1].representedObject;
+		return this.createTransaction({},true);
+	},
+	beginTransaction: function(settings) { // TODO: throw on unclosed (user created) transaction
+		return this.createTransaction(settings,false);
+	},
+	commitTransaction: function() {
+		this.transactions.pop();
+		//console.log("[[[ commit transaction");
+	},
+	flushTransaction: function() { // TODO: prevent unterminated when called within display
+		//if (this.animationFrame) cAF(this.animationFrame); // Unsure if cancelling animation frame is needed.
+		//this.ticker(); // This is completely wrong, or at least is nothing like CATransaction -(void)flush;
+		//this.displayLayers = this.displayLayers.map( function(item) { return null; });
+		this.invalidateFunctions.forEach( function(invalidate) {
+			invalidate();
+		});
+	},
+	disableAnimation: function(disable) { // If this is false, it enables animation
+		if (disable !== false) disable = true; // because the function name is misleading
+		const transaction = this.currentTransaction();
+		transaction.disableAnimation = disable;
+		this.startTicking();
+	},
+
+	registerTarget: function(target,display,invalidate,cleanup) {
+		this.startTicking();
+		const index = this.targets.indexOf(target);
+		if (index < 0) {
+			this.targets.push(target);
+			this.displayLayers.push(null); // cachedPresentationLayer
+			this.displayFunctions.push(display);
+			this.cleanupFunctions.push(cleanup);
+			this.invalidateFunctions.push(invalidate);
+		}
+	},
+
+	deregisterTarget: function(target) {
+		const index = this.targets.indexOf(target);
+		if (index > -1) {
+			this.targets.splice(index, 1);
+			this.displayLayers.splice(index, 1); // cachedPresentationLayer
+			this.displayFunctions.splice(index, 1);
+			this.cleanupFunctions.splice(index, 1);
+			this.invalidateFunctions.splice(index,1);
+		}
+	},
+
+	startTicking: function() { // TODO: consider cancelling previous animation frame.
+		if (!this.animationFrame) this.animationFrame = rAF(this.ticker.bind(this));
+	},
+	ticker: function() { // Need to manually cancel animation frame if calling directly.
+		//console.log(">>> tick");
+		this.animationFrame = undefined;
+		const targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don't think I was traversing backwards.
+		let i = targets.length;
+		while (i--) {
+			const target = targets[i];
+			const display = this.displayFunctions[i]; // strange new implementation
+			if (!target.animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
+				if (isFunction$1(display)) {
+					target.presentation;
+					display(); // new ensure one last time
+				}
+				this.invalidateFunctions[i](); // even stranger implementation
+				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
+			} else {
+				const presentationLayer = target.presentation;
+				if (this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
+					if (target.animationCount) this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
+					//display.call(target.delegate);
+					display();
+					this.invalidateFunctions[i](); // even stranger implementation
+				}
+				this.cleanupFunctions[i](); // New style cleanup in ticker.
+			}
+		}
+		//console.log("<<< tick end");
+		const length = this.transactions.length;
+		if (length) {
+			const transactionWrapper = this.transactions[length-1];
+			if (transactionWrapper.automaticallyCommit) this.commitTransaction();
+		}
+		if (this.targets.length) this.startTicking();
+	}
+};
+
+let animationNumber = 0;
+
+const wetNumberType = { // WET
+	zero: function() {
+		return 0;
+	},
+	add: function(a, b) {
+		return a + b;
+	},
+	subtract: function(a, b) {
+		return a - b;
+	},
+	interpolate: function(a, b, progress) {
+		return a + (b - a) * progress;
+	}
+};
+
+function isFunction$2(w) { // WET
+	return w && {}.toString.call(w) === "[object Function]";
+}
+
+function isNumber(w) { // WET
+	return !isNaN(parseFloat(w)) && isFinite(w); // I want infinity for repeat count. Duration for testing additive.
+}
+
+function isObject(w) {
+	return w && typeof w === "object";
+}
+
+function animationFromDescription(description) {
+	let animation;
+	if (!description) return description;
+	else if (description instanceof HyperGroup || description instanceof HyperAnimation) {
+		animation = description.copy.call(description);
+	} else if (Array.isArray(description)) {
+		animation = new HyperGroup(description);
+	} else if (isObject(description)) {
+		animation = new HyperAnimation(description);
+	} else if (isNumber(description)) animation = new HyperAnimation({duration:description});
+	else if (description === true) animation = new HyperAnimation({});
+	else throw new Error("is this an animation:"+JSON.stringify(description));
+	return animation;
+}
+
+
+
+function HyperAction() {}
+
+function HyperGroup(children) {
+	HyperAction.call(this);
+	if (!Array.isArray(children)) children = [];
+	this.group = children.map( function(animation) {
+		return animationFromDescription(animation);
+	});
+	this.sortIndex;
+	this.startTime;
+	Object.defineProperty(this, "finished", {
+		get: function() {
+			let result = true;
+			this.group.forEach( function(animation) {
+				if (!animation.finished) result = false;
+			});
+			return result;
+		},
+		enumerable: false,
+		configurable: false
+	});
+}
+
+HyperGroup.prototype = {
+	constructor: HyperGroup,
+	copy: function() {
+		return new this.constructor(this.group);
+	},
+	runAnimation: function(layer,key,transaction) {
+		this.sortIndex = animationNumber++;
+		if (this.startTime === null || typeof this.startTime === "undefined") this.startTime = transaction.time;
+		this.group.forEach( function(animation) {
+			animation.runAnimation.call(animation,layer,key,transaction);
+		});
+	},
+	composite: function(onto,now) {
+		let changed = false;
+		this.group.forEach( function(animation) {
+			changed = animation.composite.call(animation,onto,now) || changed;
+		});
+		return changed;
+	}
+};
+
+function HyperAnimation(settings) {
+	HyperAction.call(this);
+	this.property; // string, property name
+	this.from; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
+	this.to; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
+	this.type = wetNumberType; // Default
+	this.delta; // Should this be private?
+
+	this.duration; // float. In seconds. Need to validate/ensure >= 0. Initialized in runAnimation
+	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear. Initialized in runAnimation
+	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
+	this.iterations; // float >= 0. Initialized in runAnimation
+	this.autoreverse; // boolean. When iterations > 1. Easing also reversed. Maybe should be named "autoreverses", maybe should be camelCased
+	this.fillMode; // string. Defaults to "none". NOT FINISHED. "forwards" and "backwards" are "both". maybe should be named "fill". maybe should just be a boolean. // I'm unsure of the effect of combining a forward fill with additive // TODO: implement removedOnCompletion
+	this.index = 0; // float. Custom compositing order.
+	this.delay = 0; // float. In seconds. // TODO: easing should be taken in effect after the delay
+	this.blend = "relative"; // also "absolute" or "zero" // Default should be "absolute" if explicit
+	this.additive = true;
+	this.sort;
+	this.finished = false;
+	this.startTime; // float // Should this be private?
+	this.progress;//null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers. Initialized in runAnimation
+	this.onend; // NOT FINISHED. callback function, fires regardless of fillMode. Should rename. Should also implement didStart, maybe didTick, etc.
+	//this.naming; // "default","exact","increment","nil" // why not a key property?
+	this.remove = true;
+
+	if (settings) Object.keys(settings).forEach( function(key) {
+		this[key] = settings[key];
+	}.bind(this));
+}
+
+HyperAnimation.prototype = {
+	constructor: HyperAnimation,
+	copy: function() { // TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
+		const copy = new this.constructor(this.settings);
+		const keys = Object.getOwnPropertyNames(this);
+		const length = keys.length;
+		for (let i = 0; i < length; i++) {
+			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
+		}
+		return copy;
+	},
+	composite: function(onto,now) {
+		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
+		const elapsed = Math.max(0, now - (this.startTime + this.delay));
+		const speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy yet. Part of GraphicsLayer.
+		let iterationProgress = 1;
+		let combinedProgress = 1;
+		const iterationDuration = this.duration;
+		const combinedDuration = iterationDuration * this.iterations;
+		if (combinedDuration) {
+			iterationProgress = elapsed * speed / iterationDuration;
+			combinedProgress = elapsed * speed / combinedDuration;
+		}
+		if (combinedProgress >= 1) {
+			iterationProgress = 1;
+			this.finished = true;
+		}
+		let inReverse = 0; // falsy
+		if (!this.finished) {
+			if (this.autoreverse === true) inReverse = Math.floor(iterationProgress) % 2;
+			iterationProgress = iterationProgress % 1; // modulus for iterations
+		}
+		if (inReverse) iterationProgress = 1-iterationProgress; // easing is also reversed
+		if (isFunction$2(this.easing)) iterationProgress = this.easing(iterationProgress);
+		else if (this.easing === "step-start") iterationProgress = Math.ceil(iterationProgress);
+		else if (this.easing === "step-middle") iterationProgress = Math.round(iterationProgress);
+		else if (this.easing === "step-end") iterationProgress = Math.floor(iterationProgress);
+		else {
+			// TODO: match web-animations syntax
+			// TODO: refine regex, perform once in runAnimation
+			// FIXME: step-end displays twice (actually thrice). Should I just display once, not at the start?
+			const rounded = 0.5-(Math.cos(iterationProgress * Math.PI) / 2);
+			if (this.easing) {
+				const steps = /(step-start|step-middle|step-end|steps)\((\d+)\)/.exec(this.easing);
+				if (steps) {
+					const desc = steps[1];
+					const count = steps[2];
+					if (count > 0) {
+						if (desc === "step-start") iterationProgress = Math.ceil(iterationProgress * count) / count;
+						else if (desc === "step-middle") iterationProgress = Math.round(iterationProgress * count) / count;
+						else if (desc === "step-end" || desc === "steps") iterationProgress = Math.floor(iterationProgress * count) / count;
+					} else if (this.easing !== "linear") iterationProgress = rounded;
+				} else if (this.easing !== "linear") iterationProgress = rounded;
+			} else iterationProgress = rounded;
+		}
+		const value = (this.blend === "absolute") ? this.type.interpolate(this.from,this.to,iterationProgress) : this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms
+		const property = this.property;
+		if (typeof property !== "undefined" && property !== null) { // allow animating without declaring property
+			let result = value;
+			let underlying = onto[property];
+			if (typeof underlying === "undefined" || underlying === null) {
+				underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
+			}
+			if (this.additive) result = this.type.add(underlying,value);
+			if (this.sort && Array.isArray(result)) result.sort(this.sort);
+			onto[property] = result;
+		}
+		const changed = (iterationProgress !== this.progress);
+		this.progress = iterationProgress;
+
+		return changed;
+	},
+	runAnimation: function(layer,key,transaction) {
+		if (isFunction$2(this.type)) this.type = new this.type();
+		if (this.type && isFunction$2(this.type.zero) && isFunction$2(this.type.add) && isFunction$2(this.type.subtract) && isFunction$2(this.type.interpolate)) {
+			if (!this.from) this.from = this.type.zero(this.to);
+			if (!this.to) this.to = this.type.zero(this.from);
+			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
+			if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
+			if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
+			if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
+			if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
+			//this.progress = 0.0; // keep progress null so first tick is considered a change
+			this.startTime = transaction.time;
+			this.sortIndex = animationNumber++;
+		} else throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
+	}
+};
+
+const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
+const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
+
+const delegateMethods = ["display","animationForKey","input","output"]; // animationForKey // hyperAction // reaction
+const controllerMethods = ["addAnimation","animationNamed","needsDisplay","registerAnimatableProperty","removeAllAnimations", "removeAnimation"];
+const controllerProperties = ["layer","presentation","model","previous","animations","animationNames","animationCount"];
+
+const hyperContext = new HyperContext();
+
+const beginTransaction = hyperContext.beginTransaction.bind(hyperContext);
+const commitTransaction = hyperContext.commitTransaction.bind(hyperContext);
+const currentTransaction = hyperContext.currentTransaction.bind(hyperContext);
+const flushTransaction = hyperContext.flushTransaction.bind(hyperContext);
+const disableAnimation = hyperContext.disableAnimation.bind(hyperContext);
+
+function isFunction(w) { // WET
+	return w && {}.toString.call(w) === "[object Function]";
+}
+
+function prepAnimationObjectFromAddAnimation(animation, delegate) {
+	if (animation instanceof HyperGroup) { // recursive
+		animation.group.forEach( function(childAnimation) {
+			prepAnimationObjectFromAddAnimation(childAnimation, delegate);
+		});
+	} else if (animation instanceof HyperAnimation) {
+		if (delegate.typeForProperty && animation.property) {
+			const type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
+			if (type) animation.type = type;
+		}
+	} else throw new Error("not an animation");
+}
+
+function convertedKey(property,funky,self) { // DELEGATE_DOUBLE_WHAMMY // from addAnimation
+	if (isFunction(funky)) return funky.call(self,property);
+	return property;
+}
+function convertedValueOfPropertyWithFunction(value,property,funky,self) { // mutates // from register, modelLayer, and previousBacking
+	if (isFunction(funky)) return funky.call(self,property,value);
+	return value;
+}
+function convertPropertyOfLayerWithFunction(property,object,funky,self) { // mutates
+	if (object && isFunction(funky)) {
+		if (property === null || typeof property === "undefined") throw new Error("convert property undefined");
+		const value = object[property];
+		if (value !== null && typeof value !== "undefined") object[property] = funky.call(self,property,value);
+	}
+}
+function convertPropertiesOfLayerWithFunction(properties,object,funky,self) { // mutates
+	properties.forEach( function(property) {
+		if (property === null || typeof property === "undefined") throw new Error("convert properties undefined");
+		convertPropertyOfLayerWithFunction(property,object,funky,self);
+	});
+}
+function convertPropertiesOfAnimationWithFunction(properties,animation,funky,self) { // mutates // animation from, to, and delta
+	// ["from","to","delta"],animation,delegate.input
+	if (animation && isFunction(funky)) {
+		if (animation instanceof HyperGroup) { // recursive
+			animation.group.forEach( function(childAnimation) {
+				convertPropertiesOfAnimationWithFunction(properties,childAnimation,funky,self);
+			});
+		} else properties.forEach( function(item) { // HyperAnimation
+			const value = animation[item];
+			if (animation.property && value !== null && typeof value !== "undefined") animation[item] = funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
+		});
+	}
+}
+
+// function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnimations,presentationBacking) { // COMPOSITING
+// 	const presentationLayer = Object.assign({},sourceLayer); // Need to make sure display has non animated properties for example this.element
+// 	if (!sourceAnimations || !sourceAnimations.length) return presentationLayer;
+// 	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
+// 		sourceAnimations.sort( function(a,b) {
+// 			const A = a.index || 0;
+// 			const B = b.index || 0;
+// 			let result = A - B;
+// 			if (!result) result = a.startTime - b.startTime;
+// 			if (!result) result = a.sortIndex - b.sortIndex; // animation number is needed because sort is not guaranteed to be stable
+// 			return result;
+// 		});
+// 	}
+// 	let progressChanged = false;
+// 	sourceAnimations.forEach( function(animation) {
+// 		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
+// 	});
+// 	if (!progressChanged && sourceAnimations.length) {
+// 		if (presentationBacking) return presentationBacking;
+// 	}
+// 	return presentationLayer;
+// }
+function presentationTransform(presentationLayer,sourceAnimations,time,shouldSortAnimations) { // COMPOSITING
+	if (!sourceAnimations || !sourceAnimations.length) return false;
+	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
+		sourceAnimations.sort( function(a,b) {
+			const A = a.index || 0;
+			const B = b.index || 0;
+			let result = A - B;
+			if (!result) result = a.startTime - b.startTime;
+			if (!result) result = a.sortIndex - b.sortIndex; // animation number is needed because sort is not guaranteed to be stable
+			return result;
+		});
+	}
+	let progressChanged = false;
+	sourceAnimations.forEach( function(animation) {
+		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
+	});
+	return progressChanged;
+}
+
+function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimation,transaction) { // TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
+	let description;
+	//console.log("??? core implicitAnimation:%s; value:%s; previous:%s; presentation:%s;",property,prettyValue,prettyPrevious,prettyPresentation);
+	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
+	let animation = animationFromDescription(description);
+	if (!animation) animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
+	if (animation && animation instanceof HyperAnimation) {
+		if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
+		if (animation.from === null || typeof animation.from === "undefined") {
+			if (animation.blend === "absolute") animation.from = prettyPresentation;
+			else animation.from = prettyPrevious;
+		}
+		if (animation.to === null || typeof animation.to === "undefined") animation.to = prettyValue;
+		if (animation.easing === null || typeof animation.easing === "undefined") animation.easing = transaction.easing;
+		if (animation.duration === null || typeof animation.duration === "undefined") animation.duration = transaction.duration;
+		if (!animation.duration) animation.duration = 0.0;
+	}
+	return animation;
+}
+
+
+
+
+
+
+
+function activate(controller, delegate, layerInstance) {
+	if (!controller) throw new Error("Nothing to hyperactivate.");
+	if (controller.registerAnimatableProperty || controller.addAnimation) throw new Error("Already hyperactive"); // TODO: be more thorough
+	if (!delegate) delegate = controller;
+	if (!layerInstance) layerInstance = controller;
+	const allAnimations = [];
+	const allNames = [];
+	let namedAnimations = {};
+	const defaultAnimations = {};
+	let shouldSortAnimations = false;
+	const modelBacking = {};
+	const previousBacking = {}; // modelBacking and previousBacking merge like react and there is no way to delete.
+	let presentationBacking = null; // This is not nulled out anymore
+	const registeredProperties = [];
+	let activeBacking = modelBacking;
+	let presentationTime = -1;
+
+
+	function valueForKey(property) { // don't let this become re-entrant (do not animate delegate.output)
+		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyOutput,delegate);
+		const prettyValue = convertedValueOfPropertyWithFunction(activeBacking[property],property,delegate.output,delegate);
+		return prettyValue;
+	}
+
+// 	function setValueForKey(prettyValue,property) {
+// 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyInput);
+// 		const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,property,delegate.input);
+// 		if (uglyValue === modelBacking[property]) return; // No animation if no change. This filters out repeat setting of unchanging model values while animating. Function props are always not equal (if you're not careful)
+// 		const uglyPrevious = modelBacking[property];
+// 		const prettyPrevious = convertedValueOfPropertyWithFunction(uglyPrevious,property,delegate.output);
+// 		if (prettyValue === prettyPrevious) return; // No animation if no change, better version
+// 		previousBacking[property] = uglyPrevious;
+// 		const transaction = hyperContext.currentTransaction(); // Careful! This transaction might not get closed.
+// 		if (!transaction.disableAnimation) {
+// 			const presentationLayer = controller.presentation;
+// 			const prettyPresentation = presentationLayer[property];
+// 			const animation = implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[property],transaction);
+// 			if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
+// 			else controller.needsDisplay();
+// 		}
+// 		modelBacking[property] = uglyValue;
+// 	}
+// 	function setValuesOfLayer(layer) {
+// 		Object.keys(layer).forEach( function(key) {
+// 			setValueForKey(layer[key],key);
+// 		});
+// 	}
+
+	function setValueForKey(prettyValue,property) {
+		const layer = {};
+		layer[property] = prettyValue;
+		setValuesOfLayer(layer);
+	}
+	function setValuesOfLayer(layer) {
+		
+		const transaction = hyperContext.currentTransaction();
+		const presentationLayer = controller.presentation;
+		//console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
+		var result = {};
+// 		var prettyKeys = Object.keys(layer);
+// 		var index = prettyKeys.length;
+// 		while (index--) {
+// 			const prettyKey = prettyKeys[index];
+		Object.keys(layer).forEach( function(prettyKey) {
+			let uglyKey = prettyKey;
+			const prettyValue = layer[prettyKey];
+			if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey,delegate.keyInput,delegate);
+			controller.registerAnimatableProperty(uglyKey);
+			const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,prettyKey,delegate.input,delegate);
+			const uglyPrevious = modelBacking[uglyKey];
+			previousBacking[uglyKey] = uglyPrevious;
+			modelBacking[uglyKey] = uglyValue;
+			result[prettyKey] = prettyValue;
+		});
+		if (!transaction.disableAnimation) {
+			Object.keys(result).forEach( function(prettyKey) { // using result not layer because key might be different
+				let uglyKey = prettyKey;
+				if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey,delegate.keyInput,delegate);
+				const prettyValue = result[prettyKey];
+				const prettyPresentation = presentationLayer[prettyKey];
+				const prettyPrevious = convertedValueOfPropertyWithFunction(previousBacking[uglyKey],prettyKey,delegate.output,delegate);
+				const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[prettyKey],transaction);
+				if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
+				else controller.needsDisplay();
+			});
+		}// else controller.needsDisplay();
+	}
+
+	function invalidate() {
+		presentationTime = -1;
+	}
+
+	function registerWithContext() {
+		let display = function() {};
+		if (isFunction(delegate.display)) display = function() {
+			activeBacking = controller.presentation;
+			//console.log("..... display active:%s;",JSON.stringify(activeBacking));
+			delegate.display.call(delegate);
+			activeBacking = modelBacking;
+		};
+		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
+	}
+
+	function animationCleanup() { // animations contained within groups ignore remove (removedOnCompletion) and do not fire onend
+		let i = allAnimations.length;
+		const finishedWithCallback = [];
+		while (i--) {
+			const animation = allAnimations[i];
+			if (animation.finished) {
+				allAnimations.splice(i,1);
+				const name = allNames[i];
+				allNames.splice(i,1);
+				delete namedAnimations[name];
+				if (isFunction(animation.onend)) finishedWithCallback.push(animation);
+			}
+		}
+		if (!ENSURE_ONE_MORE_TICK) {
+			if (!allAnimations.length) {
+				hyperContext.deregisterTarget(controller);
+			}
+		}
+		
+// 		if (!allAnimations.length) { // this is causing problems
+// 			presentationBacking = modelBacking; // why would you do this?
+// 		}
+		finishedWithCallback.forEach( function(animation) {
+			animation.onend.call(animation,true);
+		});
+	}
+
+	function removeAnimationInstance(animation) {
+		const index = allAnimations.indexOf(animation);
+		if (index > -1) {
+			allAnimations.splice(index,1);
+			const name = allNames[index];
+			allNames.splice(index,1);
+			delete namedAnimations[name];
+			if (isFunction(animation.onend)) animation.onend.call(animation,false);
+		}
+		if (!ENSURE_ONE_MORE_TICK) {
+			if (!allAnimations.length) {
+				hyperContext.deregisterTarget(controller);
+			}
+		}
+	}
+
+	function allowable(key) {
+		return ((layerInstance !== controller || (controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0)) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0));
+	}
+
+
+	controller.registerAnimatableProperty = function(property, defaultAnimation) { // Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
+// 		if (layerInstance === delegate && delegateMethods.indexOf(property) > -1) return; // Can't animate functions that you depend on.
+// 		if (layerInstance === controller && controllerMethods.indexOf(property) > -1) return; // Can't animate functions that you depend on.
+// 		if (layerInstance === controller && controllerProperties.indexOf(property) > -1) return; // Can't animate functions that you depend on.
+		if (!allowable(property)) return;
+		let firstTime = false;
+		if (registeredProperties.indexOf(property) === -1) firstTime = true;
+		if (firstTime) registeredProperties.push(property);
+		const descriptor = Object.getOwnPropertyDescriptor(layerInstance, property);
+		//defaultAnimation = animationFromDescription(defaultAnimation); // since I can't convert I don't need to do this either, it happens when added to the receiver
+		//convertPropertiesOfAnimationWithFunction(["from","to","delta"],defaultAnimation,delegate.input); // I wish I could
+		if (defaultAnimation) defaultAnimations[property] = defaultAnimation; // maybe set to defaultValue not defaultAnimation
+		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
+		if (!descriptor || descriptor.configurable === true) {
+			const uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input,delegate);
+			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
+			if (typeof uglyValue === "undefined") modelBacking[property] = null;
+			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
+				get: function() {
+					return valueForKey(property);
+				},
+				set: function(value) {
+					setValueForKey(value,property);
+				},
+				enumerable: true,
+				configurable: true
+			});
+		}
+		if (property === "animations") throw new Error("I don't think so");
+	};
+
+	Object.defineProperty(controller, "layer", { // TODO: I don't like this. Need a merge function.
+		get: function() {
+			return layerInstance;
+		},
+		set: function(layer) {
+			if (layer) {
+				setValuesOfLayer(layer);
+				//flushTransaction();
+			}
+		},
+		enumerable: false,
+		configurable: false
+	});
+
+	Object.defineProperty(controller, "animationCount", { // Performs better than asking for animations.length, especially with delegate.input and delegate.output
+		get: function() {
+			return allAnimations.length;
+		},
+		enumerable: false,
+		configurable: false
+	});
+
+	Object.defineProperty(controller, "animations", { // TODO: cache this like presentationLayer
+		get: function() {
+			const array = allAnimations.map(function (animation) {
+				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
+				convertPropertiesOfAnimationWithFunction(["from","to","delta"],copy,delegate.output,delegate);
+				return copy;
+			});
+			return array;
+		},
+		enumerable: false,
+		configurable: false
+	});
+
+	Object.defineProperty(controller, "animationNames", {
+		get: function() {
+			return Object.keys(namedAnimations);
+		},
+		enumerable: false,
+		configurable: false
+	});
+
+	Object.defineProperty(controller, "presentation", {
+		get: function() {
+			//let verbose = true;
+			//if (Object.keys(modelBacking).indexOf("fake") > -1) verbose = true;
+			const transactionTime = hyperContext.currentTransaction().time;
+			//if (verbose) console.log("presentation time:%s; transaction time:%s;",presentationTime,transactionTime);
+			if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
+//// 			let baseLayer = {};
+//// 			if (controller !== layerInstance && delegate !== layerInstance) baseLayer = Object.assign({},layerInstance);
+
+			//const presentationLayer = Object.assign({}, layerInstance, modelBacking);
+			//const presentationLayer = Object.assign({}, layerInstance);
+			//const presentationLayer = Object.assign({}, modelBacking);
+
+// 			const prettyModel = Object.assign({},modelBacking);
+// 			convertPropertiesOfLayerWithFunction(Object.keys(prettyModel),prettyModel,delegate.output,delegate);
+
+			const presentationLayer = Object.assign(
+				Object.keys(layerInstance).reduce( function(a, b) {
+					if (allowable(b)) a[b] = layerInstance[b];
+					return a;
+				}, {}),
+				modelBacking
+			);
+
+			//if (verbose) console.log("... presentation mid:%s;",JSON.stringify(presentationLayer));
+
+// 			const presentationLayer = Object.assign({}, layerInstance, modelBacking);
+// 			//convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
+
+// 			if (!allAnimations.length) {
+// 				if (verbose) console.log("... presentation result:%s;",JSON.stringify(presentationLayer));
+// 				return presentationLayer;
+// 			}
+
+			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
+			if (allAnimations.length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
+			//if (verbose) console.log("presentation changed:%s; backing:%s;",changed,presentationBacking);
+			if (changed || presentationBacking === null) {
+				convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
+				presentationBacking = presentationLayer;
+				Object.freeze(presentationBacking);
+				//if (verbose) console.log("!!! presentation:%s; result:%s;",allAnimations.length,JSON.stringify(presentationBacking));
+				//console.log("!!! presentation:%s; result:%s;",allAnimations.length,JSON.stringify(presentationBacking));
+			}
+			presentationTime = transactionTime;
+			shouldSortAnimations = false;
+			return presentationBacking;
+		},
+		enumerable: false,
+		configurable: false
+	});
+
+// 	Object.defineProperty(controller, "model", {
+// 		get: function() {
+// 			const layer = {};
+// 			registeredProperties.forEach( function(key) {
+// 				const value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output,delegate);
+// 				Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
+// 					value: value,
+// 					enumerable: true,
+// 					configurable: false
+// 				});
+// 			});
+// 			Object.freeze(layer);
+// 			return layer;
+// 		},
+// 		enumerable: false,
+// 		configurable: false
+// 	});
+// 	Object.defineProperty(controller, "previous", {
+// 		get: function() {
+// 			const layer = Object.assign({},modelBacking);
+// 			Object.keys(previousBacking).forEach( function(key) {
+// 				const value = convertedValueOfPropertyWithFunction(previousBacking[key], key, delegate.output,delegate);
+// 				Object.defineProperty(layer, key, {
+// 					value: value,
+// 					enumerable: true,
+// 					configurable: false
+// 				});
+// 				previousBacking[key] = modelBacking[key];
+// 			});
+// 			Object.freeze(layer);
+// 			return layer;
+// 		},
+// 		enumerable: false,
+// 		configurable: false
+// 	});
+	Object.defineProperty(controller, "model", {
+		get: function() {
+			const layer = Object.assign({},layerInstance);
+			registeredProperties.forEach( function(key) {
+				const value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output,delegate);
+				Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
+					value: value,
+					enumerable: true,
+					configurable: false
+				});
+			});
+			Object.freeze(layer);
+			return layer;
+		},
+		enumerable: false,
+		configurable: false
+	});
+	Object.defineProperty(controller, "previous", {
+		get: function() {
+			const layer = Object.assign({},layerInstance);
+			registeredProperties.forEach( function(key) {
+				const value = convertedValueOfPropertyWithFunction(previousBacking[key], key, delegate.output,delegate);
+				Object.defineProperty(layer, key, {
+					value: value,
+					enumerable: true,
+					configurable: false
+				});
+				previousBacking[key] = modelBacking[key];
+			});
+			Object.freeze(layer);
+			return layer;
+		},
+		enumerable: false,
+		configurable: false
+	});
+
+	controller.needsDisplay = function() { // This should be used instead of directly calling display
+		presentationBacking = null;
+		if (!allAnimations.length) registerWithContext(); // This might not be sufficient to produce a new presentationLayer
+	};
+
+	controller.addAnimation = function(description,name) { // does not register. // should be able to pass a description if type is registered
+		const copy = animationFromDescription(description);
+		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperGroup)) throw new Error("Animations must be a Hyper.Animation or Group subclass:"+JSON.stringify(copy));
+		convertPropertiesOfAnimationWithFunction(["from","to"], copy, delegate.input,delegate); // delta is calculated from ugly values in runAnimation
+		prepAnimationObjectFromAddAnimation(copy,delegate);
+		if (!allAnimations.length) registerWithContext();
+		allAnimations.push(copy);
+		if (name !== null && typeof name !== "undefined") {
+			const previous = namedAnimations[name];
+			if (previous) removeAnimationInstance(previous); // after pushing to allAnimations, so context doesn't stop ticking
+			namedAnimations[name] = copy;
+		}
+		if (typeof name === "undefined" || name === null || name === false) allNames.push(null);
+		else allNames.push(name);
+		shouldSortAnimations = true;
+		
+		const transaction = hyperContext.currentTransaction();
+		copy.runAnimation(controller, name, transaction);
+		
+	};
+
+	controller.removeAnimation = function(name) {
+		const animation = namedAnimations[name];
+		if (animation) {
+			removeAnimationInstance(animation);
+		}
+	};
+
+	controller.removeAllAnimations = function() {
+		allAnimations.length = 0;
+		allNames.length = 0;
+		namedAnimations = {};
+		allAnimations.forEach( function(animation) {
+			if (isFunction(animation.onend)) animation.onend.call(animation,false);
+		});
+		if (!ENSURE_ONE_MORE_TICK) {
+			hyperContext.deregisterTarget(controller);
+		}
+	};
+
+	controller.animationNamed = function(name) {
+		const animation = namedAnimations[name];
+		if (animation) {
+			const copy = animation.copy.call(animation);
+			convertPropertiesOfAnimationWithFunction(["from","to","delta"],copy,delegate.output,delegate);
+			return copy;
+		}
+		return null;
+	};
+
+	Object.keys(layerInstance).forEach( function(key) { // more initialization
+		controller.registerAnimatableProperty(key);
+	});
+
+	return controller;
+}
+
+function isFunction$3(w) { // WET
+	return w && {}.toString.call(w) === "[object Function]";
+}
+
+
+function HyperScale(settings) {
+}
+HyperScale.prototype = {
+	constructor: HyperScale,
+	zero: function() {
+		return 1;
+	},
+	add: function(a,b) {
+		return a * b;
+	},
+	subtract: function(a,b) { // subtract b from a
+		if (b === 0) return 0;
+		return a/b;
+	},
+	interpolate: function(a,b,progress) {
+		return a + (b-a) * progress;
+	}
+};
+
+
+
+
+
+
+
+
+// struct convenience constructors:
+
+function One(element) {
+	activate(this);
+	this.display = function() {
+		document.getElementById(element).innerHTML = element +":<br>" +
+			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
+			"this:" + JSON.stringify(this) + "<br>" + 
+			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
+			"this.model:" + JSON.stringify(this.model) + "<br>" + 
+			"this.presentation:" + JSON.stringify(this.presentation) + "<br>" + 
+			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
+	};
+}
+One.prototype = {
+	animationForKey: function(key,value,previous,presentation) {
+		return 1.0;
+	},
+	input:function(key,value) {
+		return value;
+	},
+	output:function(key,value) {
+		return Math.round(value);
+	}
+};
+var one = new One("one");
+one.registerAnimatableProperty("x");
+one.layer["a"] = 1;
+one.layer["b"] = 2;
+one.layer = {
+	c: 3
+};
+var e = {
+	property:"e",
+	duration: 5,
+	from: 5,
+	to: 0,
+	onend: function(finished) {
+		console.log("onend:%s; two:%s;",JSON.stringify(this),JSON.stringify(two));
+	}
+};
+one.addAnimation(e);
+
+console.log("animations:%s;",JSON.stringify(one.animations));
+
+function Two(element) {
+	activate(this,this,{});
+	this.display = function() {
+		document.getElementById(element).innerHTML = element+":" + "<br>" + 
+			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
+			"this:" + JSON.stringify(this) + "<br>" + 
+			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
+			"this.model:" + JSON.stringify(this.model) + "<br>" + 
+			"this.presentation:" + JSON.stringify(this.presentation) + "<br>" + 
+			"this.previous:" + JSON.stringify(this.previous) + "<br><br>";
+	};
+}
+Two.prototype = {
+	animationForKey: function(key,value,previous,presentation) {
+		return 1.0;
+	},
+	input:function(key,value) {
+		return value;
+	},
+	output:function(key,value) {
+		if (key === "x") return Number(value).toFixed(1);
+		return value;
+	}
+};
+var two = new Two("two");
+two.registerAnimatableProperty("x");
+two.layer["a"] = 1;
+two.layer["b"] = 2;
+two.layer = {
+	c: 3
+};
+
+var three = {
+	animationForKey: function(key,value,previous,presentation) {
+		return 1.0;
+	},
+	display:function() {
+		document.getElementById("three").innerHTML = "three:<br>" +
+			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
+			"this:" + JSON.stringify(this) + "<br>" + 
+			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
+			"this.model:" + JSON.stringify(this.model) + "<br>" + 
+			"this.presentation:" + JSON.stringify(this.presentation) + "<br>" + 
+			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
+	},
+	input:function(key,value) {
+		if (key === "x" && value && value.length > 4 && value.substring(value.length-4) === " !!!") value = Number(value.substring(0, value.length-4));
+		return value;
+	},
+	output:function(key,value) {
+		if (key === "x" && value) return Math.round(value) + " !!!";
+		return value;
+	}
+};
+activate(three);
+three.display();
+three.registerAnimatableProperty("x");
+three.layer = {
+	c: 3
+};
+
+var four = {
+	animationForKey: function(key,value,previous,presentation) {
+		return 1.0;
+	},
+	display:function() {
+		document.getElementById("four").innerHTML = "four:<br>" +
+			"keys&nbsp;" + JSON.stringify(Object.keys(four)) + "<br>" + 
+			"this:" + JSON.stringify(this) + "<br>" + 
+			"this.layer:" + JSON.stringify(this.layer) + "<br>" + 
+			"this.model:" + JSON.stringify(this.model) + "<br>" + 
+			"this.presentation:" + JSON.stringify(this.presentation) + "<br>" + 
+			"this.previous:" + JSON.stringify(this.previous)+ "<br><br>";
+	}
+};
+
+activate(four,four,{scale:1});
+four.registerAnimatableProperty("x");
+four.layer = {
+	c: 3
+};
+four.registerAnimatableProperty("scale", {
+	type: new HyperScale(),
+	duration: 5.0
+});
+four.layer.scale = 2;
+
+document.addEventListener("mousemove",function(e) {
+	one.x = e.clientX;
+	two.layer.x = e.clientX;
+	three.x = e.clientX;
+	four.layer.x = e.clientX;
+});
+
+var c = {
+	property: "c",
+	duration:1.0,
+	from:1,
+	to:1,
+	blend:"absolute",
+	additive:false
+};
+var cc = {
+	property: "c",
+	duration:1.0,
+	from:1,
+	to:1,
+	blend:"absolute"
+};
+var d = {
+	property: "d",
+	duration:1.0,
+	from:1,
+	to:1,
+	blend:"absolute",
+	additive:false
+};
+var dd = {
+	property: "d",
+	duration:1.0,
+	from:1,
+	to:1,
+	blend:"absolute"
+};
+var e = {
+	property: "e",
+	duration:1.0,
+	from:1,
+	to:1,
+	blend:"absolute",
+	additive:false
+};
+
+document.addEventListener("mousedown",function(event) {
+	one.addAnimation(c);
+	two.addAnimation(cc);
+	three.addAnimation(cc);
+	four.addAnimation(c);
+
+	one.addAnimation(d);
+	two.addAnimation(dd);
+	three.addAnimation(dd);
+	four.addAnimation(d);
+
+	one.addAnimation(e);
+	two.addAnimation(e);
+	three.addAnimation(e);
+	four.addAnimation(e);
+});

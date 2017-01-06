@@ -1,11 +1,11 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-import lengthType from "./length.js";
+import { lengthType } from "./length.js";
 
 var rectangleRE = /rect\(([^,]+),([^,]+),([^,]+),([^)]+)\)/;
 
-const rectangleType = {
+export const rectangleType = {
 
 	toString: function() {
 		return "rectangleType";
@@ -19,7 +19,7 @@ const rectangleType = {
 			right: lengthType.inverse(value.right),
 			bottom: lengthType.inverse(value.bottom),
 			left: lengthType.inverse(value.left)
-		}
+		};
 	},
 	zero: function() { return {top:0, right:0, bottom:0, left:0};},// KxDx
 	add: function(base, delta) {
@@ -41,23 +41,23 @@ const rectangleType = {
 			left: lengthType.interpolate(from.left, to.left, f)
 		};
 	},
-	toCssValue: function(value) {
-		return 'rect(' +
-				lengthType.toCssValue(value.top) + ',' +
-				lengthType.toCssValue(value.right) + ',' +
-				lengthType.toCssValue(value.bottom) + ',' +
-				lengthType.toCssValue(value.left) + ')';
+	output: function(value) {
+		return "rect(" +
+				lengthType.output(value.top) + "," +
+				lengthType.output(value.right) + "," +
+				lengthType.output(value.bottom) + "," +
+				lengthType.output(value.left) + ")";
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		var match = rectangleRE.exec(value);
 		if (!match) {
 			return undefined;
 		}
 		var out = {
-			top: lengthType.fromCssValue(match[1]),
-			right: lengthType.fromCssValue(match[2]),
-			bottom: lengthType.fromCssValue(match[3]),
-			left: lengthType.fromCssValue(match[4])
+			top: lengthType.input(match[1]),
+			right: lengthType.input(match[2]),
+			bottom: lengthType.input(match[3]),
+			left: lengthType.input(match[4])
 		};
 		if (out.top && out.right && out.bottom && out.left) {
 			return out;
@@ -65,4 +65,3 @@ const rectangleType = {
 		return undefined;
 	}
 };
-export default rectangleType;

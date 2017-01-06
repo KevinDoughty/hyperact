@@ -2,9 +2,9 @@
 // https://github.com/web-animations/web-animations-js-legacy
 
 import { createObject } from "./shared.js";
-import nonNumericType from "./nonNumeric.js";
+import { nonNumericType } from "./nonNumeric.js";
 
-const visibilityType = createObject(nonNumericType, {
+export const visibilityType = createObject(nonNumericType, {
 	toString: function() {
 		return "visibilityType";
 	},
@@ -18,7 +18,7 @@ const visibilityType = createObject(nonNumericType, {
 		return "visible";
 	},
 	add: function(a,b) {
-		if (a !== 'visible' && b !== 'visible') {
+		if (a !== "visible" && b !== "visible") {
 			return nonNumericType.add(a,b);
 		}
 		return "visible";
@@ -28,7 +28,7 @@ const visibilityType = createObject(nonNumericType, {
 		return a;
 	},
 	interpolate: function(from, to, f) {
-		if (from !== 'visible' && to !== 'visible') {
+		if (from !== "visible" && to !== "visible") {
 			return nonNumericType.interpolate(from, to, f);
 		}
 		if (f <= 0) {
@@ -37,13 +37,12 @@ const visibilityType = createObject(nonNumericType, {
 		if (f >= 1) {
 			return to;
 		}
-		return 'visible';
+		return "visible";
 	},
-	fromCssValue: function(value) {
-		if (['visible', 'hidden', 'collapse'].indexOf(value) !== -1) {
+	input: function(value) {
+		if (["visible", "hidden", "collapse"].indexOf(value) !== -1) {
 			return value;
 		}
 		return undefined;
 	}
 });
-export default visibilityType;

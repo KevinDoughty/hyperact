@@ -1,7 +1,7 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-import { interp, detectFeatures, isDefinedAndNotNull } from "./shared.js";
+import { interp, detectFeatures, isDefinedAndNotNull, typeWithKeywords } from "./shared.js";
 
 var features;
 
@@ -9,13 +9,13 @@ var features;
 // platform-prefixed versions of calc will still be accepted as
 // input. While we are restrictive with the transform property
 // name, we need to be able to read underlying calc values from
-// computedStyle so can't easily restrict the input here.
+// computedStyle so can"t easily restrict the input here.
 var outerCalcRE = /^\s*(-webkit-)?calc\s*\(\s*([^)]*)\)/;
 var valueRE = /^\s*(-?[0-9]+(\.[0-9])?[0-9]*)([a-zA-Z%]*)/;
 var operatorRE = /^\s*([+-])/;
 var autoRE = /^\s*auto/i;
 
-const lengthType = {
+export const lengthType = {
 	toString: function() {
 		return "lengthType";
 	},
@@ -27,16 +27,16 @@ const lengthType = {
 	},
 	add: function(base, delta) {
 		if (delta === null || delta === undefined) {
-			delta = {}; // bug fix / hack. transformType does this too. So should the rest. If element is removed from dom, CompositedPropertyMap can't applyAnimatedValues when additive. Lack of a transform also has this problem
+			delta = {}; // bug fix / hack. transformType does this too. So should the rest. If element is removed from dom, CompositedPropertyMap can"t applyAnimatedValues when additive. Lack of a transform also has this problem
 		}
 		if (base === null || base === undefined) {
-			base = {}; // bug fix / hack. transformType does this too. So should the rest. If element is removed from dom, CompositedPropertyMap can't applyAnimatedValues when additive. Lack of a transform also has this problem
+			base = {}; // bug fix / hack. transformType does this too. So should the rest. If element is removed from dom, CompositedPropertyMap can"t applyAnimatedValues when additive. Lack of a transform also has this problem
 		}
 		var out = {};
-		for (var value in base) {
+		for (let value in base) {
 			out[value] = base[value] + (delta[value] || 0);
 		}
-		for (value in delta) {
+		for (let value in delta) {
 			if (value in base) {
 				continue;
 			}
@@ -51,10 +51,10 @@ const lengthType = {
 	},
 	interpolate: function(from, to, f) {
 		var out = {};
-		for (var value in from) {
+		for (let value in from) {
 			out[value] = interp(from[value], to[value], f);
 		}
-		for (var value in to) {
+		for (let value in to) {
 			if (value in out) {
 				continue;
 			}
@@ -62,26 +62,26 @@ const lengthType = {
 		}
 		return out;
 	},
-	toCssValue: function(value) {
+	output: function(value) {
 		if (!features) features = detectFeatures(); // !!!
-		var s = '';
+		var s = "";
 		var singleValue = true;
-		for (var item in value) {
-			if (s === '') {
+		for (let item in value) {
+			if (s === "") {
 				s = value[item] + item;
 			} else if (singleValue) {
 				if (value[item] !== 0) {
 					s = features.calcFunction +
-							'(' + s + ' + ' + value[item] + item + ')';
+							"(" + s + " + " + value[item] + item + ")";
 					singleValue = false;
 				}
 			} else if (value[item] !== 0) {
-				s = s.substring(0, s.length - 1) + ' + ' + value[item] + item + ')';
+				s = s.substring(0, s.length - 1) + " + " + value[item] + item + ")";
 			}
 		}
 		return s;
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		var result = lengthType.consumeValueFromString(value);
 		if (result) {
 			return result.value;
@@ -124,7 +124,7 @@ const lengthType = {
 				if (!op) {
 					return undefined;
 				}
-				if (op[1] === '-') {
+				if (op[1] === "-") {
 					reversed = true;
 				}
 				calcInnards = calcInnards.substring(op[0].length);
@@ -154,10 +154,11 @@ const lengthType = {
 	},
 	inverse: function(value) {
 		var out = {};
-		for (var unit in value) {
+		for (let unit in value) {
 			out[unit] = -value[unit];
 		}
 		return out;
 	}
 };
-export default lengthType;
+
+export const lengthAutoType = typeWithKeywords(["auto"], lengthType);

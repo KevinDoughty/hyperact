@@ -1,19 +1,19 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-import { clamp, interp, isDefinedAndNotNull, typeWithKeywords } from "./shared.js";
+import { clamp, interp, typeWithKeywords } from "./shared.js";
 
 var colorRE = new RegExp(
-	'(hsla?|rgba?)\\(' +
-	'([\\-0-9]+%?),?\\s*' +
-	'([\\-0-9]+%?),?\\s*' +
-	'([\\-0-9]+%?)(?:,?\\s*([\\-0-9\\.]+%?))?' +
-	'\\)'
+	"(hsla?|rgba?)\\(" +
+	"([\\-0-9]+%?),?\\s*" +
+	"([\\-0-9]+%?),?\\s*" +
+	"([\\-0-9]+%?)(?:,?\\s*([\\-0-9\\.]+%?))?" +
+	"\\)"
 );
 var colorHashRE = new RegExp(
-	'#([0-9A-Fa-f][0-9A-Fa-f]?)' +
-	'([0-9A-Fa-f][0-9A-Fa-f]?)' +
-	'([0-9A-Fa-f][0-9A-Fa-f]?)'
+	"#([0-9A-Fa-f][0-9A-Fa-f]?)" +
+	"([0-9A-Fa-f][0-9A-Fa-f]?)" +
+	"([0-9A-Fa-f][0-9A-Fa-f]?)"
 );
 
 function hsl2rgb(h, s, l) {
@@ -207,7 +207,7 @@ var namedColors = {
 
 
 
-var colorType = typeWithKeywords(['currentColor'], {
+export const colorType = typeWithKeywords(["currentColor"], {
 	inverse: function(value) { // KxDx
 		return this.subtract(value,[255,255,255,1]);
 	},
@@ -223,14 +223,16 @@ var colorType = typeWithKeywords(['currentColor'], {
 		}
 		base = this._premultiply(base);
 		delta = this._premultiply(delta);
-		return [(base[0] + delta[0]) / alpha, (base[1] + delta[1]) / alpha,
-						(base[2] + delta[2]) / alpha, alpha];
+		return [(base[0] + delta[0]) / alpha, (base[1] + delta[1]) / alpha, (base[2] + delta[2]) / alpha, alpha];
 	},
 	subtract: function(base,delta) {
+		var alpha = Math.min(base[3] + delta[3], 1);
+		if (alpha === 0) {
+			return [0, 0, 0, 0];
+		}
 		base = this._premultiply(base);
 		delta = this._premultiply(delta);
-		return [(base[0] - delta[0]) / alpha, (base[1] - delta[1]) / alpha,
-						(base[2] - delta[2]) / alpha, alpha];
+		return [(base[0] - delta[0]) / alpha, (base[1] - delta[1]) / alpha, (base[2] - delta[2]) / alpha, alpha];
 	},
 	interpolate: function(from, to, f) {
 		var alpha = clamp(interp(from[3], to[3], f), 0, 1);
@@ -239,30 +241,26 @@ var colorType = typeWithKeywords(['currentColor'], {
 		}
 		from = this._premultiply(from);
 		to = this._premultiply(to);
-		return [interp(from[0], to[0], f) / alpha,
-						interp(from[1], to[1], f) / alpha,
-						interp(from[2], to[2], f) / alpha, alpha];
+		return [interp(from[0], to[0], f) / alpha, interp(from[1], to[1], f) / alpha, interp(from[2], to[2], f) / alpha, alpha];
 	},
-	toCssValue: function(value) {
-		return 'rgba(' + Math.round(value[0]) + ', ' + Math.round(value[1]) +
-				', ' + Math.round(value[2]) + ', ' + value[3] + ')';
+	output: function(value) {
+		return "rgba(" + Math.round(value[0]) + ", " + Math.round(value[1]) + ", " + Math.round(value[2]) + ", " + value[3] + ")";
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		// http://dev.w3.org/csswg/css-color/#color
 		var out = [];
 
-		var regexResult = colorHashRE.exec(value);
-		if (regexResult) {
+		var regexHashResult = colorHashRE.exec(value);
+		if (regexHashResult) {
 			if (value.length !== 4 && value.length !== 7) {
 				return undefined;
 			}
-			var out = [];
-			regexResult.shift();
-			for (var i = 0; i < 3; i++) {
-				if (regexResult[i].length === 1) {
-					regexResult[i] = regexResult[i] + regexResult[i];
+			regexHashResult.shift();
+			for (let i = 0; i < 3; i++) {
+				if (regexHashResult[i].length === 1) {
+					regexHashResult[i] = regexHashResult[i] + regexHashResult[i];
 				}
-				var v = Math.max(Math.min(parseInt(regexResult[i], 16), 255), 0);
+				var v = Math.max(Math.min(parseInt(regexHashResult[i], 16), 255), 0);
 				out[i] = v;
 			}
 			out.push(1.0);
@@ -272,13 +270,13 @@ var colorType = typeWithKeywords(['currentColor'], {
 		if (regexResult) {
 			regexResult.shift();
 			var type = regexResult.shift().substr(0, 3);
-			for (var i = 0; i < 3; i++) {
+			for (let i = 0; i < 3; i++) {
 				var m = 1;
-				if (regexResult[i][regexResult[i].length - 1] === '%') {
+				if (regexResult[i][regexResult[i].length - 1] === "%") {
 					regexResult[i] = regexResult[i].substr(0, regexResult[i].length - 1);
 					m = 255.0 / 100.0;
 				}
-				if (type === 'rgb') {
+				if (type === "rgb") {
 					out[i] = clamp(Math.round(parseInt(regexResult[i], 10) * m), 0, 255);
 				} else {
 					out[i] = parseInt(regexResult[i], 10);
@@ -286,11 +284,11 @@ var colorType = typeWithKeywords(['currentColor'], {
 			}
 
 			// Convert hsl values to rgb value
-			if (type === 'hsl') {
+			if (type === "hsl") {
 				out = hsl2rgb.apply(null, out);
 			}
 
-			if (typeof regexResult[3] !== 'undefined') {
+			if (typeof regexResult[3] !== "undefined") {
 				out[3] = Math.max(Math.min(parseFloat(regexResult[3]), 1.0), 0.0);
 			} else {
 				out.push(1.0);
@@ -306,4 +304,3 @@ var colorType = typeWithKeywords(['currentColor'], {
 		return namedColors[value];
 	}
 });
-export default colorType;

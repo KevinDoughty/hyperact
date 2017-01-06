@@ -1,11 +1,12 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-import lengthType from "./length.js";
+import { isDefinedAndNotNull } from "./shared.js";
+import { lengthType } from "./length.js";
 
 var positionKeywordRE = /^\s*left|^\s*center|^\s*right|^\s*top|^\s*bottom/i;
 
-const positionType = {
+export const positionType = {
 	toString: function() {
 		return "positionType";
 	},
@@ -34,10 +35,10 @@ const positionType = {
 			lengthType.interpolate(from[1], to[1], f)
 		];
 	},
-	toCssValue: function(value) {
-		return value.map(lengthType.toCssValue).join(' ');
+	output: function(value) {
+		return value.map(lengthType.output).join(" ");
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		var tokens = [];
 		var remaining = value;
 		while (true) {
@@ -56,14 +57,11 @@ const positionType = {
 		}
 
 		if (tokens.length === 1) {
-			var token = tokens[0];
-			return (positionType.isHorizontalToken(token) ?
-					[token, 'center'] : ['center', token]).map(positionType.resolveToken);
+			let token = tokens[0];
+			return (positionType.isHorizontalToken(token) ? [token, "center"] : ["center", token]).map(positionType.resolveToken);
 		}
 
-		if (tokens.length === 2 &&
-				positionType.isHorizontalToken(tokens[0]) &&
-				positionType.isVerticalToken(tokens[1])) {
+		if (tokens.length === 2 && positionType.isHorizontalToken(tokens[0]) && positionType.isVerticalToken(tokens[1])) {
 			return tokens.map(positionType.resolveToken);
 		}
 
@@ -74,11 +72,11 @@ const positionType = {
 		var out = [undefined, undefined];
 		var center = false;
 		for (var i = 0; i < tokens.length; i++) {
-			var token = tokens[i];
+			let token = tokens[i];
 			if (!positionType.isKeyword(token)) {
 				return undefined;
 			}
-			if (token === 'center') {
+			if (token === "center") {
 				if (center) {
 					return undefined;
 				}
@@ -94,17 +92,17 @@ const positionType = {
 				continue;
 			}
 			var percentLength = tokens[++i];
-			if (token === 'bottom' || token === 'right') {
+			if (token === "bottom" || token === "right") {
 				percentLength = lengthType.inverse(percentLength);
-				percentLength['%'] = (percentLength['%'] || 0) + 100;
+				percentLength["%"] = (percentLength["%"] || 0) + 100;
 			}
 			out[axis] = percentLength;
 		}
 		if (center) {
 			if (!out[0]) {
-				out[0] = positionType.resolveToken('center');
+				out[0] = positionType.resolveToken("center");
 			} else if (!out[1]) {
-				out[1] = positionType.resolveToken('center');
+				out[1] = positionType.resolveToken("center");
 			} else {
 				return undefined;
 			}
@@ -122,31 +120,30 @@ const positionType = {
 		return lengthType.consumeValueFromString(value);
 	},
 	resolveToken: function(token) {
-		if (typeof token === 'string') {
-			return lengthType.fromCssValue({
-				left: '0%',
-				center: '50%',
-				right: '100%',
-				top: '0%',
-				bottom: '100%'
+		if (typeof token === "string") {
+			return lengthType.input({
+				left: "0%",
+				center: "50%",
+				right: "100%",
+				top: "0%",
+				bottom: "100%"
 			}[token]);
 		}
 		return token;
 	},
 	isHorizontalToken: function(token) {
-		if (typeof token === 'string') {
+		if (typeof token === "string") {
 			return token in { left: true, center: true, right: true };
 		}
 		return true;
 	},
 	isVerticalToken: function(token) {
-		if (typeof token === 'string') {
+		if (typeof token === "string") {
 			return token in { top: true, center: true, bottom: true };
 		}
 		return true;
 	},
 	isKeyword: function(token) {
-		return typeof token === 'string';
+		return typeof token === "string";
 	}
 };
-export default positionType;

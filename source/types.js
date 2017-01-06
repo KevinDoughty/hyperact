@@ -177,16 +177,16 @@ export function HyperPoint(settings) {
 HyperPoint.prototype = {
 	constructor: HyperPoint,
 	zero: function() {
-		return HyperZeroPoint();
+		return hyperZeroPoint();
 	},
 	add: function(a,b) {
-		return HyperMakePoint(a.x + b.x, a.y + b.y);
+		return hyperMakePoint(a.x + b.x, a.y + b.y);
 	},
 	subtract: function(a,b) { // subtract b from a
-		return HyperMakePoint(a.x - b.x, a.y - b.y);
+		return hyperMakePoint(a.x - b.x, a.y - b.y);
 	},
 	interpolate: function(a,b,progress) {
-		return HyperMakePoint(a.x + (b.x-a.x) * progress, a.y + (b.y-a.y) * progress);
+		return hyperMakePoint(a.x + (b.x-a.x) * progress, a.y + (b.y-a.y) * progress);
 	}
 };
 
@@ -195,16 +195,16 @@ export function HyperSize(settings) {
 HyperSize.prototype = {
 	constructor: HyperSize,
 	zero: function() {
-		return HyperZeroSize();
+		return hyperZeroSize();
 	},
 	add: function(a,b) {
-		return HyperMakeSize(a.width + b.width, a.height + b.height);
+		return hyperMakeSize(a.width + b.width, a.height + b.height);
 	},
 	subtract: function(a,b) { // subtract b from a
-		return HyperMakeSize(a.width - b.width, a.height - b.height);
+		return hyperMakeSize(a.width - b.width, a.height - b.height);
 	},
 	interpolate: function(a,b,progress) {
-		return HyperMakeSize(a.width + (b.width-a.width) * progress, a.height + (b.height-a.height) * progress);
+		return hyperMakeSize(a.width + (b.width-a.width) * progress, a.height + (b.height-a.height) * progress);
 	}
 };
 
@@ -213,7 +213,7 @@ export function HyperRect(settings) {
 HyperRect.prototype = {
 	constructor: HyperRect,
 	zero: function() {
-		return HyperZeroRect();
+		return hyperZeroRect();
 	},
 	add: function(a,b) {
 		return {
@@ -241,27 +241,27 @@ export function HyperRange(settings) { // TODO: negative values? // This should 
 HyperRange.prototype = {
 	constructor: HyperRange,
 	zero: function() {
-		return HyperNullRange();
+		return hyperNullRange();
 	},
 	add: function(a,b) { // union?
-		if (a.location === HyperNotFound && b.location === HyperNotFound) return HyperNullRange();
-		if (a.length === 0 && b.length === 0) return HyperNullRange();
-		if (a.location === HyperNotFound || a.length === 0) return b;
-		if (b.location === HyperNotFound || b.length === 0) return a;
+		if (a.location === hyperNotFound && b.location === hyperNotFound) return hyperNullRange();
+		if (a.length === 0 && b.length === 0) return hyperNullRange();
+		if (a.location === hyperNotFound || a.length === 0) return b;
+		if (b.location === hyperNotFound || b.length === 0) return a;
 		const finalLocation = Math.min( a.location, b.location );
 		const finalEnd = Math.max( a.location + a.length, b.location + b.length );
-		const result = HyperMakeRange(finalLocation, finalEnd - finalLocation );
+		const result = hyperMakeRange(finalLocation, finalEnd - finalLocation );
 		return result;
 	},
 	subtract: function(a,b) { // Subtraction is completely different.
 		let result = a;
-		if (a.location === HyperNotFound && b.location === HyperNotFound) result = HyperNullRange();
-		else if (a.length === 0 && b.length === 0) result = HyperNullRange();
-		else if (a.location === HyperNotFound || a.length === 0) result = HyperNullRange();
-		else if (b.location === HyperNotFound || b.length === 0) result = a;
-		else if (b.location <= a.location && b.location + b.length >= a.location + a.length) result = HyperNullRange();
-		else if (b.location <= a.location && b.location + b.length > a.location && b.location + b.length < a.location + a.length) result = HyperMakeRange(b.location + b.length, (a.location + a.length) - (b.location + b.length));
-		else if (b.location > a.location && b.location < a.location + a.length && b.location + b.length >= a.location + a.length) result = HyperMakeRange(a.location, (b.location + b.length) - a.location);
+		if (a.location === hyperNotFound && b.location === hyperNotFound) result = hyperNullRange();
+		else if (a.length === 0 && b.length === 0) result = hyperNullRange();
+		else if (a.location === hyperNotFound || a.length === 0) result = hyperNullRange();
+		else if (b.location === hyperNotFound || b.length === 0) result = a;
+		else if (b.location <= a.location && b.location + b.length >= a.location + a.length) result = hyperNullRange();
+		else if (b.location <= a.location && b.location + b.length > a.location && b.location + b.length < a.location + a.length) result = hyperMakeRange(b.location + b.length, (a.location + a.length) - (b.location + b.length));
+		else if (b.location > a.location && b.location < a.location + a.length && b.location + b.length >= a.location + a.length) result = hyperMakeRange(a.location, (b.location + b.length) - a.location);
 		return result;
 	},
 	interpolate: function(a,b,progress) {
@@ -269,75 +269,75 @@ HyperRange.prototype = {
 		return a;
 	},
 	intersection: function(a,b) { // 0,1 and 1,1 do not intersect
-		if (a.location === HyperNotFound || b.location === HyperNotFound || a.length === 0 || b.length === 0) return HyperNullRange();
-		if (a.location + a.length <= b.location || b.location + b.length <= a.location) return HyperNullRange(); // TODO: Consider location should be NSNotFound (INT_MAX) not zero.
+		if (a.location === hyperNotFound || b.location === hyperNotFound || a.length === 0 || b.length === 0) return hyperNullRange();
+		if (a.location + a.length <= b.location || b.location + b.length <= a.location) return hyperNullRange(); // TODO: Consider location should be NSNotFound (INT_MAX) not zero.
 		const finalLocation = Math.max( a.location, b.location );
 		const finalEnd = Math.min( a.location + a.length, b.location + b.length );
-		return HyperMakeRange(finalLocation, finalEnd - finalLocation);
+		return hyperMakeRange(finalLocation, finalEnd - finalLocation);
 	}
 };
 
-export const HyperNotFound = Number.MAX_VALUE;
+export const hyperNotFound = Number.MAX_VALUE;
 // struct convenience constructors:
-export function HyperMakeRect(x,y,width,height) {
+export function hyperMakeRect(x,y,width,height) {
 	return {
-		origin: HyperMakePoint(x,y),
-		size: HyperMakeSize(width,height)
+		origin: hyperMakePoint(x,y),
+		size: hyperMakeSize(width,height)
 	};
 }
-export function HyperZeroRect() {
-	return HyperMakeRect(0,0,0,0);
+export function hyperZeroRect() {
+	return hyperMakeRect(0,0,0,0);
 }
-export function HyperEqualRects(a,b) {
-	return (HyperEqualPoints(a.origin,b.origin) && HyperEqualSizes(a.size,b.size));
+export function hyperEqualRects(a,b) {
+	return (hyperEqualPoints(a.origin,b.origin) && hyperEqualSizes(a.size,b.size));
 }
 
-export function HyperMakePoint(x,y) {
+export function hyperMakePoint(x,y) {
 	return {
 		x: x,
 		y: y
 	};
 }
-export function HyperZeroPoint() {
-	return HyperMakePoint(0,0);
+export function hyperZeroPoint() {
+	return hyperMakePoint(0,0);
 }
-export function HyperEqualPoints(a,b) {
+export function hyperEqualPoints(a,b) {
 	return (a.x === b.x && a.y === b.y);
 }
 
-export function HyperMakeSize(width, height) {
+export function hyperMakeSize(width, height) {
 	return {
 		width: width,
 		height: height
 	};
 }
-export function HyperZeroSize() {
-	return HyperMakeSize(0,0);
+export function hyperZeroSize() {
+	return hyperMakeSize(0,0);
 }
-export function HyperEqualSizes(a,b) {
+export function hyperEqualSizes(a,b) {
 	return (a.width === b.width && a.height && b.height);
 }
 
-export function HyperMakeRange(location, length) {
+export function hyperMakeRange(location, length) {
 	return {
 		location: location,
 		length: length
 	};
 }
-export function HyperZeroRange() {
-	return HyperMakeRange(0,0);
+export function hyperZeroRange() {
+	return hyperMakeRange(0,0);
 }
-export function HyperNullRange() {
-	return HyperMakeRange(HyperNotFound,0);
+export function hyperNullRange() {
+	return hyperMakeRange(hyperNotFound,0);
 }
-export function HyperIndexInRange(index,range) {
+export function hyperIndexInRange(index,range) {
 	return (index > range.location && index < range.location + range.length);
 }
-export function HyperEqualRanges(a,b) {
+export function hyperEqualRanges(a,b) {
 	return (a.location === b.location && a.length === b.length);
 }
-export function HyperIntersectionRange(a,b) {
-	if (a.location + a.length <= b.location || b.location + b.length <= a.location) return HyperNullRange();
+export function hyperIntersectionRange(a,b) {
+	if (a.location + a.length <= b.location || b.location + b.length <= a.location) return hyperNullRange();
 	const location = Math.max( a.location, b.location );
 	const end = Math.min( a.location + a.length, b.location + b.length );
 	return { location: location, length: end - location };

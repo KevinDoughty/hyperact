@@ -4,25 +4,20 @@
 	"globals": {
 		"document": true,
 		"window": true,
-		"setTimeout": true
+		"setTimeout": true,
+		"console": true
 	},
 	"rules": {
-		// enable additional rules
-		"indent": ["error", "tab"],
+		"indent": ["error", "tab", { "SwitchCase": 1 }],
 		"linebreak-style": ["error", "unix"],
 		"quotes": ["error", "double"],
 		"semi": ["error", "always"],
-
-		// override default options for rules from base configurations
 		"comma-dangle": ["error", "never"],
-		"no-cond-assign": ["error", "always"],
-
-		// disable rules from base configurations
+		"no-cond-assign": ["error", "except-parens"],
 		"no-console": "off",
-		
 		"no-unused-vars": ["error", {"args": "none"}],
 		"eqeqeq": 2,
-		
 		"no-trailing-spaces": [2, { "skipBlankLines": true }],
+		"no-constant-condition": ["error", { "checkLoops": false }]
 	}
 }

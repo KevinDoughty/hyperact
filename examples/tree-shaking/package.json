@@ -1,21 +1,20 @@
 {
   "name": "tree-shaking",
   "version": "0.0.1",
-  "description": "A failed attempt at tree-shaking",
+  "description": "Tree-shaking in all its glory",
   "main": "bundle.js",
   "scripts": {
-    "build": "WEBPACK_ENV=build webpack --optimize-minimize",
-    "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch --optimize-minimize",
+    "build": "./node_modules/.bin/rollup index.js --format es --output bundle.js",
+    "dev": "./node_modules/.bin/rollup index.js --format es --output bundle.js -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Kevin Doughty",
   "license": "Apache-2.0",
   "devDependencies": {
-    "webpack": "^2.1.0-beta.28",
-    "webpack-dev-server": "^2.2.0-rc.0",
-    "babel-core": "^6.21.0",
-    "babel-polyfill": "^6.20.0",
-    "babel-preset-es2015": "^6.18.0",
-    "babel-loader": "^6.2.10"
+    "babel-plugin-external-helpers": "^6.18.0",
+    "babel-preset-es2015-rollup": "^3.0.0",
+    "rollup": "^0.39.2",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-watch": "^3.1.0"
   }
 }

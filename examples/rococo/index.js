@@ -1,4 +1,4 @@
-import { decorate, disableAnimation, HyperArray, HyperNumber } from "../../hyperact.js";
+import { activate, disableAnimation, HyperArray, HyperNumber } from "../../hyperact.js";
 
 function elastic(progress,omega,zeta) {
 	const beta = Math.sqrt(1.0 - zeta * zeta);
@@ -14,15 +14,15 @@ function easing(progress) {
 const duration = 1.0;
 
 class View {
-	constructor(element) {
+	constructor(element,value) {
+		activate(this);
 		this.element = element;
 		this.iterations = 50;
 		this.vertices = 500;
-		this.radius = 75;
-		this.value = 0;
+		this.radius = 100;
+		this.value = value;
 		this.positionArray = this.plot();
 		
-		decorate(this);
 		this.registerAnimatableProperty("positionArray");
 	}
 	animationForKey(key,value,previous) {
@@ -38,12 +38,13 @@ class View {
 		const height = canvas.height;
 		const centerX = width/2;
 		const centerY = height/2;
+		//console.log("x:%s; y:%s;",centerX,centerY);
 		const phi = this.value * Math.PI;
 		const array = [];
 		const slice = (Math.PI * 2) / this.vertices;
-		let j = this.vertices;
+		let j = this.vertices+1;
 		let theta = 0;
-		while (--j) { // array length is not vertices * 2 !!!
+		while (--j) {
 			theta -= slice;
 			let i = this.iterations;
 			let x = centerX;
@@ -64,6 +65,7 @@ class View {
 		this.needsDisplay(); // temporary bug fix
 	}
 	display() {
+		//console.log(JSON.stringify(this.positionArray));
 		const canvas = this.element;
 		const context = canvas.getContext("2d");
 		const width = canvas.width;
@@ -84,13 +86,14 @@ class View {
 }
 
 class Slider {
-	constructor(element) {
-		decorate(this);
+	constructor(element,value) {
+		activate(this);
 		this.element = element;
-		this.value = 0;
+		this.value = value;
 		this.registerAnimatableProperty("value");
 	}
-	animationForKey(key,value,previous) {
+	animationForKey(key,value,previous,presentation) {
+		//console.log("animationForKey:%s; value:%s; previous:%s; presentation:%s;",key,value,previous,presentation);
 		return {
 			duration: duration,
 			easing: easing
@@ -112,11 +115,13 @@ input.min = 0;
 input.max = 1000;
 input.value = rococo * 1000;
 document.body.appendChild(input);
-const slider = new Slider(input);
+const slider = new Slider(input,rococo);
 
 const canvas = document.createElement("canvas");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 document.body.appendChild(canvas);
-const view = new View(canvas);
+const view = new View(canvas,rococo);
 
 function resize() {
 	canvas.width = window.innerWidth;
@@ -140,11 +145,13 @@ document.addEventListener("mouseup", (e) => {
 });
 input.addEventListener("input", (e) => {
 	rococo = input.value / 1000;
+	//console.log("rococo input:%s;",rococo);
 	view.layout(rococo);
 	slider.layout(rococo);
 });
 input.addEventListener("change", (e) => {
 	rococo = input.value / 1000;
+	//console.log("rococo change:%s;",rococo);
 	view.layout(rococo);
 	slider.layout(rococo);
 })

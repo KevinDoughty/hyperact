@@ -201,7 +201,7 @@ HyperAnimation.prototype = {
 			if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 			if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
 			if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
-			this.progress = 0.0;
+			//this.progress = 0.0; // keep progress null so first tick is considered a change
 			this.startTime = transaction.time;
 			this.sortIndex = animationNumber++;
 		} else throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");

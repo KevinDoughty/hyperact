@@ -3,6 +3,11 @@ var assert = require("assert");
 
 var duration = 0.1; // mocha timeout is 2 seconds
 
+const delegateMethods = ["display","animationForKey","input","output"];
+const controllerMethods = ["addAnimation","animationNamed","needsDisplay","registerAnimatableProperty","removeAllAnimations", "removeAnimation"];
+const controllerProperties = ["layer","presentation","model","previous","animations","animationNames","animationCount"];
+
+
 function isFunction(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
@@ -15,8 +20,8 @@ describe("core", function() {
 			assert(!isFunction({}));
 			assert(!isFunction("[object Function]"));
 		});
-		it("decorate", function() {
-			assert(isFunction(core.decorate));
+		it("activate", function() {
+			assert(isFunction(core.activate));
 		});
 		it("disableAnimation", function() {
 			assert(isFunction(core.disableAnimation));
@@ -29,11 +34,11 @@ describe("core", function() {
 
 		beforeEach( function() {
 	// 		var One = function() {
-	// 			core.decorate(this); // controller, delegate, and layer are the same
+	// 			core.activate(this); // controller, delegate, and layer are the same
 	// 		}
 	// 		one = new One();
 			one = {};
-			core.decorate(one);
+			core.activate(one);
 		});
 
 		it("controller and layer are the same object", function() {
@@ -95,7 +100,7 @@ describe("core", function() {
 	// 		assert(one.uiop === 1);
 	// 	});
 
-		it("unregistered animation layer", function() {
+		it("unregistered animation layer, unflushed", function() {
 			one.uiop = 2;
 			one.addAnimation({
 				property:"uiop",
@@ -195,11 +200,11 @@ describe("core", function() {
 
 		beforeEach( function() {
 	// 		var Two = function() {
-	// 			core.decorate(this,this,{}); // controller and delegate same, with separate layer
+	// 			core.activate(this,this,{}); // controller and delegate same, with separate layer
 	// 		}
 	// 		two = new Two();
 			two = {};
-			core.decorate(two,two,{}); // controller and delegate same, with separate layer
+			core.activate(two,two,{}); // controller and delegate same, with separate layer
 		});
 
 		it("controller and layer are not the same instance", function() {
@@ -230,53 +235,95 @@ describe("core", function() {
 	});
 
 	describe("three", function() {
-		it("presentation does include functions, decorate(view)", function() {
-			const animationForKey = function(key,value,previous) {
-				return duration;
+		it("presentation does not include delegate methods, activate(view,view,view)", function() {
+			const fake = function() {
+			
 			};
-			var view = {
+			const view = {
 				a:1,
 				b:2,
 				c:3,
-				animationForKey: animationForKey
+				fake:fake
 			};
-			core.decorate(view);
-			assert.deepEqual(view.presentation, { a:1, b:2, c:3, animationForKey:animationForKey });
+			delegateMethods.forEach( function(key) {
+				view[key] = fake;
+			});
+// 			controllerMethods.forEach( function(key) { // Error: Already hyperactive
+// 				view[key] = test;
+// 			});
+// 			controllerProperties.forEach( function(key) { // Error: Already hyperactive
+// 				view[key] = test;
+// 			});
+			core.activate(view,view,view);
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, { a:1, b:2, c:3, fake:fake });
 		});
-		it("presentation does include functions, decorate(view,view,layer)", function() {
-			const animationForKey = function(key,value,previous) {
-				return duration;
-			};
+		it("presentation does not include reserved delegate methods, activate(view,layer,layer)", function() {
 			const test = function() {
-				console.log("this is a function");
+			
 			};
-			var layer = {
-				a:1,
-				b:2,
-				c:3,
-				test: test
-			};
-			var view = {
-				animationForKey: animationForKey
-			};
-			core.decorate(view,view,layer);
-			assert.deepEqual(view.presentation, { a:1, b:2, c:3, test:test });
+			const view = {};
+			const layer = { a:1, b:2, c:3, test:test };
+			delegateMethods.forEach( function(key) {
+				layer[key] = test;
+			});
+			controllerMethods.forEach( function(key) {
+				layer[key] = test;
+			});
+			controllerProperties.forEach( function(key) {
+				layer[key] = test;
+			});
+			core.activate(view,layer,layer);
+			const expected = { a:1, b:2, c:3, test:test };
+			controllerMethods.forEach( function(key) {
+				expected[key] = test;
+			});
+			controllerProperties.forEach( function(key) {
+				expected[key] = test;
+			});
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, expected);
 		});
-		it("implicit duration only, presentation", function() {
-			const animationForKey = function(key,value,previous) {
-				return duration;
+		it("presentation does include reserved functions, activate(view,view,layer)", function() {
+			const test = function() {
+			
 			};
+			const view = {};
+			const layer = { a:1, b:2, c:3, test:test };
+			delegateMethods.forEach( function(key) {
+				layer[key] = test;
+			});
+			controllerMethods.forEach( function(key) {
+				layer[key] = test;
+			});
+			controllerProperties.forEach( function(key) {
+				layer[key] = test;
+			});
+			core.activate(view,view,layer);
+			const expected = { a:1, b:2, c:3, test:test };
+			delegateMethods.forEach( function(key) {
+				expected[key] = test;
+			});
+			controllerMethods.forEach( function(key) {
+				expected[key] = test;
+			});
+			controllerProperties.forEach( function(key) {
+				expected[key] = test;
+			});
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, expected);
+		});
+		it("implicit duration only, presentation, unflushed", function() {
 			var view = {
 				a:1,
 				b:2,
-				c:3,
-				animationForKey: animationForKey
+				c:3
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.layer = {a:4, b:5, c:6};
-			assert.deepEqual(view.presentation, { a:1, b:2, c:3, animationForKey:animationForKey });
+			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
 		});
-		it("implicit constant, presentation", function() {
+		it("implicit constant, presentation, flushed", function() {
 			const animationForKey = function(key,value,previous) {
 				// console.log("animationForKey:%s; value:%s; previous:%s;",key,value,previous);
 				// animationForKey:a; value:4; previous:1;
@@ -297,12 +344,12 @@ describe("core", function() {
 			var view = {
 				animationForKey: animationForKey
 			};
-			core.decorate(view,view,layer);
+			core.activate(view,view,layer);
 			view.layer = {a:4, b:5, c:6};
 			core.flushTransaction();
 			assert.deepEqual(view.presentation, { a:5, b:6, c:7 });
 		});
-		it("implicit duration only, model", function() {
+		it("implicit duration only, model, unflushed", function() {
 			const animationForKey = function(key,value,previous) {
 				return duration;
 			};
@@ -312,7 +359,7 @@ describe("core", function() {
 				c:3,
 				animationForKey: animationForKey
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.layer = {a:4, b:5, c:6};
 			assert.deepEqual(view.model, { a:4, b:5, c:6 });
 		});
@@ -333,7 +380,7 @@ describe("core", function() {
 			var view = {
 				animationForKey: animationForKey
 			};
-			core.decorate(view,view,layer);
+			core.activate(view,view,layer);
 			view.layer = {a:4, b:5, c:6};
 			assert.deepEqual(view.model, { a:4, b:5, c:6 });
 		});
@@ -344,7 +391,7 @@ describe("core", function() {
 				b:2,
 				c:3
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.registerAnimatableProperty("a");
 			view.addAnimation({
 				property:"a",
@@ -365,7 +412,7 @@ describe("core", function() {
 				b:2,
 				c:3
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.registerAnimatableProperty("a");
 			view.addAnimation({
 				property:"a",
@@ -382,7 +429,7 @@ describe("core", function() {
 
 		it("single presentation flushed", function() {
 			var view = {a:1, b:2, c:3};
-			core.decorate(view);
+			core.activate(view);
 			//view.layer = {a:1, b:2, c:3};
 			view.addAnimation({
 				property:"a",
@@ -422,7 +469,7 @@ describe("core", function() {
 					if (completed) done();
 				}
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.registerAnimatableProperty("a"); // no longer needed
 			view.addAnimation({
 				property:"a",
@@ -438,13 +485,13 @@ describe("core", function() {
 	});
 
 	describe("five", function() {
-		it("should not reflect presentation outside of display, decorate(view,view,layer)", function() {
+		it("should not reflect presentation outside of display, activate(view,view,layer)", function() {
 			const view = {
 			};
 			const layer = {
 				a: 1
 			};
-			core.decorate(view,view,layer);
+			core.activate(view,view,layer);
 			view.addAnimation({
 				property:"a",
 				from:2,
@@ -461,11 +508,11 @@ describe("core", function() {
 			assert.equal(presentation.a,3);
 		
 		});
-		it("should not reflect presentation outside of display, decorate(view)", function() {
+		it("should not reflect presentation outside of display, activate(view)", function() {
 			const view = {
 				a:1
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.addAnimation({
 				property:"a",
 				from:2,
@@ -481,13 +528,13 @@ describe("core", function() {
 			assert.equal(model.a,1);
 			assert.equal(presentation.a,3);
 		});
-		it("decorate automatically sets underlying value of existing properties, decorate(view)", function() {
+		it("activate automatically sets underlying value of existing properties, activate(view)", function() {
 			const view = {
 				a:1,
 				b:2,
 				c:3
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.addAnimation([
 				{
 					property:"a",
@@ -520,21 +567,21 @@ describe("core", function() {
 			assert.equal(presentation.b,3);
 			assert.equal(presentation.c,4);
 		});
-		it("decorate automatically registers existing properties, decorate(view)", function(done) {
+		it("activate automatically registers existing properties, activate(view)", function(done) {
 			const view = {
 				animationForKey:(key,nu,old,now) => {
 					if (key === "a") done();
 				},
 				a:1
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.a = 2;
 		});
 		it("animations get removed, object literal, before", function(done) {
 			const view = {
 				a:1
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.addAnimation({
 				duration:duration
 			});
@@ -549,7 +596,7 @@ describe("core", function() {
 		});
 		it("animations get removed, constructor, before", function(done) {
 			function One() {
-				core.decorate(this);
+				core.activate(this);
 			}
 			One.prototype = {
 				animationForKey: function(key,value,previous,presentation) {
@@ -573,7 +620,7 @@ describe("core", function() {
 			const view = {
 				a:1
 			};
-			core.decorate(view);
+			core.activate(view);
 			view.addAnimation({
 				duration: duration,
 				onend: function() {
@@ -588,7 +635,7 @@ describe("core", function() {
 		});
 		it("animations get removed, constructor, after", function(done) {
 			function One() {
-				core.decorate(this);
+				core.activate(this);
 			}
 			One.prototype = {
 				animationForKey: function(key,value,previous,presentation) {
@@ -613,7 +660,7 @@ describe("core", function() {
 				this.animationForKey = (key,nu,old,now) => duration;
 				this.input = (key,value) => value;
 				this.output = (key,value) => value;
-				core.decorate(this);
+				core.activate(this);
 			}
 			const view = new View();
 			view.addAnimation({ // this would be unterminated
@@ -628,7 +675,7 @@ describe("core", function() {
 				this.animationForKey = (key,nu,old,now) => duration;
 				this.input = (key,value) => value;
 				this.output = (key,value) => value;
-				core.decorate(this);
+				core.activate(this);
 			}
 			const view = new View();
 			view.addAnimation({ // this would be unterminated
@@ -645,7 +692,7 @@ describe("core", function() {
 	describe("six", function() {
 		it("group presentation flushed", function() {
 			var view = {a:1, b:2, c:3};
-			core.decorate(view);
+			core.activate(view);
 			view.addAnimation([
 				{
 					property:"a",
@@ -679,7 +726,7 @@ describe("core", function() {
 // 			const view = { a:0, b:0, c:0, display: function() {
 // 				if (count > 2) done();
 // 			}};
-// 			core.decorate(view);
+// 			core.activate(view);
 // 			const animation = [
 // 				{
 // 					duration:duration / 2,
@@ -716,7 +763,7 @@ describe("core", function() {
 
 		it("added animations not apparent in presentation until transaction flush, not flushed, explicit transaction", function() {
 			core.beginTransaction();
-			const view = core.decorate({a:0});
+			const view = core.activate({a:0});
 			view.addAnimation({
 				property:"a",
 				from:1,
@@ -729,7 +776,7 @@ describe("core", function() {
 
 		it("added animations not apparent in presentation until transaction flush, flushed, explicit transaction", function() {
 			core.beginTransaction();
-			const view = core.decorate({a:0});
+			const view = core.activate({a:0});
 			view.addAnimation({
 				property:"a",
 				from:1,
@@ -742,7 +789,7 @@ describe("core", function() {
 		});
 
 		it("added animations not apparent in presentation until transaction flush, not flushed, implicit transaction", function() {
-			const view = core.decorate({a:0});
+			const view = core.activate({a:0});
 			view.addAnimation({
 				property:"a",
 				from:1,
@@ -753,7 +800,7 @@ describe("core", function() {
 		});
 
 		it("added animations not apparent in presentation until transaction flush, flushed, implicit transaction", function() {
-			const view = core.decorate({a:0});
+			const view = core.activate({a:0});
 			view.addAnimation({
 				property:"a",
 				from:1,
@@ -767,153 +814,164 @@ describe("core", function() {
 	});
 
 
-// 	describe("eight", function() {
-// 		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
-// 			const view = {};
-// 			core.decorate(view);
-// 			assert(typeof view.presentation === "undefined");
-// 			assert(typeof view.previous === "undefined");
-// 			assert(typeof view.model === "undefined");
-// 			assert(typeof view.presentationLayer !== "undefined");
-// 			assert(typeof view.previousLayer !== "undefined");
-// 			assert(typeof view.modelLayer !== "undefined");
-// 		});
-// 		it("input output !!!", function() {
-// 			var view = {
-// 				a:1,
-// 				b:2,
-// 				c:3,
-// 				input:function(key,value) {
-// 					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") value = Number(value.substring(0, value.length-4));
-// 					return value;
-// 				},
-// 				output:function(key,value) {
-// 					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") throw new Error(" !!!");
-// 					if (value) return Math.round(value) + " !!!";
-// 					return value;
-// 				}
-// 			};
-// 			core.decorate(view);
-// 			view.registerAnimatableProperty("a");
-// 			view.addAnimation({
-// 				property:"a",
-// 				duration:duration,
-// 				from:2,
-// 				to:2,
-// 				blend:"absolute"
-// 			});
-// 			assert(false);
-// 		});
-// 		it("animationForKey presentation argument", function() {
-// 			assert(false);
-// 		});
-// 		it("previousLayer values are correct", function() {
-// 			assert(false);
-// 		});
-// 		it("speed and pause", function() {
-// 			assert(false);
-// 		});
-// 		it("delegate animationDidStop like CAAnimationDelegate", function() {
-// 			assert(false);
-// 		});
-// 	});
-//
-//
-//
-// 	describe("nine", function() {
-// 		var one;
-// 		var view;
-// 		beforeEach( function() {
-// 			one = {};
-// 			core.decorate(one);
-// 			view = {};
-// 			core.decorate(view);
-// 		});
-// 		it("registered presentation, unflushed", function() {
-// 			one.layer.zxcv = 0;
-// 			one.registerAnimatableProperty("zxcv");
-// 			one.layer.zxcv = 1;
-// 			assert(one.presentation.zxcv === 0);
-// 		});
-// 		it("unregistered animation presentation, unflushed", function() {
-// 			one.uiop = 2;
-// 			one.addAnimation({
-// 				property:"uiop",
-// 				duration:duration,
-// 				from: 1,
-// 				to: 1,
-// 				blend:"absolute",
-// 				additive:false
-// 			});
-// 			assert(one.presentation.uiop === 2);
-// 		});
-// 		it("registered before animation presentation, unflushed", function() {
-// 			one.registerAnimatableProperty("uiop");
-// 			one.uiop = 2;
-// 			one.addAnimation({
-// 				property:"uiop",
-// 				duration:duration,
-// 				from: 1,
-// 				to: 1,
-// 				blend:"absolute",
-// 				additive:false
-// 			});
-// 			assert(one.presentation.uiop === 2);
-// 		});
-// 		it("registered after animation presentation, unflushed", function() {
-// 			one.uiop = 2;
-// 			one.registerAnimatableProperty("uiop");
-// 			one.addAnimation({
-// 				property:"uiop",
-// 				duration:duration,
-// 				from: 1,
-// 				to: 1,
-// 				blend:"absolute",
-// 				additive:false
-// 			});
-// 			assert(one.presentation.uiop === 2);
-// 		});
-// 		it("registered animation effect, unflushed", function() {
-// 			one.uiop = 2;
-// 			one.registerAnimatableProperty("uiop");
-// 			one.addAnimation({
-// 				property:"uiop",
-// 				duration:duration,
-// 				from: 1,
-// 				to: 1,
-// 				blend:"absolute"
-// 			});
-// 			assert(one.presentation.uiop === 2);
-// 		});
-// 		it("group presentation unflushed", function() {
-// 			var view = {};
-// 			core.decorate(view);
-// 			view.layer = {a:1, b:2, c:3};
-// 			view.addAnimation([
-// 				{
-// 					property:"a",
-// 					duration:duration,
-// 					from:1,
-// 					to:1,
-// 					blend:"absolute"
-// 				},
-// 				{
-// 					property:"b",
-// 					duration:duration,
-// 					from:1,
-// 					to:1,
-// 					blend:"absolute"
-// 				},
-// 				{
-// 					property:"c",
-// 					duration:duration,
-// 					from:1,
-// 					to:1,
-// 					blend:"absolute",
-// 					additive:false
-// 				}
-// 			]);
-// 			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
-// 		});
-// 	});
+	describe("eight", function() {
+		var one;
+		var view;
+		beforeEach( function() {
+			one = {};
+			core.activate(one);
+			view = {};
+			core.activate(view);
+		});
+		it("registered presentation, unflushed", function() {
+			one.layer.zxcv = 0;
+			one.registerAnimatableProperty("zxcv");
+			one.layer.zxcv = 1;
+			assert.equal(one.presentation.zxcv,0);
+		});
+		it("unregistered animation presentation, unflushed", function() {
+			one.uiop = 2;
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute",
+				additive:false
+			});
+			assert.equal(one.presentation.uiop,2);
+		});
+		it("registered before animation presentation, unflushed", function() {
+			one.registerAnimatableProperty("uiop");
+			one.uiop = 2;
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute",
+				additive:false
+			});
+			assert.equal(one.presentation.uiop,2);
+		});
+		it("registered after animation presentation, unflushed", function() {
+			one.uiop = 2;
+			one.registerAnimatableProperty("uiop");
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute",
+				additive:false
+			});
+			assert.equal(one.presentation.uiop,2);
+		});
+		it("registered animation effect, unflushed", function() {
+			one.uiop = 2;
+			one.registerAnimatableProperty("uiop");
+			one.addAnimation({
+				property:"uiop",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute"
+			});
+			assert.equal(one.presentation.uiop,2);
+		});
+		it("group presentation unflushed", function() {
+			var view = {};
+			core.activate(view);
+			view.layer = {a:1, b:2, c:3};
+			view.addAnimation([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"b",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"c",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute",
+					additive:false
+				}
+			]);
+			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
+		});
+	});
+
+
+
+	describe("nine", function() {
+		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
+			const view = {};
+			core.activate(view);
+			assert(typeof view.presentation === "undefined");
+			assert(typeof view.previous === "undefined");
+			assert(typeof view.model === "undefined");
+			assert(typeof view.presentationLayer !== "undefined");
+			assert(typeof view.previousLayer !== "undefined");
+			assert(typeof view.modelLayer !== "undefined");
+		});
+		it("input output !!!", function() {
+			var view = {
+				a:1,
+				b:2,
+				c:3,
+				input:function(key,value) {
+					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") value = Number(value.substring(0, value.length-4));
+					return value;
+				},
+				output:function(key,value) {
+					if (value && value.length > 4 && value.substring(value.length-4) === " !!!") throw new Error(" !!!");
+					if (value) return Math.round(value) + " !!!";
+					return value;
+				}
+			};
+			core.activate(view);
+			view.registerAnimatableProperty("a");
+			view.addAnimation({
+				property:"a",
+				duration:duration,
+				from:2,
+				to:2,
+				blend:"absolute"
+			});
+			assert(false);
+		});
+		it("animationForKey presentation argument", function() {
+			assert(false);
+		});
+		it("previousLayer values are correct", function() {
+			assert(false);
+		});
+		it("speed and pause", function() {
+			assert(false);
+		});
+		it("delegate animationDidStop like CAAnimationDelegate", function() {
+			assert(false);
+		});
+		it("maybe activate multiple layers, allow an array argument, and register key paths", function() {
+			assert(false);
+		});
+		it("maybe be able to activate again, one controller with many targets.", function() {
+			assert(false);
+		});
+		it("no controller mode", function() {
+			assert(false);
+		});
+	});
+
+
 });

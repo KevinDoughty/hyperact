@@ -1,4 +1,4 @@
-import { decorate } from "../../hyperact.js";
+import { activate } from "../../hyperact.js";
 
 function push(progress) {
 	var result = 1 + 0.5 * (1-progress) * Math.sin(progress * Math.PI * 2);
@@ -9,7 +9,7 @@ var shorter = 1;
 var longer = 10;
 
 function Hydrogen(kdMeson,electron) {
-	decorate(this);
+	activate(this);
 	
 	this.kdMeson = kdMeson;
 	this.electron = electron;

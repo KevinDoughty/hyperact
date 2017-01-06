@@ -3,7 +3,7 @@
 
 import { interp, clamp } from "./shared.js";
 
-const fontWeightType = {
+export const fontWeightType = {
 	toString: function() {
 		return "fontWeightType";
 	},
@@ -20,18 +20,18 @@ const fontWeightType = {
 	interpolate: function(from, to, f) {
 		return interp(from, to, f);
 	},
-	toCssValue: function(value) {
+	output: function(value) {
 		value = Math.round(value / 100) * 100;
 		value = clamp(value, 100, 900);
 		if (value === 400) {
-			return 'normal';
+			return "normal";
 		}
 		if (value === 700) {
-			return 'bold';
+			return "bold";
 		}
 		return String(value);
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		// TODO: support lighter / darker ?
 		var out = Number(value);
 		if (isNaN(out) || out < 100 || out > 900 || out % 100 !== 0) {
@@ -40,4 +40,3 @@ const fontWeightType = {
 		return out;
 	}
 };
-export default fontWeightType;

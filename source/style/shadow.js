@@ -1,11 +1,12 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-import colorType from "./color.js";
-import lengthType from "./length.js";
-import nonNumericType from "./nonNumeric.js";
+import { isDefined } from "./shared.js";
+import { colorType } from "./color.js";
+import { lengthType } from "./length.js";
+import { nonNumericType } from "./nonNumeric.js";
 
-const shadowType = {
+export const shadowType = {
 	toString: function() {
 		return "shadowType";
 	},
@@ -94,18 +95,18 @@ const shadowType = {
 		}
 		return result;
 	},
-	_toCssValueSingle: function(value) {
-		return (value.inset ? 'inset ' : '') +
-				lengthType.toCssValue(value.hOffset) + ' ' +
-				lengthType.toCssValue(value.vOffset) + ' ' +
-				lengthType.toCssValue(value.blur) +
-				(value.spread ? ' ' + lengthType.toCssValue(value.spread) : '') +
-				(value.color ? ' ' + colorType.toCssValue(value.color) : '');
+	_outputSingle: function(value) {
+		return (value.inset ? "inset " : "") +
+				lengthType.output(value.hOffset) + " " +
+				lengthType.output(value.vOffset) + " " +
+				lengthType.output(value.blur) +
+				(value.spread ? " " + lengthType.output(value.spread) : "") +
+				(value.color ? " " + colorType.output(value.color) : "");
 	},
-	toCssValue: function(value) {
-		return value.map(this._toCssValueSingle).join(', ');
+	output: function(value) {
+		return value.map(this._outputSingle).join(", ");
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		var shadowRE = /(([^(,]+(\([^)]*\))?)+)/g;
 		var match;
 		var shadows = [];
@@ -114,10 +115,10 @@ const shadowType = {
 		}
 
 		var result = shadows.map(function(value) {
-			if (value === 'none') {
+			if (value === "none") {
 				return shadowType.zero();
 			}
-			value = value.replace(/^\s+|\s+$/g, '');
+			value = value.replace(/^\s+|\s+$/g, "");
 
 			var partsRE = /([^ (]+(\([^)]*\))?)/g;
 			var parts = [];
@@ -136,18 +137,18 @@ const shadowType = {
 			while (parts.length) {
 				var part = parts.shift();
 
-				var length = lengthType.fromCssValue(part);
+				var length = lengthType.input(part);
 				if (length) {
 					lengths.push(length);
 					continue;
 				}
 
-				var color = colorType.fromCssValue(part);
+				var color = colorType.input(part);
 				if (color) {
 					result.color = color;
 				}
 
-				if (part === 'inset') {
+				if (part === "inset") {
 					result.inset = true;
 				}
 			}
@@ -169,4 +170,3 @@ const shadowType = {
 		return result.every(isDefined) ? result : undefined;
 	}
 };
-export default shadowType;

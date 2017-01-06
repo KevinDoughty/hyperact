@@ -1,7 +1,9 @@
-import { decorate, HyperScale } from "../../hyperact.js";
+import { activate } from "../../source/core.js";
+import { HyperScale } from "../../source/types.js";
+
 
 function One(element) {
-	decorate(this);
+	activate(this);
 	this.display = function() {
 		document.getElementById(element).innerHTML = element +":<br>" +
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
@@ -44,7 +46,7 @@ one.addAnimation(e);
 console.log("animations:%s;",JSON.stringify(one.animations));
 
 function Two(element) {
-	decorate(this,this,{});
+	activate(this,this,{});
 	this.display = function() {
 		document.getElementById(element).innerHTML = element+":" + "<br>" + 
 			"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" + 
@@ -97,7 +99,7 @@ var three = {
 		return value;
 	}
 }
-decorate(three);
+activate(three);
 three.display();
 three.registerAnimatableProperty("x");
 three.layer = {
@@ -119,7 +121,7 @@ var four = {
 	}
 }
 
-decorate(four,four,{scale:1});
+activate(four,four,{scale:1});
 four.registerAnimatableProperty("x");
 four.layer = {
 	c: 3

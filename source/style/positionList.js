@@ -1,11 +1,11 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-import positionType from "./position.js";
+import { positionType } from "./position.js";
 import { isDefinedAndNotNull } from "./shared.js";
 
 // Spec: http://dev.w3.org/csswg/css-backgrounds/#background-position
-const positionListType = {
+export const positionListType = {
 	toString: function() {
 		return "positionListType";
 	},
@@ -45,19 +45,18 @@ const positionListType = {
 		}
 		return out;
 	},
-	toCssValue: function(value) {
-		return value.map(positionType.toCssValue).join(', ');
+	output: function(value) {
+		return value.map(positionType.output).join(", ");
 	},
-	fromCssValue: function(value) {
+	input: function(value) {
 		if (!isDefinedAndNotNull(value)) {
 			return undefined;
 		}
 		if (!value.trim()) {
-			return [positionType.fromCssValue('0% 0%')];
+			return [positionType.input("0% 0%")];
 		}
-		var positionValues = value.split(',');
-		var out = positionValues.map(positionType.fromCssValue);
+		var positionValues = value.split(",");
+		var out = positionValues.map(positionType.input);
 		return out.every(isDefinedAndNotNull) ? out : undefined;
 	}
 };
-export default positionListType;

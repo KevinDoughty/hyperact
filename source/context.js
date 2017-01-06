@@ -42,6 +42,7 @@ HyperContext.prototype = {
 		const length = this.transactions.length;
 		let time = now() / 1000;
 		if (length) time = this.transactions[length-1].representedObject.time; // Clock stops in the outermost transaction.
+		//console.log("]]] begin transaction");
 		Object.defineProperty(transaction, "time", { // Manually set time of transaction here to be not configurable
 			get: function() {
 				return time;
@@ -63,6 +64,7 @@ HyperContext.prototype = {
 	},
 	commitTransaction: function() {
 		this.transactions.pop();
+		//console.log("[[[ commit transaction");
 	},
 	flushTransaction: function() { // TODO: prevent unterminated when called within display
 		//if (this.animationFrame) cAF(this.animationFrame); // Unsure if cancelling animation frame is needed.
@@ -101,10 +103,12 @@ HyperContext.prototype = {
 			this.invalidateFunctions.splice(index,1);
 		}
 	},
+
 	startTicking: function() { // TODO: consider cancelling previous animation frame.
 		if (!this.animationFrame) this.animationFrame = rAF(this.ticker.bind(this));
 	},
 	ticker: function() { // Need to manually cancel animation frame if calling directly.
+		//console.log(">>> tick");
 		this.animationFrame = undefined;
 		const targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don't think I was traversing backwards.
 		let i = targets.length;
@@ -113,24 +117,23 @@ HyperContext.prototype = {
 			const display = this.displayFunctions[i]; // strange new implementation
 			if (!target.animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
 				if (isFunction(display)) {
-					//const presentationLayer = target.presentation;
+					target.presentation;
 					display(); // new ensure one last time
 				}
 				this.invalidateFunctions[i](); // even stranger implementation
 				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
 			} else {
-				if (isFunction(display)) {
-					const presentationLayer = target.presentation;
-					if (this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
-						if (target.animationCount) this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
-						//display.call(target.delegate);
-						display();
-					}
+				const presentationLayer = target.presentation;
+				if (this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
+					if (target.animationCount) this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
+					//display.call(target.delegate);
+					display();
+					this.invalidateFunctions[i](); // even stranger implementation
 				}
-				this.invalidateFunctions[i](); // even stranger implementation
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
 			}
 		}
+		//console.log("<<< tick end");
 		const length = this.transactions.length;
 		if (length) {
 			const transactionWrapper = this.transactions[length-1];
