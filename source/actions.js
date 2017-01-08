@@ -44,16 +44,74 @@ export function animationFromDescription(description) {
 
 
 
-function HyperAction() {}
+function HyperAction() {} // Can't freeze animation objects while implementation of core cleanup sets onend function to null
 
-export function HyperGroup(children) {
+export function HyperChain(childrenOrSettings) {
 	HyperAction.call(this);
-	if (!Array.isArray(children)) children = [];
+	let children = [];
+	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;
+	else if (childrenOrSettings && childrenOrSettings.chain) children = childrenOrSettings.chain;
+	this.chain = children.map( function(animation) {
+		return animationFromDescription(animation);
+	});
+// 	this.sortIndex;
+// 	this.startTime;
+// 	this.onend;
+	Object.defineProperty(this, "finished", {
+		get: function() {
+			if (!this.chain.length) return true;
+			return this.chain[this.chain.length-1].finished;
+		},
+		enumerable: false,
+		configurable: false
+	});
+	if (childrenOrSettings && !Array.isArray(childrenOrSettings)) Object.keys(childrenOrSettings).forEach( function(key) {
+		if (key !== "chain" && key !== "finished") this[key] = childrenOrSettings[key];
+	}.bind(this));
+}
+
+HyperChain.prototype = {
+	constructor: HyperChain,
+	copy: function() {
+		return new this.constructor(this);
+	},
+	runAnimation: function(layer,key,transaction) {
+		this.sortIndex = animationNumber++;
+		if (this.startTime === null || typeof this.startTime === "undefined") this.startTime = transaction.time;
+		let length = this.chain.length;
+		const fakeTransaction = Object.assign({},transaction);
+		let startTime = transaction.time;
+		for (let index = 0; index < length; index++) {
+			const animation = this.chain[0];
+			transaction.startTime = startTime;
+			animation.runAnimation.call(animation,layer,key,fakeTransaction);
+			if (startTime === Infinity || animation.iterations === Infinity) startTime = Infinity; // TODO: negative infinity?
+			else startTime = animation.delay + animation.duration * animation.iterations;
+		}
+	},
+	composite: function(onto,now) {
+		let changed = false;
+		let length = this.chain.length;
+		for (let index = 0; index < length; index++) {
+			const animation = this.chain[index];
+			changed = animation.composite.call(animation,onto,now) || changed;
+		}
+		return changed;
+	}
+};
+
+export function HyperGroup(childrenOrSettings) {
+	HyperAction.call(this);
+	let children = [];
+	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;
+	else if (childrenOrSettings && childrenOrSettings.group) children = childrenOrSettings.group;
+	
 	this.group = children.map( function(animation) {
 		return animationFromDescription(animation);
 	});
-	this.sortIndex;
-	this.startTime;
+// 	this.sortIndex;
+// 	this.startTime;
+// 	this.onend;
 	Object.defineProperty(this, "finished", {
 		get: function() {
 			let result = true;
@@ -65,12 +123,15 @@ export function HyperGroup(children) {
 		enumerable: false,
 		configurable: false
 	});
+	if (childrenOrSettings && !Array.isArray(childrenOrSettings)) Object.keys(childrenOrSettings).forEach( function(key) {
+		if (key !== "group" && key !== "finished") this[key] = childrenOrSettings[key];
+	}.bind(this));
 }
 
 HyperGroup.prototype = {
 	constructor: HyperGroup,
 	copy: function() {
-		return new this.constructor(this.group);
+		return new this.constructor(this);
 	},
 	runAnimation: function(layer,key,transaction) {
 		this.sortIndex = animationNumber++;
@@ -95,7 +156,6 @@ export function HyperAnimation(settings) {
 	this.to; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
 	this.type = wetNumberType; // Default
 	this.delta; // Should this be private?
-
 	this.duration; // float. In seconds. Need to validate/ensure >= 0. Initialized in runAnimation
 	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear. Initialized in runAnimation
 	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
@@ -132,6 +192,8 @@ HyperAnimation.prototype = {
 	},
 	composite: function(onto,now) {
 		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
+		if (this.startTime > now && this.fillMode !== "backwards" && this.fillMode !== "both") return false;
+		if (this.finished && this.fillMode !== "forwards" && this.fillMode !== "both") return false;
 		const elapsed = Math.max(0, now - (this.startTime + this.delay));
 		const speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy yet. Part of GraphicsLayer.
 		let iterationProgress = 1;
@@ -186,7 +248,7 @@ HyperAnimation.prototype = {
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
-		const changed = (iterationProgress !== this.progress);
+		const changed = (iterationProgress !== this.progress || this.finished);
 		this.progress = iterationProgress;
 
 		return changed;
@@ -202,7 +264,7 @@ HyperAnimation.prototype = {
 			if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
 			if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
 			//this.progress = 0.0; // keep progress null so first tick is considered a change
-			this.startTime = transaction.time;
+			if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
 			this.sortIndex = animationNumber++;
 		} else throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 	}

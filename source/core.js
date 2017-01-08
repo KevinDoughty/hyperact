@@ -1,5 +1,5 @@
 import { HyperContext } from "./context.js";
-import { HyperAnimation, HyperGroup, animationFromDescription } from "./actions.js";
+import { HyperAnimation, HyperGroup, HyperChain, animationFromDescription } from "./actions.js";
 
 const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
@@ -21,15 +21,19 @@ function isFunction(w) { // WET
 }
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
-	if (animation instanceof HyperGroup) { // recursive
-		animation.group.forEach( function(childAnimation) {
-			prepAnimationObjectFromAddAnimation(childAnimation, delegate);
-		});
-	} else if (animation instanceof HyperAnimation) {
+	if (animation instanceof HyperAnimation) {
 		if (delegate.typeForProperty && animation.property) {
 			const type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
 			if (type) animation.type = type;
 		}
+	} else if (animation instanceof HyperGroup) { // recursive
+		animation.group.forEach( function(childAnimation) {
+			prepAnimationObjectFromAddAnimation(childAnimation, delegate);
+		});
+	} else if (animation instanceof HyperChain) { // recursive
+		animation.chain.forEach( function(childAnimation) {
+			prepAnimationObjectFromAddAnimation(childAnimation, delegate);
+		});
 	} else throw new Error("not an animation");
 }
 
@@ -57,14 +61,20 @@ function convertPropertiesOfLayerWithFunction(properties,object,funky,self) { //
 function convertPropertiesOfAnimationWithFunction(properties,animation,funky,self) { // mutates // animation from, to, and delta
 	// ["from","to","delta"],animation,delegate.input
 	if (animation && isFunction(funky)) {
-		if (animation instanceof HyperGroup) { // recursive
+		if (animation instanceof HyperAnimation) {
+			properties.forEach( function(item) { // HyperAnimation
+				const value = animation[item];
+				if (animation.property && value !== null && typeof value !== "undefined") animation[item] = funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
+			});
+		} else if (animation instanceof HyperGroup) { // recursive
 			animation.group.forEach( function(childAnimation) {
 				convertPropertiesOfAnimationWithFunction(properties,childAnimation,funky,self);
 			});
-		} else properties.forEach( function(item) { // HyperAnimation
-			const value = animation[item];
-			if (animation.property && value !== null && typeof value !== "undefined") animation[item] = funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
-		});
+		} else if (animation instanceof HyperChain) { // recursive
+			animation.chain.forEach( function(childAnimation) {
+				convertPropertiesOfAnimationWithFunction(properties,childAnimation,funky,self);
+			});
+		}
 	}
 }
 
@@ -240,30 +250,47 @@ export function activate(controller, delegate, layerInstance) {
 		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
 	}
 
+
+
+	function cleanupAndRemoveAnimationAtIndex(animation, index) {
+		if (index > -1) {
+			allAnimations.splice(index,1);
+			const name = allNames[index];
+			allNames.splice(index,1);
+			delete namedAnimations[name];
+		}
+	}
+	function cleanupAnimationAtIndex(animation, index, finishedWithCallback) {
+		if (animation instanceof HyperGroup) { // recursive
+			animation.group.forEach( function(childAnimation) {
+				cleanupAnimationAtIndex(childAnimation, -1);
+			});
+		} else if (animation instanceof HyperChain) { // recursive
+			animation.chain.forEach( function(childAnimation) {
+				cleanupAnimationAtIndex(childAnimation, -1);
+			});
+		} else if (!(animation instanceof HyperAnimation)) throw new Error("not an animation");
+		if (animation.finished) {
+			cleanupAndRemoveAnimationAtIndex(animation,index);
+			if (isFunction(animation.onend)) finishedWithCallback.push(animation);
+		}
+	}
+
 	function animationCleanup() { // animations contained within groups ignore remove (removedOnCompletion) and do not fire onend
 		let i = allAnimations.length;
 		const finishedWithCallback = [];
 		while (i--) {
 			const animation = allAnimations[i];
-			if (animation.finished) {
-				allAnimations.splice(i,1);
-				const name = allNames[i];
-				allNames.splice(i,1);
-				delete namedAnimations[name];
-				if (isFunction(animation.onend)) finishedWithCallback.push(animation);
-			}
+			cleanupAnimationAtIndex(animation,i,finishedWithCallback);
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
 			if (!allAnimations.length) {
 				hyperContext.deregisterTarget(controller);
 			}
 		}
-		
-// 		if (!allAnimations.length) { // this is causing problems
-// 			presentationBacking = modelBacking; // why would you do this?
-// 		}
 		finishedWithCallback.forEach( function(animation) {
 			animation.onend.call(animation,true);
+			animation.onend = null; // fill modes might otherwise cause onend to get called again. Can't freeze animation object.
 		});
 	}
 
@@ -493,7 +520,7 @@ export function activate(controller, delegate, layerInstance) {
 
 	controller.addAnimation = function(description,name) { // does not register. // should be able to pass a description if type is registered
 		const copy = animationFromDescription(description);
-		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperGroup)) throw new Error("Animations must be a Hyper.Animation or Group subclass:"+JSON.stringify(copy));
+		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Animations must be an Animation, Group, or Chain subclass:"+JSON.stringify(copy));
 		convertPropertiesOfAnimationWithFunction(["from","to"], copy, delegate.input,delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy,delegate);
 		if (!allAnimations.length) registerWithContext();

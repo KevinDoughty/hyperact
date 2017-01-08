@@ -196,16 +196,72 @@ function animationFromDescription(description) {
 	return animation;
 }
 
-function HyperAction() {}
+function HyperAction() {} // Can't freeze animation objects while implementation of core cleanup sets onend function to null
 
-function HyperGroup(children) {
+function HyperChain(childrenOrSettings) {
 	HyperAction.call(this);
-	if (!Array.isArray(children)) children = [];
+	var children = [];
+	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;else if (childrenOrSettings && childrenOrSettings.chain) children = childrenOrSettings.chain;
+	this.chain = children.map(function (animation) {
+		return animationFromDescription(animation);
+	});
+	// 	this.sortIndex;
+	// 	this.startTime;
+	// 	this.onend;
+	Object.defineProperty(this, "finished", {
+		get: function get$$1() {
+			if (!this.chain.length) return true;
+			return this.chain[this.chain.length - 1].finished;
+		},
+		enumerable: false,
+		configurable: false
+	});
+	if (childrenOrSettings && !Array.isArray(childrenOrSettings)) Object.keys(childrenOrSettings).forEach(function (key) {
+		if (key !== "chain" && key !== "finished") this[key] = childrenOrSettings[key];
+	}.bind(this));
+}
+
+HyperChain.prototype = {
+	constructor: HyperChain,
+	copy: function copy() {
+		return new this.constructor(this);
+	},
+	runAnimation: function runAnimation(layer, key, transaction) {
+		this.sortIndex = animationNumber++;
+		if (this.startTime === null || typeof this.startTime === "undefined") this.startTime = transaction.time;
+		var length = this.chain.length;
+		var fakeTransaction = Object.assign({}, transaction);
+		var startTime = transaction.time;
+		for (var index = 0; index < length; index++) {
+			var animation = this.chain[0];
+			transaction.startTime = startTime;
+			animation.runAnimation.call(animation, layer, key, fakeTransaction);
+			if (startTime === Infinity || animation.iterations === Infinity) startTime = Infinity; // TODO: negative infinity?
+			else startTime = animation.delay + animation.duration * animation.iterations;
+		}
+	},
+	composite: function composite(onto, now) {
+		var changed = false;
+		var length = this.chain.length;
+		for (var index = 0; index < length; index++) {
+			var animation = this.chain[index];
+			changed = animation.composite.call(animation, onto, now) || changed;
+		}
+		return changed;
+	}
+};
+
+function HyperGroup(childrenOrSettings) {
+	HyperAction.call(this);
+	var children = [];
+	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;else if (childrenOrSettings && childrenOrSettings.group) children = childrenOrSettings.group;
+
 	this.group = children.map(function (animation) {
 		return animationFromDescription(animation);
 	});
-	this.sortIndex;
-	this.startTime;
+	// 	this.sortIndex;
+	// 	this.startTime;
+	// 	this.onend;
 	Object.defineProperty(this, "finished", {
 		get: function get$$1() {
 			var result = true;
@@ -217,12 +273,15 @@ function HyperGroup(children) {
 		enumerable: false,
 		configurable: false
 	});
+	if (childrenOrSettings && !Array.isArray(childrenOrSettings)) Object.keys(childrenOrSettings).forEach(function (key) {
+		if (key !== "group" && key !== "finished") this[key] = childrenOrSettings[key];
+	}.bind(this));
 }
 
 HyperGroup.prototype = {
 	constructor: HyperGroup,
 	copy: function copy() {
-		return new this.constructor(this.group);
+		return new this.constructor(this);
 	},
 	runAnimation: function runAnimation(layer, key, transaction) {
 		this.sortIndex = animationNumber++;
@@ -247,7 +306,6 @@ function HyperAnimation(settings) {
 	this.to; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
 	this.type = wetNumberType; // Default
 	this.delta; // Should this be private?
-
 	this.duration; // float. In seconds. Need to validate/ensure >= 0. Initialized in runAnimation
 	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear. Initialized in runAnimation
 	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
@@ -285,6 +343,8 @@ HyperAnimation.prototype = {
 	},
 	composite: function composite(onto, now) {
 		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
+		if (this.startTime > now && this.fillMode !== "backwards" && this.fillMode !== "both") return false;
+		if (this.finished && this.fillMode !== "forwards" && this.fillMode !== "both") return false;
 		var elapsed = Math.max(0, now - (this.startTime + this.delay));
 		var speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy yet. Part of GraphicsLayer.
 		var iterationProgress = 1;
@@ -334,7 +394,7 @@ HyperAnimation.prototype = {
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
-		var changed = iterationProgress !== this.progress;
+		var changed = iterationProgress !== this.progress || this.finished;
 		this.progress = iterationProgress;
 
 		return changed;
@@ -350,7 +410,7 @@ HyperAnimation.prototype = {
 			if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
 			if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
 			//this.progress = 0.0; // keep progress null so first tick is considered a change
-			this.startTime = transaction.time;
+			if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
 			this.sortIndex = animationNumber++;
 		} else throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 	}
@@ -377,16 +437,21 @@ function isFunction(w) {
 }
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
-	if (animation instanceof HyperGroup) {
-		// recursive
-		animation.group.forEach(function (childAnimation) {
-			prepAnimationObjectFromAddAnimation(childAnimation, delegate);
-		});
-	} else if (animation instanceof HyperAnimation) {
+	if (animation instanceof HyperAnimation) {
 		if (delegate.typeForProperty && animation.property) {
 			var type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
 			if (type) animation.type = type;
 		}
+	} else if (animation instanceof HyperGroup) {
+		// recursive
+		animation.group.forEach(function (childAnimation) {
+			prepAnimationObjectFromAddAnimation(childAnimation, delegate);
+		});
+	} else if (animation instanceof HyperChain) {
+		// recursive
+		animation.chain.forEach(function (childAnimation) {
+			prepAnimationObjectFromAddAnimation(childAnimation, delegate);
+		});
 	} else throw new Error("not an animation");
 }
 
@@ -419,16 +484,23 @@ function convertPropertiesOfAnimationWithFunction(properties, animation, funky, 
 	// mutates // animation from, to, and delta
 	// ["from","to","delta"],animation,delegate.input
 	if (animation && isFunction(funky)) {
-		if (animation instanceof HyperGroup) {
+		if (animation instanceof HyperAnimation) {
+			properties.forEach(function (item) {
+				// HyperAnimation
+				var value = animation[item];
+				if (animation.property && value !== null && typeof value !== "undefined") animation[item] = funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
+			});
+		} else if (animation instanceof HyperGroup) {
 			// recursive
 			animation.group.forEach(function (childAnimation) {
 				convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
 			});
-		} else properties.forEach(function (item) {
-			// HyperAnimation
-			var value = animation[item];
-			if (animation.property && value !== null && typeof value !== "undefined") animation[item] = funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
-		});
+		} else if (animation instanceof HyperChain) {
+			// recursive
+			animation.chain.forEach(function (childAnimation) {
+				convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
+			});
+		}
 	}
 }
 
@@ -604,31 +676,48 @@ function activate(controller, delegate, layerInstance) {
 		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
 	}
 
+	function cleanupAndRemoveAnimationAtIndex(animation, index) {
+		if (index > -1) {
+			allAnimations.splice(index, 1);
+			var name = allNames[index];
+			allNames.splice(index, 1);
+			delete namedAnimations[name];
+		}
+	}
+	function cleanupAnimationAtIndex(animation, index, finishedWithCallback) {
+		if (animation instanceof HyperGroup) {
+			// recursive
+			animation.group.forEach(function (childAnimation) {
+				cleanupAnimationAtIndex(childAnimation, -1);
+			});
+		} else if (animation instanceof HyperChain) {
+			// recursive
+			animation.chain.forEach(function (childAnimation) {
+				cleanupAnimationAtIndex(childAnimation, -1);
+			});
+		} else if (!(animation instanceof HyperAnimation)) throw new Error("not an animation");
+		if (animation.finished) {
+			cleanupAndRemoveAnimationAtIndex(animation, index);
+			if (isFunction(animation.onend)) finishedWithCallback.push(animation);
+		}
+	}
+
 	function animationCleanup() {
 		// animations contained within groups ignore remove (removedOnCompletion) and do not fire onend
 		var i = allAnimations.length;
 		var finishedWithCallback = [];
 		while (i--) {
 			var animation = allAnimations[i];
-			if (animation.finished) {
-				allAnimations.splice(i, 1);
-				var name = allNames[i];
-				allNames.splice(i, 1);
-				delete namedAnimations[name];
-				if (isFunction(animation.onend)) finishedWithCallback.push(animation);
-			}
+			cleanupAnimationAtIndex(animation, i, finishedWithCallback);
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
 			if (!allAnimations.length) {
 				hyperContext.deregisterTarget(controller);
 			}
 		}
-
-		// 		if (!allAnimations.length) { // this is causing problems
-		// 			presentationBacking = modelBacking; // why would you do this?
-		// 		}
 		finishedWithCallback.forEach(function (animation) {
 			animation.onend.call(animation, true);
+			animation.onend = null; // fill modes might otherwise cause onend to get called again. Can't freeze animation object.
 		});
 	}
 
@@ -857,7 +946,7 @@ function activate(controller, delegate, layerInstance) {
 	controller.addAnimation = function (description, name) {
 		// does not register. // should be able to pass a description if type is registered
 		var copy = animationFromDescription(description);
-		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperGroup)) throw new Error("Animations must be a Hyper.Animation or Group subclass:" + JSON.stringify(copy));
+		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Animations must be an Animation, Group, or Chain subclass:" + JSON.stringify(copy));
 		convertPropertiesOfAnimationWithFunction(["from", "to"], copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy, delegate);
 		if (!allAnimations.length) registerWithContext();
