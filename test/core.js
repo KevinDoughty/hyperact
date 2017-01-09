@@ -236,31 +236,25 @@ describe("core", function() {
 
 	describe("three", function() {
 		it("presentation does not include delegate methods, activate(view,view,view)", function() {
-			const fake = function() {
-			
+			const test = function(property,value) {
+				return value; // delegate.input and delegate.output are expected to return a value
 			};
 			const view = {
 				a:1,
 				b:2,
 				c:3,
-				fake:fake
+				test:test
 			};
 			delegateMethods.forEach( function(key) {
-				view[key] = fake;
+				view[key] = test;
 			});
-// 			controllerMethods.forEach( function(key) { // Error: Already hyperactive
-// 				view[key] = test;
-// 			});
-// 			controllerProperties.forEach( function(key) { // Error: Already hyperactive
-// 				view[key] = test;
-// 			});
 			core.activate(view,view,view);
 			core.flushTransaction();
-			assert.deepEqual(view.presentation, { a:1, b:2, c:3, fake:fake });
+			assert.deepEqual(view.presentation, { a:1, b:2, c:3, test:test });
 		});
-		it("presentation does not include reserved delegate methods, activate(view,layer,layer)", function() {
-			const test = function() {
-			
+		it("presentation does not include delegate methods, activate(view,layer,layer)", function() {
+			const test = function(property,value) {
+				return value;
 			};
 			const view = {};
 			const layer = { a:1, b:2, c:3, test:test };
@@ -284,7 +278,7 @@ describe("core", function() {
 			core.flushTransaction();
 			assert.deepEqual(view.presentation, expected);
 		});
-		it("presentation does include reserved functions, activate(view,view,layer)", function() {
+		it("presentation does include delegate and controller methods, activate(view,view,layer)", function() {
 			const test = function() {
 			
 			};
@@ -313,7 +307,7 @@ describe("core", function() {
 			core.flushTransaction();
 			assert.deepEqual(view.presentation, expected);
 		});
-		it("implicit duration only, presentation, unflushed", function() {
+		it("set layer with no animation, presentation, unflushed", function() {
 			var view = {
 				a:1,
 				b:2,
@@ -321,6 +315,7 @@ describe("core", function() {
 			};
 			core.activate(view);
 			view.layer = {a:4, b:5, c:6};
+			//console.log("pres:%s;",JSON.stringify(view.presentation));
 			assert.deepEqual(view.presentation, { a:1, b:2, c:3 });
 		});
 		it("implicit constant, presentation, flushed", function() {
@@ -655,7 +650,7 @@ describe("core", function() {
 				a: 3
 			};
 		});
-		it("can't animate functions that you depend on", function() { // otherwise reentrant at valueForKey
+		it("can't animate functions that you depend on", function(done) { // otherwise reentrant at valueForKey
 			function View() {
 				this.animationForKey = (key,nu,old,now) => duration;
 				this.input = (key,value) => value;
@@ -721,40 +716,37 @@ describe("core", function() {
 			assert.deepEqual(view.presentation, { a:2, b:3, c:1 });
 		});
 
-// 		it("group children onend", function(done) { // Expected. For now. Group child animation onend is not called. Also group child animations are not removed
-// 			let count = 0;
-// 			const view = { a:0, b:0, c:0, display: function() {
-// 				if (count > 2) done();
-// 			}};
-// 			core.activate(view);
-// 			const animation = [
-// 				{
-// 					duration:duration / 2,
-// 					property:"a",
-// 					from:0,
-// 					to:1,
-// 					onend: function() {
-// 						console.log("first");
-// 						count++;
-// 					}
-// 				},
-// 				{
-// 					duration:duration,
-// 					onend: function() {
-// 						console.log("second");
-// 						count++;
-// 					}
-// 				},
-// 				{
-// 					duration:duration * 2,
-// 					onend: function() {
-// 						console.log("third");
-// 						count++;
-// 					}
-// 				}
-// 			];
-// 			view.addAnimation(animation);
-// 		});
+		it("group children onend", function(done) {
+			let count = 0;
+			const view = { a:0, b:0, c:0, display: function() {
+				if (count > 2) done();
+			}};
+			core.activate(view);
+			const animation = [
+				{
+					duration:duration / 2,
+					property:"a",
+					from:0,
+					to:1,
+					onend: function() {
+						count++;
+					}
+				},
+				{
+					duration:duration,
+					onend: function() {
+						count++;
+					}
+				},
+				{
+					duration:duration * 2,
+					onend: function() {
+						count++;
+					}
+				}
+			];
+			view.addAnimation(animation);
+		});
 
 	});
 

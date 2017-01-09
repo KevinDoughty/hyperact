@@ -121,7 +121,6 @@ function presentationTransform(presentationLayer,sourceAnimations,time,shouldSor
 
 function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimation,transaction) { // TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
 	let description;
-	//console.log("??? core implicitAnimation:%s; value:%s; previous:%s; presentation:%s;",property,prettyValue,prettyPrevious,prettyPresentation);
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
 	let animation = animationFromDescription(description);
 	if (!animation) animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
@@ -163,7 +162,6 @@ export function activate(controller, delegate, layerInstance) {
 	const registeredProperties = [];
 	let activeBacking = modelBacking;
 	let presentationTime = -1;
-
 
 	function valueForKey(property) { // don't let this become re-entrant (do not animate delegate.output)
 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyOutput,delegate);
@@ -250,8 +248,6 @@ export function activate(controller, delegate, layerInstance) {
 		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
 	}
 
-
-
 	function cleanupAndRemoveAnimationAtIndex(animation, index) {
 		if (index > -1) {
 			allAnimations.splice(index,1);
@@ -263,11 +259,11 @@ export function activate(controller, delegate, layerInstance) {
 	function cleanupAnimationAtIndex(animation, index, finishedWithCallback) {
 		if (animation instanceof HyperGroup) { // recursive
 			animation.group.forEach( function(childAnimation) {
-				cleanupAnimationAtIndex(childAnimation, -1);
+				cleanupAnimationAtIndex(childAnimation, -1, finishedWithCallback);
 			});
 		} else if (animation instanceof HyperChain) { // recursive
 			animation.chain.forEach( function(childAnimation) {
-				cleanupAnimationAtIndex(childAnimation, -1);
+				cleanupAnimationAtIndex(childAnimation, -1, finishedWithCallback);
 			});
 		} else if (!(animation instanceof HyperAnimation)) throw new Error("not an animation");
 		if (animation.finished) {
@@ -276,7 +272,7 @@ export function activate(controller, delegate, layerInstance) {
 		}
 	}
 
-	function animationCleanup() { // animations contained within groups ignore remove (removedOnCompletion) and do not fire onend
+	function animationCleanup() { // animations contained within groups ignore remove (removedOnCompletion) but should fire onend
 		let i = allAnimations.length;
 		const finishedWithCallback = [];
 		while (i--) {
@@ -310,16 +306,12 @@ export function activate(controller, delegate, layerInstance) {
 		}
 	}
 
-	function allowable(key) {
+	function allowableProperty(key) {
 		return ((layerInstance !== controller || (controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0)) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0));
 	}
 
-
 	controller.registerAnimatableProperty = function(property, defaultAnimation) { // Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
-// 		if (layerInstance === delegate && delegateMethods.indexOf(property) > -1) return; // Can't animate functions that you depend on.
-// 		if (layerInstance === controller && controllerMethods.indexOf(property) > -1) return; // Can't animate functions that you depend on.
-// 		if (layerInstance === controller && controllerProperties.indexOf(property) > -1) return; // Can't animate functions that you depend on.
-		if (!allowable(property)) return;
+		if (!allowableProperty(property)) return;
 		let firstTime = false;
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
 		if (firstTime) registeredProperties.push(property);
@@ -329,7 +321,7 @@ export function activate(controller, delegate, layerInstance) {
 		if (defaultAnimation) defaultAnimations[property] = defaultAnimation; // maybe set to defaultValue not defaultAnimation
 		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
 		if (!descriptor || descriptor.configurable === true) {
-			const uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input,delegate);
+			const uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input, delegate);
 			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
 			if (typeof uglyValue === "undefined") modelBacking[property] = null;
 			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
@@ -343,7 +335,6 @@ export function activate(controller, delegate, layerInstance) {
 				configurable: true
 			});
 		}
-		if (property === "animations") throw new Error("I don't think so");
 	};
 
 	Object.defineProperty(controller, "layer", { // TODO: I don't like this. Need a merge function.
@@ -389,50 +380,29 @@ export function activate(controller, delegate, layerInstance) {
 		configurable: false
 	});
 
+	function baseLayer() {
+		return Object.keys(layerInstance).filter(allowableProperty).reduce(function(accumulator, current) {
+			accumulator[current] = layerInstance[current];
+			return accumulator;
+		}, {});
+	}
+
 	Object.defineProperty(controller, "presentation", {
 		get: function() {
-			//let verbose = true;
-			//if (Object.keys(modelBacking).indexOf("fake") > -1) verbose = true;
 			const transactionTime = hyperContext.currentTransaction().time;
-			//if (verbose) console.log("presentation time:%s; transaction time:%s;",presentationTime,transactionTime);
 			if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
-//// 			let baseLayer = {};
-//// 			if (controller !== layerInstance && delegate !== layerInstance) baseLayer = Object.assign({},layerInstance);
-
-			//const presentationLayer = Object.assign({}, layerInstance, modelBacking);
-			//const presentationLayer = Object.assign({}, layerInstance);
-			//const presentationLayer = Object.assign({}, modelBacking);
-
-// 			const prettyModel = Object.assign({},modelBacking);
-// 			convertPropertiesOfLayerWithFunction(Object.keys(prettyModel),prettyModel,delegate.output,delegate);
-
-			const presentationLayer = Object.assign(
-				Object.keys(layerInstance).reduce( function(a, b) {
-					if (allowable(b)) a[b] = layerInstance[b];
-					return a;
-				}, {}),
-				modelBacking
-			);
-
-			//if (verbose) console.log("... presentation mid:%s;",JSON.stringify(presentationLayer));
-
-// 			const presentationLayer = Object.assign({}, layerInstance, modelBacking);
+			const presentationLayer = Object.assign(baseLayer(), modelBacking);
 // 			//convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
-
 // 			if (!allAnimations.length) {
 // 				if (verbose) console.log("... presentation result:%s;",JSON.stringify(presentationLayer));
 // 				return presentationLayer;
 // 			}
-
 			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			if (allAnimations.length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
-			//if (verbose) console.log("presentation changed:%s; backing:%s;",changed,presentationBacking);
 			if (changed || presentationBacking === null) {
 				convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
 				presentationBacking = presentationLayer;
 				Object.freeze(presentationBacking);
-				//if (verbose) console.log("!!! presentation:%s; result:%s;",allAnimations.length,JSON.stringify(presentationBacking));
-				//console.log("!!! presentation:%s; result:%s;",allAnimations.length,JSON.stringify(presentationBacking));
 			}
 			presentationTime = transactionTime;
 			shouldSortAnimations = false;
@@ -442,44 +412,9 @@ export function activate(controller, delegate, layerInstance) {
 		configurable: false
 	});
 
-// 	Object.defineProperty(controller, "model", {
-// 		get: function() {
-// 			const layer = {};
-// 			registeredProperties.forEach( function(key) {
-// 				const value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output,delegate);
-// 				Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
-// 					value: value,
-// 					enumerable: true,
-// 					configurable: false
-// 				});
-// 			});
-// 			Object.freeze(layer);
-// 			return layer;
-// 		},
-// 		enumerable: false,
-// 		configurable: false
-// 	});
-// 	Object.defineProperty(controller, "previous", {
-// 		get: function() {
-// 			const layer = Object.assign({},modelBacking);
-// 			Object.keys(previousBacking).forEach( function(key) {
-// 				const value = convertedValueOfPropertyWithFunction(previousBacking[key], key, delegate.output,delegate);
-// 				Object.defineProperty(layer, key, {
-// 					value: value,
-// 					enumerable: true,
-// 					configurable: false
-// 				});
-// 				previousBacking[key] = modelBacking[key];
-// 			});
-// 			Object.freeze(layer);
-// 			return layer;
-// 		},
-// 		enumerable: false,
-// 		configurable: false
-// 	});
 	Object.defineProperty(controller, "model", {
 		get: function() {
-			const layer = Object.assign({},layerInstance);
+			const layer = baseLayer();//Object.assign({},layerInstance);
 			registeredProperties.forEach( function(key) {
 				const value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output,delegate);
 				Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
@@ -494,9 +429,10 @@ export function activate(controller, delegate, layerInstance) {
 		enumerable: false,
 		configurable: false
 	});
+
 	Object.defineProperty(controller, "previous", {
 		get: function() {
-			const layer = Object.assign({},layerInstance);
+			const layer = baseLayer();//Object.assign({},layerInstance);
 			registeredProperties.forEach( function(key) {
 				const value = convertedValueOfPropertyWithFunction(previousBacking[key], key, delegate.output,delegate);
 				Object.defineProperty(layer, key, {
