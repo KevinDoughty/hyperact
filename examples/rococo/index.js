@@ -38,7 +38,6 @@ class View {
 		const height = canvas.height;
 		const centerX = width/2;
 		const centerY = height/2;
-		//console.log("x:%s; y:%s;",centerX,centerY);
 		const phi = this.value * Math.PI;
 		const array = [];
 		const slice = (Math.PI * 2) / this.vertices;
@@ -65,7 +64,6 @@ class View {
 		this.needsDisplay(); // temporary bug fix
 	}
 	display() {
-		//console.log(JSON.stringify(this.positionArray));
 		const canvas = this.element;
 		const context = canvas.getContext("2d");
 		const width = canvas.width;
@@ -93,7 +91,6 @@ class Slider {
 		this.registerAnimatableProperty("value");
 	}
 	animationForKey(key,value,previous,presentation) {
-		//console.log("animationForKey:%s; value:%s; previous:%s; presentation:%s;",key,value,previous,presentation);
 		return {
 			duration: duration,
 			easing: easing
@@ -145,13 +142,11 @@ document.addEventListener("mouseup", (e) => {
 });
 input.addEventListener("input", (e) => {
 	rococo = input.value / 1000;
-	//console.log("rococo input:%s;",rococo);
 	view.layout(rococo);
 	slider.layout(rococo);
 });
 input.addEventListener("change", (e) => {
 	rococo = input.value / 1000;
-	//console.log("rococo change:%s;",rococo);
 	view.layout(rococo);
 	slider.layout(rococo);
 })

@@ -42,10 +42,6 @@ describe("context", function() {
 			const transaction = context.currentTransaction();
 			assert(transaction);
 		});
-		it("_automaticallyCommit is not exposed", function() {
-			const transaction = context.currentTransaction();
-			assert(transaction && !transaction._automaticallyCommit);
-		});
 		it("transaction time", function() {
 			const transaction = context.currentTransaction();
 			assert(transaction && (transaction.time || transaction.time === 0));

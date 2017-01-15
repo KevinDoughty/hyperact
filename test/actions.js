@@ -1,4 +1,4 @@
-import { HyperGroup, HyperChain, HyperAnimation } from "../source/actions.js";
+import { HyperGroup, HyperChain, HyperAnimation, HyperKeyframes } from "../source/actions.js";
 var assert = require("assert");
 
 function isFunction(w) {
@@ -17,6 +17,12 @@ describe("actions", function() {
 		});
 		it("HyperGroup", function() {
 			assert(isFunction(HyperGroup));
+		});
+		it("HyperChain", function() {
+			assert(isFunction(HyperChain));
+		});
+		it("HyperKeyframes", function() {
+			assert(isFunction(HyperKeyframes));
 		});
 	});
 
@@ -37,6 +43,16 @@ describe("actions", function() {
 			const children = [1,2,3,4];
 			const chain = new HyperChain(children);
 			assert(chain.chain && chain.chain.length === children.length);
+		});
+	});
+
+	describe("three", function() {
+		beforeEach( function() {
+		});
+		it("keyframes length", function() {
+			const children = [1,2,3,4];
+			const keyframes = new HyperKeyframes({keyframes:children});
+			assert(keyframes.keyframes && keyframes.keyframes.length === children.length);
 		});
 	});
 });

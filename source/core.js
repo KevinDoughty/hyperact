@@ -1,5 +1,5 @@
 import { HyperContext } from "./context.js";
-import { HyperAnimation, HyperGroup, HyperChain, animationFromDescription } from "./actions.js";
+import { HyperAnimation, HyperKeyframes, HyperGroup, HyperChain, animationFromDescription } from "./actions.js";
 
 const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
@@ -24,6 +24,13 @@ function prepAnimationObjectFromAddAnimation(animation, delegate) {
 	if (animation instanceof HyperAnimation) {
 		if (delegate.typeForProperty && animation.property) {
 			const type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
+			if (type) animation.type = type;
+		}
+	} else if (animation instanceof HyperKeyframes) {
+		if (delegate.typeForProperty && animation.property) {
+			let keyframe = null;
+			if (animation.keyframes.length) keyframe = animation.keyframes[animation.keyframes.length-1];
+			const type = delegate.typeForProperty.call(delegate, animation.property, keyframe);
 			if (type) animation.type = type;
 		}
 	} else if (animation instanceof HyperGroup) { // recursive
@@ -58,13 +65,23 @@ function convertPropertiesOfLayerWithFunction(properties,object,funky,self) { //
 		convertPropertyOfLayerWithFunction(property,object,funky,self);
 	});
 }
-function convertPropertiesOfAnimationWithFunction(properties,animation,funky,self) { // mutates // animation from, to, and delta
-	// ["from","to","delta"],animation,delegate.input
+function convertPropertiesOfAnimationWithFunction(animation,funky,self) { // mutates // animation from, to, and delta
 	if (animation && isFunction(funky)) {
+		const properties = ["from","to","delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
 		if (animation instanceof HyperAnimation) {
-			properties.forEach( function(item) { // HyperAnimation
+			if (animation.property) properties.forEach( function(item) { // HyperAnimation
 				const value = animation[item];
-				if (animation.property && value !== null && typeof value !== "undefined") animation[item] = funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
+				if (value !== null && typeof value !== "undefined") animation[item] = funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
+			});
+		} else if (animation instanceof HyperKeyframes) {
+			const properties = ["keyframes","delta"];
+			if (animation.property) properties.forEach( function(item) { // HyperKeyframes
+				const array = animation[item];
+				if (array !== null && typeof array !== "undefined") {
+					animation[item] = array.map( value => {
+						funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
+					});
+				}
 			});
 		} else if (animation instanceof HyperGroup) { // recursive
 			animation.group.forEach( function(childAnimation) {
@@ -124,13 +141,15 @@ function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentatio
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
 	let animation = animationFromDescription(description);
 	if (!animation) animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
-	if (animation && animation instanceof HyperAnimation) {
+	if (animation && (animation instanceof HyperAnimation || animation instanceof HyperKeyframes)) {
 		if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
-		if (animation.from === null || typeof animation.from === "undefined") {
-			if (animation.blend === "absolute") animation.from = prettyPresentation;
-			else animation.from = prettyPrevious;
+		if (animation instanceof HyperAnimation) {
+			if (animation.from === null || typeof animation.from === "undefined") {
+				if (animation.blend === "absolute") animation.from = prettyPresentation;
+				else animation.from = prettyPrevious;
+			}
+			if (animation.to === null || typeof animation.to === "undefined") animation.to = prettyValue;
 		}
-		if (animation.to === null || typeof animation.to === "undefined") animation.to = prettyValue;
 		if (animation.easing === null || typeof animation.easing === "undefined") animation.easing = transaction.easing;
 		if (animation.duration === null || typeof animation.duration === "undefined") animation.duration = transaction.duration;
 		if (!animation.duration) animation.duration = 0.0;
@@ -265,7 +284,7 @@ export function activate(controller, delegate, layerInstance) {
 			animation.chain.forEach( function(childAnimation) {
 				cleanupAnimationAtIndex(childAnimation, -1, finishedWithCallback);
 			});
-		} else if (!(animation instanceof HyperAnimation)) throw new Error("not an animation");
+		} else if (!(animation instanceof HyperAnimation) && !(animation instanceof HyperKeyframes)) throw new Error("not an animation");
 		if (animation.finished) {
 			cleanupAndRemoveAnimationAtIndex(animation,index);
 			if (isFunction(animation.onend)) finishedWithCallback.push(animation);
@@ -306,12 +325,12 @@ export function activate(controller, delegate, layerInstance) {
 		}
 	}
 
-	function allowableProperty(key) {
+	function isAllowableProperty(key) {
 		return ((layerInstance !== controller || (controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0)) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0));
 	}
 
 	controller.registerAnimatableProperty = function(property, defaultAnimation) { // Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
-		if (!allowableProperty(property)) return;
+		if (!isAllowableProperty(property)) return;
 		let firstTime = false;
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
 		if (firstTime) registeredProperties.push(property);
@@ -363,7 +382,7 @@ export function activate(controller, delegate, layerInstance) {
 		get: function() {
 			const array = allAnimations.map(function (animation) {
 				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				convertPropertiesOfAnimationWithFunction(["from","to","delta"],copy,delegate.output,delegate);
+				convertPropertiesOfAnimationWithFunction(copy,delegate.output,delegate);
 				return copy;
 			});
 			return array;
@@ -381,7 +400,7 @@ export function activate(controller, delegate, layerInstance) {
 	});
 
 	function baseLayer() {
-		return Object.keys(layerInstance).filter(allowableProperty).reduce(function(accumulator, current) {
+		return Object.keys(layerInstance).filter(isAllowableProperty).reduce(function(accumulator, current) {
 			accumulator[current] = layerInstance[current];
 			return accumulator;
 		}, {});
@@ -456,8 +475,8 @@ export function activate(controller, delegate, layerInstance) {
 
 	controller.addAnimation = function(description,name) { // does not register. // should be able to pass a description if type is registered
 		const copy = animationFromDescription(description);
-		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Animations must be an Animation, Group, or Chain subclass:"+JSON.stringify(copy));
-		convertPropertiesOfAnimationWithFunction(["from","to"], copy, delegate.input,delegate); // delta is calculated from ugly values in runAnimation
+		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:"+JSON.stringify(copy));
+		convertPropertiesOfAnimationWithFunction(copy, delegate.input,delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy,delegate);
 		if (!allAnimations.length) registerWithContext();
 		allAnimations.push(copy);
@@ -498,7 +517,7 @@ export function activate(controller, delegate, layerInstance) {
 		const animation = namedAnimations[name];
 		if (animation) {
 			const copy = animation.copy.call(animation);
-			convertPropertiesOfAnimationWithFunction(["from","to","delta"],copy,delegate.output,delegate);
+			convertPropertiesOfAnimationWithFunction(copy,delegate.output,delegate);
 			return copy;
 		}
 		return null;

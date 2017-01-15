@@ -1,7 +1,8 @@
 import * as core from "../source/core.js";
 var assert = require("assert");
+import { HyperChain, HyperKeyframes } from "../source/actions.js";
 
-var duration = 0.1; // mocha timeout is 2 seconds
+var duration = 0.05; // mocha timeout is 2 seconds
 
 const delegateMethods = ["display","animationForKey","input","output"];
 const controllerMethods = ["addAnimation","animationNamed","needsDisplay","registerAnimatableProperty","removeAllAnimations", "removeAnimation"];
@@ -716,10 +717,10 @@ describe("core", function() {
 			assert.deepEqual(view.presentation, { a:2, b:3, c:1 });
 		});
 
-		it("group children onend", function(done) {
+		it("group onend", function(done) {
 			let count = 0;
 			const view = { a:0, b:0, c:0, display: function() {
-				if (count > 2) done();
+				if (count === 3) done();
 			}};
 			core.activate(view);
 			const animation = [
@@ -751,7 +752,322 @@ describe("core", function() {
 	});
 
 
+
 	describe("seven", function() {
+		it("chain presentation unflushed", function() {
+			var view = {a:0};
+			core.activate(view);
+			view.addAnimation( new HyperChain([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:2,
+					to:2,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:3,
+					to:3,
+					blend:"absolute",
+					additive:false
+				}
+			]));
+			assert.deepEqual(view.presentation, { a:0 });
+		});
+		it("chain presentation flushed", function() {
+			var view = {a:0};
+			core.activate(view);
+			view.addAnimation( new HyperChain([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:2,
+					to:2,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:3,
+					to:3,
+					blend:"absolute",
+					additive:false
+				}
+			]));
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, { a:1 });
+		});
+
+		it("chain presentation step one", function(done) {
+			var view = {a:0};
+			core.activate(view);
+			view.addAnimation({
+				duration: duration/2,
+				onend: function() {
+					var error = (view.presentation.a === 1) ? null : new Error("chain presentation value incorrect");
+					done(error);
+				}
+			});
+			view.addAnimation(new HyperChain([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:2,
+					to:2,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:3,
+					to:3,
+					blend:"absolute",
+					additive:false
+				}
+			]));
+		});
+
+		it("chain presentation step two", function(done) {
+			var view = {a:0};
+			core.activate(view);
+			view.addAnimation({
+				duration: duration + duration/2,
+				onend: function() {
+					var error = (view.presentation.a === 2) ? null : new Error("chain presentation value incorrect");
+					done(error);
+				}
+			});
+			view.addAnimation(new HyperChain([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:2,
+					to:2,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:3,
+					to:3,
+					blend:"absolute",
+					additive:false
+				}
+			]));
+		});
+
+		it("chain presentation step three", function(done) {
+			var view = {a:0};
+			core.activate(view);
+			view.addAnimation({
+				duration: duration*2 + duration/2,
+				onend: function() {
+					var error = (view.presentation.a === 3) ? null : new Error("chain presentation value incorrect");
+					done(error);
+				}
+			});
+			view.addAnimation(new HyperChain([
+				{
+					property:"a",
+					duration:duration,
+					from:1,
+					to:1,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:2,
+					to:2,
+					blend:"absolute"
+				},
+				{
+					property:"a",
+					duration:duration,
+					from:3,
+					to:3,
+					blend:"absolute",
+					additive:false
+				}
+			]));
+		});
+
+		it("chain onend", function(done) {
+			let count = 0;
+			const view = { a:0, display: function() {
+				if (count === 4) done();
+			}};
+			core.activate(view);
+			const animation = new HyperChain({
+				chain:[
+					{
+						duration:duration / 2,
+						property:"a",
+						from:0,
+						to:1,
+						onend: function() {
+							count++;
+						}
+					},
+					{
+						duration:duration,
+						onend: function() {
+							count++;
+						}
+					},
+					{
+						duration:duration * 2,
+						onend: function() {
+							count++;
+						}
+					}
+				],
+				onend: function() {
+					count++;
+				}
+			});
+			view.addAnimation(animation);
+		});
+
+	});
+
+
+
+	describe("eight", function() {
+
+		it("keyframe presentation unflushed", function() {
+			var view = {a:0};
+			core.activate(view);
+			view.addAnimation( new HyperKeyframes({
+				property:"a",
+				keyframes:[1,1],
+				duration:duration,
+				blend:"absolute"
+			}));
+			assert.deepEqual(view.presentation, { a:0 });
+		});
+		it("keyframe presentation flushed", function() {
+			var view = {a:0};
+			core.activate(view);
+			view.addAnimation( new HyperKeyframes({
+				property:"a",
+				keyframes:[1,1],
+				duration:duration,
+				blend:"absolute"
+			}));
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, { a:1 });
+		});
+
+		it("keyframe presentation step one", function(done) {
+			var view = {one:0};
+			core.activate(view);
+			view.addAnimation({
+				duration: duration/4,
+				onend: function() {
+					var error = (view.presentation.one === 1) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.one);
+					done(error);
+				}
+			});
+			view.addAnimation( new HyperKeyframes(
+				{
+					property:"one",
+					duration:duration * 1.5,
+					keyframes:[1,1,2,2],
+					blend:"absolute"
+				}
+			));
+		});
+
+		it("keyframe presentation step two", function(done) {
+			var view = {two:0};
+			core.activate(view);
+			view.addAnimation({
+				duration: duration/2 + duration/4,
+				onend: function() {
+					var error = (view.presentation.two > 1 && view.presentation.two < 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.two);
+					done(error);
+				}
+			});
+			view.addAnimation( new HyperKeyframes(
+				{
+					property:"two",
+					duration:duration * 1.5,
+					keyframes:[1,1,2,2],
+					blend:"absolute"
+				}
+			));
+		});
+
+		it("keyframe presentation step three", function(done) {
+			var view = {three:0};
+			core.activate(view);
+			view.addAnimation({
+				duration: duration + duration/4,
+				onend: function() {
+					var error = (view.presentation.three === 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.three);
+					done(error);
+				}
+			});
+			view.addAnimation( new HyperKeyframes(
+				{
+					property:"three",
+					duration:duration * 1.5,
+					keyframes:[1,1,2,2],
+					blend:"absolute"
+				}
+			));
+		});
+
+		it("keyframes onend", function(done) {
+			const view = { a:0 };
+			core.activate(view);
+			const animation = new HyperKeyframes({
+				duration:duration,
+				property:"a",
+				keyframes:[1,2,3],
+				onend: function() {
+					done();
+				}
+			});
+			view.addAnimation(animation);
+		});
+
+	});
+
+
+
+	describe("nine", function() {
 
 		it("added animations not apparent in presentation until transaction flush, not flushed, explicit transaction", function() {
 			core.beginTransaction();
@@ -766,19 +1082,19 @@ describe("core", function() {
 			core.commitTransaction();
 		});
 
-		it("added animations not apparent in presentation until transaction flush, flushed, explicit transaction", function() {
-			core.beginTransaction();
-			const view = core.activate({a:0});
-			view.addAnimation({
-				property:"a",
-				from:1,
-				to:1,
-				duration:duration
-			});
-			core.flushTransaction();
-			assert.equal(view.presentation.a,1);
-			core.commitTransaction();
-		});
+// 		it("added animations not apparent in presentation until transaction flush, flushed, explicit transaction", function() { // This is unfortunately expected behavior in Core Animation.
+// 			core.beginTransaction();
+// 			const view = core.activate({a:0});
+// 			view.addAnimation({
+// 				property:"a",
+// 				from:1,
+// 				to:1,
+// 				duration:duration
+// 			});
+// 			core.flushTransaction();
+// 			assert.equal(view.presentation.a,1);
+// 			core.commitTransaction();
+// 		});
 
 		it("added animations not apparent in presentation until transaction flush, not flushed, implicit transaction", function() {
 			const view = core.activate({a:0});
@@ -806,7 +1122,7 @@ describe("core", function() {
 	});
 
 
-	describe("eight", function() {
+	describe("ten", function() {
 		var one;
 		var view;
 		beforeEach( function() {
@@ -905,7 +1221,7 @@ describe("core", function() {
 
 
 
-	describe("nine", function() {
+	describe("eleven", function() {
 		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
 			const view = {};
 			core.activate(view);
