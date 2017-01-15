@@ -184,24 +184,9 @@ function isObject(w) {
 	return w && (typeof w === "undefined" ? "undefined" : _typeof(w)) === "object";
 }
 
-function animationFromDescription(description) {
-	var animation = void 0;
-	if (!description) return description;else if (description instanceof HyperGroup || description instanceof HyperAnimation) {
-		animation = description.copy.call(description);
-	} else if (Array.isArray(description)) {
-		animation = new HyperGroup(description);
-	} else if (isObject(description)) {
-		animation = new HyperAnimation(description);
-	} else if (isNumber(description)) animation = new HyperAnimation({ duration: description });else if (description === true) animation = new HyperAnimation({});else throw new Error("is this an animation:" + JSON.stringify(description));
-	return animation;
-}
-
-function HyperAction() {} // Can't freeze animation objects while implementation of core cleanup sets onend function to null
-
 function HyperChain(childrenOrSettings) {
-	HyperAction.call(this);
 	var children = [];
-	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;else if (childrenOrSettings && childrenOrSettings.chain) children = childrenOrSettings.chain;
+	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;else if (childrenOrSettings && Array.isArray(childrenOrSettings.chain)) children = childrenOrSettings.chain;
 	this.chain = children.map(function (animation) {
 		return animationFromDescription(animation);
 	});
@@ -231,13 +216,13 @@ HyperChain.prototype = {
 		if (this.startTime === null || typeof this.startTime === "undefined") this.startTime = transaction.time;
 		var length = this.chain.length;
 		var fakeTransaction = Object.assign({}, transaction);
-		var startTime = transaction.time;
+		var startTime = this.startTime;
 		for (var index = 0; index < length; index++) {
-			var animation = this.chain[0];
-			transaction.startTime = startTime;
+			var animation = this.chain[index];
+			fakeTransaction.time = startTime;
 			animation.runAnimation.call(animation, layer, key, fakeTransaction);
 			if (startTime === Infinity || animation.iterations === Infinity) startTime = Infinity; // TODO: negative infinity?
-			else startTime = animation.delay + animation.duration * animation.iterations;
+			else startTime = startTime + animation.delay + animation.duration * animation.iterations;
 		}
 	},
 	composite: function composite(onto, now) {
@@ -252,7 +237,6 @@ HyperChain.prototype = {
 };
 
 function HyperGroup(childrenOrSettings) {
-	HyperAction.call(this);
 	var children = [];
 	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;else if (childrenOrSettings && childrenOrSettings.group) children = childrenOrSettings.group;
 
@@ -299,13 +283,9 @@ HyperGroup.prototype = {
 	}
 };
 
-function HyperAnimation(settings) {
-	HyperAction.call(this);
+function HyperAction() {
 	this.property; // string, property name
-	this.from; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
-	this.to; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
 	this.type = wetNumberType; // Default
-	this.delta; // Should this be private?
 	this.duration; // float. In seconds. Need to validate/ensure >= 0. Initialized in runAnimation
 	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear. Initialized in runAnimation
 	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
@@ -314,23 +294,18 @@ function HyperAnimation(settings) {
 	this.fillMode; // string. Defaults to "none". NOT FINISHED. "forwards" and "backwards" are "both". maybe should be named "fill". maybe should just be a boolean. // I'm unsure of the effect of combining a forward fill with additive // TODO: implement removedOnCompletion
 	this.index = 0; // float. Custom compositing order.
 	this.delay = 0; // float. In seconds. // TODO: easing should be taken in effect after the delay
-	this.blend = "relative"; // also "absolute" or "zero" // Default should be "absolute" if explicit
+	this.blend = "relative"; // also "absolute" // Default should be "absolute" if explicit
 	this.additive = true;
 	this.sort;
 	this.finished = false;
 	this.startTime; // float // Should this be private?
-	this.progress; //null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers. Initialized in runAnimation
+	this.progress; //null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers. No longer initialized in runAnimation
 	this.onend; // NOT FINISHED. callback function, fires regardless of fillMode. Should rename. Should also implement didStart, maybe didTick, etc.
 	//this.naming; // "default","exact","increment","nil" // why not a key property?
 	this.remove = true;
+} // Can't freeze animation objects while implementation of core cleanup sets onend function to null
 
-	if (settings) Object.keys(settings).forEach(function (key) {
-		this[key] = settings[key];
-	}.bind(this));
-}
-
-HyperAnimation.prototype = {
-	constructor: HyperAnimation,
+HyperAction.prototype = {
 	copy: function copy() {
 		// TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
 		var copy = new this.constructor(this.settings);
@@ -346,7 +321,7 @@ HyperAnimation.prototype = {
 		if (this.startTime > now && this.fillMode !== "backwards" && this.fillMode !== "both") return false;
 		if (this.finished && this.fillMode !== "forwards" && this.fillMode !== "both") return false;
 		var elapsed = Math.max(0, now - (this.startTime + this.delay));
-		var speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy yet. Part of GraphicsLayer.
+		var speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy
 		var iterationProgress = 1;
 		var combinedProgress = 1;
 		var iterationDuration = this.duration;
@@ -381,7 +356,31 @@ HyperAnimation.prototype = {
 				} else if (this.easing !== "linear") iterationProgress = rounded;
 			} else iterationProgress = rounded;
 		}
-		var value = this.blend === "absolute" ? this.type.interpolate(this.from, this.to, iterationProgress) : this.type.interpolate(this.delta, this.type.zero(this.to), iterationProgress); // sending argument to zero() for css transforms
+		//const value = (this.blend === "absolute") ? this.type.interpolate(this.from,this.to,iterationProgress) : this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms
+		var value = void 0;
+		if (this instanceof HyperKeyframes) {
+			// TODO: This is just wrong
+			var length = this.keyframes.length;
+			if (!length) throw new Error("HyperAction composite need to be able to handle zero keyframes");
+			if (length === 1) throw new Error("HyperAction composite need to be able to handle one keyframe");
+			//let i = length;
+			//while (i--) { // TODO: This is also just wrong
+			var i = void 0;
+			for (i = 0; i < length - 1; i++) {
+				//const offset = this.offsets[i];
+				//console.log("%s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
+				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i + 1]) {
+					break;
+				}
+			}
+			var previous = i;
+			var next = previous + 1;
+			if (this.blend === "absolute") value = this.type.interpolate(this.keyframes[previous], this.keyframes[next], iterationProgress - this.offsets[previous]);else value = this.type.interpolate(this.delta[previous], this.delta[next], iterationProgress - this.offsets[previous]); // sending argument to zero() for css transforms (or custom types)
+			//console.log("%s prev:%s; next:%s; progress:%s; offset prev:%s; next:%s; keyframes prev:%s; next:%s; value:%s; offsets:%s; keyframes:%s;",this.property,previous,next,iterationProgress,this.offsets[previous],this.offsets[next],this.keyframes[previous],this.keyframes[next],value,JSON.stringify(this.offsets),JSON.stringify(this.keyframes));
+		} else {
+			// HyperAnimation
+			if (this.blend === "absolute") value = this.type.interpolate(this.from, this.to, iterationProgress);else value = this.type.interpolate(this.delta, this.type.zero(this.to), iterationProgress); // sending argument to zero() for css transforms (or custom types)
+		}
 		var property = this.property;
 		if (typeof property !== "undefined" && property !== null) {
 			// allow animating without declaring property
@@ -398,23 +397,102 @@ HyperAnimation.prototype = {
 		this.progress = iterationProgress;
 
 		return changed;
-	},
-	runAnimation: function runAnimation(layer, key, transaction) {
-		if (isFunction$2(this.type)) this.type = new this.type();
-		if (this.type && isFunction$2(this.type.zero) && isFunction$2(this.type.add) && isFunction$2(this.type.subtract) && isFunction$2(this.type.interpolate)) {
-			if (!this.from) this.from = this.type.zero(this.to);
-			if (!this.to) this.to = this.type.zero(this.from);
-			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from, this.to);
-			if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
-			if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
-			if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
-			if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
-			//this.progress = 0.0; // keep progress null so first tick is considered a change
-			if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
-			this.sortIndex = animationNumber++;
-		} else throw new Error("Hyper.Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 	}
 };
+
+function HyperKeyframes(settings) {
+	HyperAction.call(this);
+	var children = [];
+	if (settings && Array.isArray(settings.keyframes)) children = settings.keyframes;
+	this.keyframes = children;
+	var length = this.keyframes.length;
+
+	if (settings) Object.keys(settings).forEach(function (key) {
+		if (key !== "keyframes") this[key] = settings[key];
+	}.bind(this));
+
+	if (!Array.isArray(this.offsets) || this.offsets.length !== length) {
+		// TODO: handle zero or one frames
+		if (length < 2) this.offsets = [];else this.offsets = this.keyframes.map(function (item, index) {
+			return index / (length - 1);
+		});
+	} else this.offsets.sort(function (a, b) {
+		// TODO: maybe verify all offset are actually numbers, between 0 and 1
+		return a - b;
+	});
+}
+
+HyperKeyframes.prototype = Object.create(HyperAction.prototype);
+HyperKeyframes.prototype.constructor = HyperKeyframes;
+HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
+	if (isFunction$2(this.type)) this.type = new this.type();
+	if (this.type && isFunction$2(this.type.zero) && isFunction$2(this.type.add) && isFunction$2(this.type.subtract) && isFunction$2(this.type.interpolate)) {
+		// 			if (!this.from) this.from = this.type.zero(this.to);
+		// 			if (!this.to) this.to = this.type.zero(this.from);
+		// 			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
+		if (this.blend !== "absolute" && this.keyframes.length) {
+			var last = this.keyfames.length - 1;
+			var array = [];
+			for (var i = 0; i < last; i++) {
+				array[i] = this.type.subtract(array[i], array[i + 1]);
+			}
+			array[last] = this.type.zero(this.keyframes[last]);
+			this.delta = array;
+		}
+		if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
+		if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
+		if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
+		if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
+		if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
+		this.sortIndex = animationNumber++;
+	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
+};
+
+function HyperAnimation(settings) {
+	HyperAction.call(this);
+	this.from; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
+	this.to; // type specific. Subclasses must implement zero, add, subtract and interpolate. invert is no longer used
+	this.delta; // Should this be private?
+
+	if (settings) Object.keys(settings).forEach(function (key) {
+		this[key] = settings[key];
+	}.bind(this));
+}
+
+HyperAnimation.prototype = Object.create(HyperAction.prototype);
+HyperAnimation.prototype.constructor = HyperAnimation;
+HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
+	if (!this.type) {
+		console.log("HyperAnimation runAnimation questionable type assignment");
+		this.type = wetNumberType; // questionable if I should do this here
+	}
+	if (isFunction$2(this.type)) this.type = new this.type();
+	if (this.type && isFunction$2(this.type.zero) && isFunction$2(this.type.add) && isFunction$2(this.type.subtract) && isFunction$2(this.type.interpolate)) {
+		if (!this.from) this.from = this.type.zero(this.to);
+		if (!this.to) this.to = this.type.zero(this.from);
+		if (this.blend !== "absolute") this.delta = this.type.subtract(this.from, this.to);
+		if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
+		if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
+		if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
+		if (this.iterations === null || typeof this.iterations === "undefined") this.iterations = 1; // negative values have no effect
+		//this.progress = 0.0; // keep progress null so first tick is considered a change
+		if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
+		this.sortIndex = animationNumber++;
+	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
+};
+
+function animationFromDescription(description) {
+	var animation = void 0;
+	if (!description) return description;
+	if (description instanceof HyperAction || description instanceof HyperGroup || description instanceof HyperChain) {
+		animation = description.copy.call(description);
+	} else if (Array.isArray(description)) {
+		animation = new HyperGroup(description);
+	} else if (isObject(description)) {
+		animation = new HyperAnimation(description);
+	} else if (isNumber(description)) animation = new HyperAnimation({ duration: description });else if (description === true) animation = new HyperAnimation({});else throw new Error("is this an animation:" + JSON.stringify(description));
+	return animation;
+}
 
 var DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 var ENSURE_ONE_MORE_TICK = true; // true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
@@ -441,6 +519,13 @@ function prepAnimationObjectFromAddAnimation(animation, delegate) {
 		if (delegate.typeForProperty && animation.property) {
 			var type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
 			if (type) animation.type = type;
+		}
+	} else if (animation instanceof HyperKeyframes) {
+		if (delegate.typeForProperty && animation.property) {
+			var keyframe = null;
+			if (animation.keyframes.length) keyframe = animation.keyframes[animation.keyframes.length - 1];
+			var _type = delegate.typeForProperty.call(delegate, animation.property, keyframe);
+			if (_type) animation.type = _type;
 		}
 	} else if (animation instanceof HyperGroup) {
 		// recursive
@@ -480,27 +565,40 @@ function convertPropertiesOfLayerWithFunction(properties, object, funky, self) {
 		convertPropertyOfLayerWithFunction(property, object, funky, self);
 	});
 }
-function convertPropertiesOfAnimationWithFunction(properties, animation, funky, self) {
+function convertPropertiesOfAnimationWithFunction(animation, funky, self) {
 	// mutates // animation from, to, and delta
-	// ["from","to","delta"],animation,delegate.input
 	if (animation && isFunction(funky)) {
-		if (animation instanceof HyperAnimation) {
-			properties.forEach(function (item) {
-				// HyperAnimation
-				var value = animation[item];
-				if (animation.property && value !== null && typeof value !== "undefined") animation[item] = funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
-			});
-		} else if (animation instanceof HyperGroup) {
-			// recursive
-			animation.group.forEach(function (childAnimation) {
-				convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
-			});
-		} else if (animation instanceof HyperChain) {
-			// recursive
-			animation.chain.forEach(function (childAnimation) {
-				convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
-			});
-		}
+		(function () {
+			var properties = ["from", "to", "delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
+			if (animation instanceof HyperAnimation) {
+				if (animation.property) properties.forEach(function (item) {
+					// HyperAnimation
+					var value = animation[item];
+					if (value !== null && typeof value !== "undefined") animation[item] = funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
+				});
+			} else if (animation instanceof HyperKeyframes) {
+				var _properties = ["keyframes", "delta"];
+				if (animation.property) _properties.forEach(function (item) {
+					// HyperKeyframes
+					var array = animation[item];
+					if (array !== null && typeof array !== "undefined") {
+						animation[item] = array.map(function (value) {
+							funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
+						});
+					}
+				});
+			} else if (animation instanceof HyperGroup) {
+				// recursive
+				animation.group.forEach(function (childAnimation) {
+					convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
+				});
+			} else if (animation instanceof HyperChain) {
+				// recursive
+				animation.chain.forEach(function (childAnimation) {
+					convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
+				});
+			}
+		})();
 	}
 }
 
@@ -553,12 +651,14 @@ function implicitAnimation(property, prettyValue, prettyPrevious, prettyPresenta
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate, property, prettyValue, prettyPrevious, prettyPresentation); // TODO: rename action or implicit
 	var animation = animationFromDescription(description);
 	if (!animation) animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
-	if (animation && animation instanceof HyperAnimation) {
+	if (animation && (animation instanceof HyperAnimation || animation instanceof HyperKeyframes)) {
 		if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
-		if (animation.from === null || typeof animation.from === "undefined") {
-			if (animation.blend === "absolute") animation.from = prettyPresentation;else animation.from = prettyPrevious;
+		if (animation instanceof HyperAnimation) {
+			if (animation.from === null || typeof animation.from === "undefined") {
+				if (animation.blend === "absolute") animation.from = prettyPresentation;else animation.from = prettyPrevious;
+			}
+			if (animation.to === null || typeof animation.to === "undefined") animation.to = prettyValue;
 		}
-		if (animation.to === null || typeof animation.to === "undefined") animation.to = prettyValue;
 		if (animation.easing === null || typeof animation.easing === "undefined") animation.easing = transaction.easing;
 		if (animation.duration === null || typeof animation.duration === "undefined") animation.duration = transaction.duration;
 		if (!animation.duration) animation.duration = 0.0;
@@ -689,7 +789,7 @@ function activate(controller, delegate, layerInstance) {
 			animation.chain.forEach(function (childAnimation) {
 				cleanupAnimationAtIndex(childAnimation, -1, finishedWithCallback);
 			});
-		} else if (!(animation instanceof HyperAnimation)) throw new Error("not an animation");
+		} else if (!(animation instanceof HyperAnimation) && !(animation instanceof HyperKeyframes)) throw new Error("not an animation");
 		if (animation.finished) {
 			cleanupAndRemoveAnimationAtIndex(animation, index);
 			if (isFunction(animation.onend)) finishedWithCallback.push(animation);
@@ -731,13 +831,13 @@ function activate(controller, delegate, layerInstance) {
 		}
 	}
 
-	function allowableProperty(key) {
+	function isAllowableProperty(key) {
 		return (layerInstance !== controller || controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0);
 	}
 
 	controller.registerAnimatableProperty = function (property, defaultAnimation) {
 		// Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
-		if (!allowableProperty(property)) return;
+		if (!isAllowableProperty(property)) return;
 		var firstTime = false;
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
 		if (firstTime) registeredProperties.push(property);
@@ -789,7 +889,7 @@ function activate(controller, delegate, layerInstance) {
 		get: function get() {
 			var array = allAnimations.map(function (animation) {
 				var copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				convertPropertiesOfAnimationWithFunction(["from", "to", "delta"], copy, delegate.output, delegate);
+				convertPropertiesOfAnimationWithFunction(copy, delegate.output, delegate);
 				return copy;
 			});
 			return array;
@@ -807,7 +907,7 @@ function activate(controller, delegate, layerInstance) {
 	});
 
 	function baseLayer() {
-		return Object.keys(layerInstance).filter(allowableProperty).reduce(function (accumulator, current) {
+		return Object.keys(layerInstance).filter(isAllowableProperty).reduce(function (accumulator, current) {
 			accumulator[current] = layerInstance[current];
 			return accumulator;
 		}, {});
@@ -884,8 +984,8 @@ function activate(controller, delegate, layerInstance) {
 	controller.addAnimation = function (description, name) {
 		// does not register. // should be able to pass a description if type is registered
 		var copy = animationFromDescription(description);
-		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Animations must be an Animation, Group, or Chain subclass:" + JSON.stringify(copy));
-		convertPropertiesOfAnimationWithFunction(["from", "to"], copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
+		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:" + JSON.stringify(copy));
+		convertPropertiesOfAnimationWithFunction(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy, delegate);
 		if (!allAnimations.length) registerWithContext();
 		allAnimations.push(copy);
@@ -924,7 +1024,7 @@ function activate(controller, delegate, layerInstance) {
 		var animation = namedAnimations[name];
 		if (animation) {
 			var copy = animation.copy.call(animation);
-			convertPropertiesOfAnimationWithFunction(["from", "to", "delta"], copy, delegate.output, delegate);
+			convertPropertiesOfAnimationWithFunction(copy, delegate.output, delegate);
 			return copy;
 		}
 		return null;
