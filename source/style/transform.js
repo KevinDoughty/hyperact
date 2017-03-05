@@ -3,7 +3,7 @@
 
 import { isDefinedAndNotNull, interp, clamp } from "./shared.js";
 import { lengthType } from "./length.js";
-import { numberType } from "./number.js";
+import { cssNumberType } from "./number.js";
 
 var convertToDeg = function(num, type) {
 	switch (type) {
@@ -559,8 +559,8 @@ export const transformType = {
 	toJSON: function() {
 		return this.toString();
 	},
-	inverse: function(value) { // KxDx // TODO: SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+	inverse: function(value) { // KxDx // TODO: SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
 		if (!value || !value.length) { // This happens often...
 			//console.log("transformType inverse with no base!");
 			value = this.zero();
@@ -575,22 +575,22 @@ export const transformType = {
 				case "rotateZ":
 				case "skewX":
 				case "skewY":
-					out.push({t : value[i].t, d : [numberType.inverse(value[i].d[0])]}); // new style, have to unwrap then re-wrap
+					out.push({t : value[i].t, d : [cssNumberType.inverse(value[i].d[0])]}); // new style, have to unwrap then re-wrap
 					break;
 				case "skew":
-					out.push({ t : value[i].t, d : [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1])] });
+					out.push({ t : value[i].t, d : [cssNumberType.inverse(value[i].d[0]), cssNumberType.inverse(value[i].d[1])] });
 					break;
 				case "translateX":
 				case "translateY":
 				case "translateZ":
 				case "perspective":
-					out.push({t : value[i].t, d : [numberType.inverse(value[i].d[0])]	});
+					out.push({t : value[i].t, d : [cssNumberType.inverse(value[i].d[0])]});
 					break;
 				case "translate":
-					out.push({t : value[i].t, d : [{px : numberType.inverse(value[i].d[0].px)}, {px : numberType.inverse(value[i].d[1].px)}] });
+					out.push({t : value[i].t, d : [{px : cssNumberType.inverse(value[i].d[0].px)}, {px : cssNumberType.inverse(value[i].d[1].px)}] });
 					break;
 				case "translate3d":
-					out.push({t : value[i].t, d : [{px : numberType.inverse(value[i].d[0].px)}, {px : numberType.inverse(value[i].d[1].px)}, {px : numberType.inverse(value[i].d[2].px)} ] });
+					out.push({t : value[i].t, d : [{px : cssNumberType.inverse(value[i].d[0].px)}, {px : cssNumberType.inverse(value[i].d[1].px)}, {px : cssNumberType.inverse(value[i].d[2].px)} ] });
 					break;
 				case "scale":
 					out.push({ t : value[i].t, d : [delta[i].d[0]/value[i].d[0], delta[i].d[1]/value[i].d[1]] }); // inverse of 2 is 1/2
@@ -604,7 +604,7 @@ export const transformType = {
 					out.push({ t : value[i].t, d : [ delta[i].d[0]/value[i].d[0], delta[i].d[1]/value[i].d[1], -1/value[i].d[2]] }); // inverse of 2 is 1/2
 					break;
 				case "matrix":
-					out.push({ t : value[i].t, d : [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1]), numberType.inverse(value[i].d[2]), numberType.inverse(value[i].d[3]), numberType.inverse(value[i].d[4]), numberType.inverse(value[i].d[5])] });
+					out.push({ t : value[i].t, d : [cssNumberType.inverse(value[i].d[0]), cssNumberType.inverse(value[i].d[1]), cssNumberType.inverse(value[i].d[2]), cssNumberType.inverse(value[i].d[3]), cssNumberType.inverse(value[i].d[4]), cssNumberType.inverse(value[i].d[5])] });
 					break;
 			}
 		}
@@ -612,8 +612,8 @@ export const transformType = {
 	},
 
 	add: function(base, delta) {
-		//console.log("ADD base:%s;",JSON.stringify(base));
-		//console.log("ADD delta:%s;",JSON.stringify(delta));
+// 		console.log("ADD base:%s;",JSON.stringify(base));
+// 		console.log("ADD delta:%s;",JSON.stringify(delta));
 		
 		if (!base || !base.length) return delta;
 		if (!delta || !delta.length) return base;
@@ -636,8 +636,10 @@ export const transformType = {
 		return base.concat(delta);
 	},
 
-	sum: function(value,delta) { // add is for the full values, sum is for their components // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+	sum: function(value,delta) { // add is for the full values, sum is for their components // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+// 		console.log("SUM base:%s;",JSON.stringify(value));
+// 		console.log("SUM delta:%s;",JSON.stringify(delta));
 		var out = [];
 		var valueLength = value.length;
 		var deltaLength = delta.length;
@@ -655,22 +657,22 @@ export const transformType = {
 					case "rotateZ":
 					case "skewX":
 					case "skewY":
-						out.push({t : value[i].t, d : [numberType.add(value[i].d[0],delta[j].d[0])]}); // new style, have to unwrap then re-wrap
+						out.push({t : value[i].t, d : [cssNumberType.add(value[i].d[0],delta[j].d[0])]}); // new style, have to unwrap then re-wrap
 						break;
 					case "skew":
-						out.push({ t : value[i].t, d : [numberType.add(value[i].d[0],delta[j].d[0]), numberType.add(value[i].d[1],delta[j].d[1])] });
+						out.push({ t : value[i].t, d : [cssNumberType.add(value[i].d[0],delta[j].d[0]), cssNumberType.add(value[i].d[1],delta[j].d[1])] });
 						break;
 					case "translateX":
 					case "translateY":
 					case "translateZ":
 					case "perspective":
-						out.push({t : value[i].t, d : [numberType.add(value[i].d[0],delta[j].d[0])]	});
+						out.push({t : value[i].t, d : [cssNumberType.add(value[i].d[0],delta[j].d[0])]	});
 						break;
 					case "translate":
-						out.push({t : value[i].t, d : [{px : numberType.add(value[i].d[0].px,delta[j].d[0].px)}, {px : numberType.add(value[i].d[1].px,delta[j].d[1].px)}] });
+						out.push({t : value[i].t, d : [{px : cssNumberType.add(value[i].d[0].px,delta[j].d[0].px)}, {px : cssNumberType.add(value[i].d[1].px,delta[j].d[1].px)}] });
 						break;
 					case "translate3d":
-						out.push({t : value[i].t, d : [{px : numberType.add(value[i].d[0].px,delta[j].d[0].px)}, {px : numberType.add(value[i].d[1].px,delta[j].d[1].px)}, {px : numberType.add(value[i].d[2].px,delta[j].d[2].px)} ] });
+						out.push({t : value[i].t, d : [{px : cssNumberType.add(value[i].d[0].px,delta[j].d[0].px)}, {px : cssNumberType.add(value[i].d[1].px,delta[j].d[1].px)}, {px : cssNumberType.add(value[i].d[2].px,delta[j].d[2].px)} ] });
 						break;
 					case "scale":
 						out.push({ t : value[i].t, d : [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1]] });
@@ -684,7 +686,7 @@ export const transformType = {
 						out.push({ t : value[i].t, d : [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1], value[i].d[2] * delta[j].d[2]] });
 						break;
 					case "matrix":
-						out.push({ t : value[i].t, d : [numberType.add(value[i].d[0],delta[j].d[0]), numberType.add(value[i].d[1],delta[j].d[1]), numberType.add(value[i].d[2],delta[j].d[2]), numberType.add(value[i].d[3],delta[j].d[3]), numberType.add(value[i].d[4],delta[j].d[4]), numberType.add(value[i].d[5],delta[j].d[5])] });
+						out.push({ t : value[i].t, d : [cssNumberType.add(value[i].d[0],delta[j].d[0]), cssNumberType.add(value[i].d[1],delta[j].d[1]), cssNumberType.add(value[i].d[2],delta[j].d[2]), cssNumberType.add(value[i].d[3],delta[j].d[3]), cssNumberType.add(value[i].d[4],delta[j].d[4]), cssNumberType.add(value[i].d[5],delta[j].d[5])] });
 						break;
 					case "matrix3d":
 						break;
@@ -698,8 +700,8 @@ export const transformType = {
 		return out;
 	},
 
-	zero: function(value) { // KxDx // requires an old value for type // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+	zero: function(value) { // KxDx // requires an old value for type // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
 		var identity2dMatrix = [1, 0, 0, 1, 0 ,0];
 		if (!value) return [{ t : "matrix", d : identity2dMatrix }];
 		var out = [];
@@ -755,7 +757,7 @@ export const transformType = {
 	},
 
 	interpolate: function(from, to, f) {
-		//console.log("transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
+		//console.log("!!! transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
 		var out = [];
 		var i;
 		for (i = 0; i < Math.min(from.length, to.length); i++) {

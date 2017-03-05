@@ -233,6 +233,12 @@ HyperChain.prototype = {
 			changed = animation.composite.call(animation, onto, now) || changed;
 		}
 		return changed;
+	},
+	convert: function convert(funky, self) {
+		// mutates // animation from, to, and delta
+		if (isFunction$2(funky)) this.chain.forEach(function (animation) {
+			animation.convert.call(animation, funky, self);
+		});
 	}
 };
 
@@ -280,6 +286,12 @@ HyperGroup.prototype = {
 			changed = animation.composite.call(animation, onto, now) || changed;
 		});
 		return changed;
+	},
+	convert: function convert(funky, self) {
+		// mutates // animation from, to, and delta
+		if (isFunction$2(funky)) this.group.forEach(function (animation) {
+			animation.convert.call(animation, funky, self);
+		});
 	}
 };
 
@@ -308,13 +320,14 @@ function HyperAction() {
 HyperAction.prototype = {
 	copy: function copy() {
 		// TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
-		var copy = new this.constructor(this.settings);
-		var keys = Object.getOwnPropertyNames(this);
-		var length = keys.length;
-		for (var i = 0; i < length; i++) {
-			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
-		}
-		return copy;
+		return new this.constructor(this);
+		// 		const copy = new this.constructor(this.settings);
+		// 		const keys = Object.getOwnPropertyNames(this);
+		// 		const length = keys.length;
+		// 		for (let i = 0; i < length; i++) {
+		// 			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
+		// 		}
+		// 		return copy;
 	},
 	composite: function composite(onto, now) {
 		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
@@ -365,18 +378,26 @@ HyperAction.prototype = {
 			if (length === 1) throw new Error("HyperAction composite need to be able to handle one keyframe");
 			//let i = length;
 			//while (i--) { // TODO: This is also just wrong
-			var i = void 0;
-			for (i = 0; i < length - 1; i++) {
-				//const offset = this.offsets[i];
-				//console.log("%s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
-				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i + 1]) {
-					break;
-				}
+			// let i;
+			// 			for (i=0; i<length-1; i++) {
+			// 				//const offset = this.offsets[i];
+			// 				//console.log("actions composite1 %s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
+			// 				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i+1]) {
+			// 					break;
+			// 				}
+			// 			}
+			var i = length - 1;
+			while (i--) {
+				// TODO: test that this works in reverse
+				if (iterationProgress >= this.offsets[i]) break;
 			}
 			var previous = i;
 			var next = previous + 1;
-			if (this.blend === "absolute") value = this.type.interpolate(this.keyframes[previous], this.keyframes[next], iterationProgress - this.offsets[previous]);else value = this.type.interpolate(this.delta[previous], this.delta[next], iterationProgress - this.offsets[previous]); // sending argument to zero() for css transforms (or custom types)
-			//console.log("%s prev:%s; next:%s; progress:%s; offset prev:%s; next:%s; keyframes prev:%s; next:%s; value:%s; offsets:%s; keyframes:%s;",this.property,previous,next,iterationProgress,this.offsets[previous],this.offsets[next],this.keyframes[previous],this.keyframes[next],value,JSON.stringify(this.offsets),JSON.stringify(this.keyframes));
+			var frameSpan = this.offsets[next] - this.offsets[previous];
+			if (frameSpan === 0) throw new Error("can't divide by zero. check your keyframe offsets.");
+			var frameLocation = iterationProgress - this.offsets[previous];
+			var frameProgress = frameLocation / frameSpan;
+			if (this.blend === "absolute") value = this.type.interpolate(this.keyframes[previous], this.keyframes[next], frameProgress);else value = this.type.interpolate(this.delta[previous], this.delta[next], frameProgress); // sending argument to zero() for css transforms (or custom types)
 		} else {
 			// HyperAnimation
 			if (this.blend === "absolute") value = this.type.interpolate(this.from, this.to, iterationProgress);else value = this.type.interpolate(this.delta, this.type.zero(this.to), iterationProgress); // sending argument to zero() for css transforms (or custom types)
@@ -386,16 +407,13 @@ HyperAction.prototype = {
 			// allow animating without declaring property
 			var result = value;
 			var underlying = onto[property];
-			if (typeof underlying === "undefined" || underlying === null) {
-				underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
-			}
+			if (typeof underlying === "undefined" || underlying === null) underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
 			if (this.additive) result = this.type.add(underlying, value);
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
 		var changed = iterationProgress !== this.progress || this.finished;
 		this.progress = iterationProgress;
-
 		return changed;
 	}
 };
@@ -411,6 +429,9 @@ function HyperKeyframes(settings) {
 		if (key !== "keyframes") this[key] = settings[key];
 	}.bind(this));
 
+	// TODO: lots of validation
+	// TODO: composite assumes offsets are in order, and not equal (need to prevent dividing by zero)
+
 	if (!Array.isArray(this.offsets) || this.offsets.length !== length) {
 		// TODO: handle zero or one frames
 		if (length < 2) this.offsets = [];else this.offsets = this.keyframes.map(function (item, index) {
@@ -420,21 +441,23 @@ function HyperKeyframes(settings) {
 		// TODO: maybe verify all offset are actually numbers, between 0 and 1
 		return a - b;
 	});
+	this.progress = null;
 }
 
 HyperKeyframes.prototype = Object.create(HyperAction.prototype);
 HyperKeyframes.prototype.constructor = HyperKeyframes;
+HyperKeyframes.prototype.copy = function () {
+	return new this.constructor(this);
+};
 HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
+	//console.log("run frames:%s;",JSON.stringify(this.keyframes));
 	if (isFunction$2(this.type)) this.type = new this.type();
 	if (this.type && isFunction$2(this.type.zero) && isFunction$2(this.type.add) && isFunction$2(this.type.subtract) && isFunction$2(this.type.interpolate)) {
-		// 			if (!this.from) this.from = this.type.zero(this.to);
-		// 			if (!this.to) this.to = this.type.zero(this.from);
-		// 			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
 		if (this.blend !== "absolute" && this.keyframes.length) {
-			var last = this.keyfames.length - 1;
+			var last = this.keyframes.length - 1;
 			var array = [];
 			for (var i = 0; i < last; i++) {
-				array[i] = this.type.subtract(array[i], array[i + 1]);
+				array[i] = this.type.subtract(this.keyframes[i], this.keyframes[last]);
 			}
 			array[last] = this.type.zero(this.keyframes[last]);
 			this.delta = array;
@@ -446,6 +469,24 @@ HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
 		if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
+	//console.log("run delta:%s;",JSON.stringify(this.delta));
+};
+HyperKeyframes.prototype.convert = function (funky, self) {
+	// mutates // animation from, to, and delta
+	if (isFunction$2(funky) && this.property) {
+		var properties = ["keyframes", "delta"];
+		properties.forEach(function (item) {
+			var _this = this;
+
+			// HyperKeyframes
+			if (this[item]) {
+				var array = this[item].slice(0);
+				this[item] = array.map(function (value) {
+					return funky.call(self, _this.property, value); // intentionally allows animations with an undefined property
+				});
+			}
+		}.bind(this));
+	}
 };
 
 function HyperAnimation(settings) {
@@ -457,13 +498,14 @@ function HyperAnimation(settings) {
 	if (settings) Object.keys(settings).forEach(function (key) {
 		this[key] = settings[key];
 	}.bind(this));
+	this.progress = null;
 }
 
 HyperAnimation.prototype = Object.create(HyperAction.prototype);
 HyperAnimation.prototype.constructor = HyperAnimation;
 HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 	if (!this.type) {
-		console.log("HyperAnimation runAnimation questionable type assignment");
+		///console.log("HyperAnimation runAnimation questionable type assignment");
 		this.type = wetNumberType; // questionable if I should do this here
 	}
 	if (isFunction$2(this.type)) this.type = new this.type();
@@ -471,6 +513,8 @@ HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 		if (!this.from) this.from = this.type.zero(this.to);
 		if (!this.to) this.to = this.type.zero(this.from);
 		if (this.blend !== "absolute") this.delta = this.type.subtract(this.from, this.to);
+		///console.log("actions runAnimation type:%s;",this.type.toString());
+		///console.log("actions runAnimation from:%s; to:%s; delta:%s;",JSON.stringify(this.from),JSON.stringify(this.to),JSON.stringify(this.delta));
 		if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
@@ -480,16 +524,28 @@ HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
+HyperAnimation.prototype.convert = function (funky, self) {
+	// mutates // animation from, to, and delta
+	if (isFunction$2(funky) && this.property) {
+		var properties = ["from", "to", "delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
+		properties.forEach(function (item) {
+			// HyperAnimation
+			var value = this[item];
+			if (value !== null && typeof value !== "undefined") this[item] = funky.call(self, this.property, value); // intentionally allows animations with an undefined property
+		}.bind(this));
+	}
+};
 
 function animationFromDescription(description) {
 	var animation = void 0;
 	if (!description) return description;
-	if (description instanceof HyperAction || description instanceof HyperGroup || description instanceof HyperChain) {
+	if (description instanceof HyperAction || description instanceof HyperKeyframes || description instanceof HyperGroup || description instanceof HyperChain) {
 		animation = description.copy.call(description);
 	} else if (Array.isArray(description)) {
 		animation = new HyperGroup(description);
 	} else if (isObject(description)) {
-		animation = new HyperAnimation(description);
+		// TODO: if has both keyframes and from/to, descriptions could return a group of both. But why?
+		if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);else if (Array.isArray(description.group)) animation = new HyperGroup(description);else if (Array.isArray(description.chain)) animation = new HyperChain(description);else animation = new HyperAnimation(description);
 	} else if (isNumber(description)) animation = new HyperAnimation({ duration: description });else if (description === true) animation = new HyperAnimation({});else throw new Error("is this an animation:" + JSON.stringify(description));
 	return animation;
 }
@@ -515,17 +571,10 @@ function isFunction(w) {
 }
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
-	if (animation instanceof HyperAnimation) {
+	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
 		if (delegate.typeForProperty && animation.property) {
 			var type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
 			if (type) animation.type = type;
-		}
-	} else if (animation instanceof HyperKeyframes) {
-		if (delegate.typeForProperty && animation.property) {
-			var keyframe = null;
-			if (animation.keyframes.length) keyframe = animation.keyframes[animation.keyframes.length - 1];
-			var _type = delegate.typeForProperty.call(delegate, animation.property, keyframe);
-			if (_type) animation.type = _type;
 		}
 	} else if (animation instanceof HyperGroup) {
 		// recursive
@@ -565,65 +614,7 @@ function convertPropertiesOfLayerWithFunction(properties, object, funky, self) {
 		convertPropertyOfLayerWithFunction(property, object, funky, self);
 	});
 }
-function convertPropertiesOfAnimationWithFunction(animation, funky, self) {
-	// mutates // animation from, to, and delta
-	if (animation && isFunction(funky)) {
-		(function () {
-			var properties = ["from", "to", "delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
-			if (animation instanceof HyperAnimation) {
-				if (animation.property) properties.forEach(function (item) {
-					// HyperAnimation
-					var value = animation[item];
-					if (value !== null && typeof value !== "undefined") animation[item] = funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
-				});
-			} else if (animation instanceof HyperKeyframes) {
-				var _properties = ["keyframes", "delta"];
-				if (animation.property) _properties.forEach(function (item) {
-					// HyperKeyframes
-					var array = animation[item];
-					if (array !== null && typeof array !== "undefined") {
-						animation[item] = array.map(function (value) {
-							funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
-						});
-					}
-				});
-			} else if (animation instanceof HyperGroup) {
-				// recursive
-				animation.group.forEach(function (childAnimation) {
-					convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
-				});
-			} else if (animation instanceof HyperChain) {
-				// recursive
-				animation.chain.forEach(function (childAnimation) {
-					convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
-				});
-			}
-		})();
-	}
-}
 
-// function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnimations,presentationBacking) { // COMPOSITING
-// 	const presentationLayer = Object.assign({},sourceLayer); // Need to make sure display has non animated properties for example this.element
-// 	if (!sourceAnimations || !sourceAnimations.length) return presentationLayer;
-// 	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
-// 		sourceAnimations.sort( function(a,b) {
-// 			const A = a.index || 0;
-// 			const B = b.index || 0;
-// 			let result = A - B;
-// 			if (!result) result = a.startTime - b.startTime;
-// 			if (!result) result = a.sortIndex - b.sortIndex; // animation number is needed because sort is not guaranteed to be stable
-// 			return result;
-// 		});
-// 	}
-// 	let progressChanged = false;
-// 	sourceAnimations.forEach( function(animation) {
-// 		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
-// 	});
-// 	if (!progressChanged && sourceAnimations.length) {
-// 		if (presentationBacking) return presentationBacking;
-// 	}
-// 	return presentationLayer;
-// }
 function presentationTransform(presentationLayer, sourceAnimations, time, shouldSortAnimations) {
 	// COMPOSITING
 	if (!sourceAnimations || !sourceAnimations.length) return false;
@@ -722,13 +713,14 @@ function activate(controller, delegate, layerInstance) {
 	function setValueForKey(prettyValue, property) {
 		var layer = {};
 		layer[property] = prettyValue;
+		///console.log("core setValueForKey:%s; pretty:%s;",property,JSON.stringify(prettyValue));
 		setValuesOfLayer(layer);
 	}
 	function setValuesOfLayer(layer) {
 
 		var transaction = hyperContext.currentTransaction();
 		var presentationLayer = controller.presentation;
-		//console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
+		///console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
 		var result = {};
 		// 		var prettyKeys = Object.keys(layer);
 		// 		var index = prettyKeys.length;
@@ -741,6 +733,7 @@ function activate(controller, delegate, layerInstance) {
 			controller.registerAnimatableProperty(uglyKey);
 			var uglyValue = convertedValueOfPropertyWithFunction(prettyValue, prettyKey, delegate.input, delegate);
 			var uglyPrevious = modelBacking[uglyKey];
+			///console.log("core setValuesOfLayer1 key:%s; pretty:%s; ugly:%s;",uglyKey,JSON.stringify(prettyValue),JSON.stringify(uglyValue));
 			previousBacking[uglyKey] = uglyPrevious;
 			modelBacking[uglyKey] = uglyValue;
 			result[prettyKey] = prettyValue;
@@ -751,6 +744,8 @@ function activate(controller, delegate, layerInstance) {
 				var uglyKey = prettyKey;
 				if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey, delegate.keyInput, delegate);
 				var prettyValue = result[prettyKey];
+				///console.log("core setValuesOfLayer2 key:%s; pretty:%s;",uglyKey,JSON.stringify(prettyValue));
+
 				var prettyPresentation = presentationLayer[prettyKey];
 				var prettyPrevious = convertedValueOfPropertyWithFunction(previousBacking[uglyKey], prettyKey, delegate.output, delegate);
 				var animation = implicitAnimation(prettyKey, prettyValue, prettyPrevious, prettyPresentation, delegate, defaultAnimations[prettyKey], transaction);
@@ -853,6 +848,7 @@ function activate(controller, delegate, layerInstance) {
 		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
 		if (!descriptor || descriptor.configurable === true) {
 			var uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input, delegate);
+			///console.log("core register property:%s; pretty:%s; ugly:%s;",property,layerInstance[property],JSON.stringify(uglyValue));
 			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
 			if (typeof uglyValue === "undefined") modelBacking[property] = null;
 			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
@@ -894,7 +890,7 @@ function activate(controller, delegate, layerInstance) {
 		get: function get() {
 			var array = allAnimations.map(function (animation) {
 				var copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				convertPropertiesOfAnimationWithFunction(copy, delegate.output, delegate);
+				copy.convert.call(copy, delegate.output, delegate);
 				return copy;
 			});
 			return array;
@@ -928,6 +924,7 @@ function activate(controller, delegate, layerInstance) {
 			// 				if (verbose) console.log("... presentation result:%s;",JSON.stringify(presentationLayer));
 			// 				return presentationLayer;
 			// 			}
+			///console.log("core presentationLayer pre:%s; model:%s;",JSON.stringify(presentationLayer),JSON.stringify(modelBacking));
 			var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			if (allAnimations.length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
 			if (changed || presentationBacking === null) {
@@ -937,6 +934,7 @@ function activate(controller, delegate, layerInstance) {
 			}
 			presentationTime = transactionTime;
 			shouldSortAnimations = false;
+			///console.log("core presentationLayer post:%s; model:%s;",JSON.stringify(presentationBacking),JSON.stringify(modelBacking));
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -988,9 +986,10 @@ function activate(controller, delegate, layerInstance) {
 
 	controller.addAnimation = function (description, name) {
 		// does not register. // should be able to pass a description if type is registered
+		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description);
 		var copy = animationFromDescription(description);
 		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:" + JSON.stringify(copy));
-		convertPropertiesOfAnimationWithFunction(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
+		copy.convert.call(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy, delegate);
 		if (!allAnimations.length) registerWithContext();
 		allAnimations.push(copy);
@@ -1001,7 +1000,6 @@ function activate(controller, delegate, layerInstance) {
 		}
 		if (typeof name === "undefined" || name === null || name === false) allNames.push(null);else allNames.push(name);
 		shouldSortAnimations = true;
-
 		var transaction = hyperContext.currentTransaction();
 		copy.runAnimation(controller, name, transaction);
 	};
@@ -1029,7 +1027,7 @@ function activate(controller, delegate, layerInstance) {
 		var animation = namedAnimations[name];
 		if (animation) {
 			var copy = animation.copy.call(animation);
-			convertPropertiesOfAnimationWithFunction(copy, delegate.output, delegate);
+			copy.convert.call(copy, delegate.output, delegate);
 			return copy;
 		}
 		return null;
@@ -1048,7 +1046,9 @@ function isFunction$3(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-function HyperNumber(settings) {}
+function HyperNumber(settings) {
+	this.debug = "HyperNumber";
+}
 HyperNumber.prototype = {
 	constructor: HyperNumber,
 	zero: function zero() {
@@ -1066,7 +1066,9 @@ HyperNumber.prototype = {
 	}
 };
 
-function HyperScale(settings) {}
+function HyperScale(settings) {
+	this.debug = "HyperScale";
+}
 HyperScale.prototype = {
 	constructor: HyperScale,
 	zero: function zero() {
@@ -1089,6 +1091,7 @@ function HyperArray(type, length, settings) {
 	this.type = type;
 	if (isFunction$3(type)) this.type = new type(settings);
 	this.length = length;
+	this.debug = "HyperScale";
 }
 HyperArray.prototype = {
 	constructor: HyperArray,
@@ -1125,6 +1128,7 @@ HyperArray.prototype = {
 
 function HyperSet(settings) {
 	if (isFunction$3(settings)) this.sort = settings;else if (settings && isFunction$3(settings.sort)) this.sort = settings.sort;
+	this.debug = "HyperSet";
 }
 HyperSet.prototype = {
 	constructor: HyperSet,
@@ -1395,41 +1399,6 @@ function hyperIntersectionRange(a, b) {
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-var nonNumericType = {
-	toString: function toString() {
-		return "nonNumericType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	zero: function zero() {
-		return "";
-	},
-	inverse: function inverse(value) {
-		return value;
-	},
-	add: function add(base, delta) {
-		return isDefined(delta) ? delta : base;
-	},
-	subtract: function subtract(base, delta) {
-		// same as add? or return base?
-		return base; // Sure why not
-		//return this.add(base,this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		return f < 0.5 ? from : to;
-	},
-	output: function output(value) {
-		return value;
-	},
-	input: function input(value) {
-		return value;
-	}
-};
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
 var SVG_NS = "http://www.w3.org/2000/svg";
 
 function typeWithKeywords(keywords, type) {
@@ -1541,6 +1510,414 @@ function detectFeatures() {
 function createDummyElement() {
 	return document.documentElement.namespaceURI === SVG_NS ? document.createElementNS(SVG_NS, "g") : document.createElement("div");
 }
+
+// This file is a heavily modified derivative work of:
+// https://github.com/web-animations/web-animations-js-legacy
+
+var nonNumericType = {
+	toString: function toString() {
+		return "nonNumericType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
+	zero: function zero() {
+		return "";
+	},
+	inverse: function inverse(value) {
+		return value;
+	},
+	add: function add(base, delta) {
+		return isDefined(delta) ? delta : base;
+	},
+	subtract: function subtract(base, delta) {
+		// same as add? or return base?
+		return base; // Sure why not
+		//return this.add(base,this.inverse(delta));
+	},
+	interpolate: function interpolate(from, to, f) {
+		return f < 0.5 ? from : to;
+	},
+	output: function output(value) {
+		return value;
+	},
+	input: function input(value) {
+		return value;
+	}
+};
+
+function prepareDocument(dict, HyperStyleDeclaration) {
+	if (typeof document !== "undefined") for (var property in dict) {
+		//document.documentElement.style) {
+		// 		if (cssStyleDeclarationAttribute[property] || property in cssStyleDeclarationMethodModifiesStyle) {
+		// 			continue;
+		// 		}
+		(function (property) {
+			//console.log("PREPARE:%s;",property);
+			//Object.defineProperty(HyperStyleDeclaration.prototype, property, configureDescriptor({
+			var type = dict[property];
+			Object.defineProperty(HyperStyleDeclaration.prototype, property, {
+				get: function get() {
+					// I think this is wrong. The layer should be returning pretty value.
+					var layer = this.hyperStyleLayer;
+					var ugly = layer[property];
+					var pretty = type.output(ugly);
+					console.log("!!! hyperact source/style/element.js output property:%s; ugly:%s; pretty:%s; I think this is wrong, layer should be returning pretty value", property, JSON.stringify(ugly), JSON.stringify(pretty));
+					return pretty;
+				},
+				set: function set(value) {
+					//var ugly = type.input(value);
+					//this.hyperStyleController.registerAnimatableProperty(property);
+					//console.log("!!! element will set:%s; pretty:%s; layer:%s;",property,value,JSON.stringify(this.hyperStyleLayer));
+					//this.hyperStyleLayer[property] = ugly; // This will produce animations from and to the ugly values, not CSS values.
+					this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
+					//console.log("!!! element did set:%s; pretty:%s; layer:%s;",property,value,JSON.stringify(this.hyperStyleLayer));
+					this.hyperStyleController.registerAnimatableProperty(property);
+				},
+				configurable: true,
+				enumerable: true
+			});
+		})(property);
+	}
+}
+// This function is a fallback for when we can't replace an element's style with
+// AnimatatedCSSStyleDeclaration and must patch the existing style to behave
+// in a similar way.
+// Only the methods listed in cssStyleDeclarationMethodModifiesStyle will
+// be patched to behave in the same manner as a native implementation,
+// getter properties like style.left or style[0] will be tainted by the
+// polyfill's animation engine.
+
+// var patchInlineStyleForAnimation = function(style) {
+// 	var surrogateElement = document.createElement('div');
+// 	copyInlineStyle(style, surrogateElement.style);
+// 	var isAnimatedProperty = {};
+// 	for (var method in cssStyleDeclarationMethodModifiesStyle) {
+// 		if (!(method in style)) {
+// 			continue;
+// 		}
+// 		Object.defineProperty(style, method, configureDescriptor({
+// 			value: (function(method, originalMethod, modifiesStyle) {
+// 				return function() {
+// 					var result = surrogateElement.style[method].apply(
+// 							surrogateElement.style, arguments);
+// 					if (modifiesStyle) {
+// 						if (!isAnimatedProperty[arguments[0]]) {
+// 							originalMethod.apply(style, arguments);
+// 						}
+// 						animatedInlineStyleChanged(); //retick
+// 					}
+// 					return result;
+// 				}
+// 			})(method, style[method], cssStyleDeclarationMethodModifiesStyle[method])
+// 		}));
+// 	}
+// 	style._clearAnimatedProperty = function(property) {
+// 		this[property] = surrogateElement.style[property];
+// 		isAnimatedProperty[property] = false;
+// 	};
+// 	style._setAnimatedProperty = function(property, value) {
+// 		this[property] = value;
+// 		isAnimatedProperty[property] = true;
+// 	};
+// };
+
+//import { typeWithKeywords } from "./shared.js";
+
+// import { transformType } from "./transform.js";
+// import { colorType } from "./color.js";
+// import { cssIntegerType, cssOpacityType } from "./number.js";
+// import { lengthType, lengthAutoType } from "./length.js";
+// //import { positionType } from "./position.js";
+// import { positionListType } from "./positionList.js";
+// import { rectangleType } from "./rectangle.js";
+// import { shadowType } from "./shadow.js";
+// import { fontWeightType } from "./fontWeight.js";
+// import { visibilityType } from "./visibility.js";
+
+function typeForStyle(property) {
+	return usedPropertyTypes[property] || nonNumericType;
+}
+
+var usedPropertyTypes = {};
+function registerAnimatableStyles(dict) {
+	Object.assign(usedPropertyTypes, dict);
+	prepareDocument(dict, HyperStyleDeclaration);
+}
+// export function registerAllStyles() {
+// 	registerAnimatableStyles(propertyTypes);
+// }
+function activateElement(element) {
+	var receiver = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : element;
+
+	initialize(element, receiver);
+}
+
+function isFunction$4(w) {
+	return w && {}.toString.call(w) === "[object Function]";
+}
+// function isNumber(w) {
+// 	return !isNaN(parseFloat(w)) && isFinite(w); // I want infinity for repeat count. Probably not duration
+// }
+// const typeForStyle = function(property) {
+// 	return propertyTypes[property] || nonNumericType;
+// };
+
+
+var HyperStyle = {};
+
+// HyperStyle.addAnimation = function(element, animation, named) { // TODO: needs delegate and initialize
+// 	if (typeof window === "undefined") return;
+// 	if (typeof element === "undefined" || element === null) return;
+// 	initialize(element);
+// 	animation = animationFromDescription(animation);
+// 	if (animation) {
+// 		var property = animation.property;
+// 		if (property) {
+// 			var type = typeForStyle(property);
+// 			if (isFunction(type)) type = new type();
+// 			animation.type = type;
+// 			if (typeof animation.from === "undefined" || animation.from === null) animation.from = type.zero();
+// 			else animation.from = type.input(animation.from);
+// 			if (typeof animation.to === "undefined" || animation.to === null) animation.to = type.zero();
+// 			else animation.to = type.input(animation.to);
+// 			//element.style._controller.registerAnimatableProperty(key);
+// 			element.style.addAnimation(animation, named);
+// 		}
+// 	}
+// };
+// HyperStyle.setDelegateOfElement = function(delegate,element,oldStyle) {
+// 	return HyperStyle.setDelegate(element,delegate,oldStyle);
+// };
+// HyperStyle.setDelegate = function(element, delegate, oldStyle) { // setDelegateOfElement
+// 	if (typeof window === "undefined") return;
+// 	var animatedStyle = initialize(element, delegate, oldStyle); // PyonReact
+// 	if (!element) return animatedStyle; // PyonReact
+// };
+
+function initialize(target, receiver) {
+	if (typeof window === "undefined") return;
+	if (!target || target.style.hyperStyleInitialized) return; // PyonReact
+	//HyperStyle.activate(target, delegate, null, delegate); // (element, receiver, layer, delegate)
+	HyperStyle.activate(target, receiver);
+	target.style.hyperStyleInitialized = true; // PyonReact // formerly _webAnimationsStyleInitialized
+}
+
+// HyperStyle.composite = function(sourceLayer, sourceAnimations, time) { // expensive access converts to and from css and internal values
+// 	if (time === null || typeof time === "undefined") time = 0;
+// 	var copyLayer = Object.assign({},sourceLayer);
+// 	if (Array.isArray(sourceAnimations)) {
+// 		var resultAnimations = [];
+// 		sourceAnimations.forEach( function(description) {
+// 			var animation = animationFromDescription(description);
+// 			var property = animation.property;
+// 			var type = typeForStyle(animation.property);
+// 			animation.type = type;
+// 			copyLayer[property] = type.input(sourceLayer[property]);
+// 			if (animation.startTime === null || typeof animation.startTime === "undefined") animation.startTime = time;
+// 			if (animation.from === null || typeof animation.from === "undefined") animation.from = animation.type.zero();
+// 			else animation.from = type.input(animation.from);
+// 			if (animation.to === null || typeof animation.to === "undefined") animation.to = animation.type.zero();
+// 			else animation.to = animation.type.input(animation.to);
+// 			if (animation.blend !== "absolute") animation.delta = animation.type.subtract(animation.from,animation.to);
+// 			resultAnimations.push(animation);
+// 		});
+// 		var result = composite(copyLayer, resultAnimations, time);
+// 		sourceAnimations.forEach( function(animation) {
+// 			var property = animation.property;
+// 			var type = typeForStyle(property);
+// 			copyLayer[property] = type.output(result[property]);
+// 		});
+// 	} else if (sourceAnimations) {
+// 		var resultAnimations = {};
+// 		Object.keys(sourceAnimations).forEach( function(key) {
+// 			var animation = animationFromDescription(sourceAnimations[key]);
+// 			var property = animation.property;
+// 			var type = typeForStyle(animation.property);
+// 			animation.type = type;
+// 			copyLayer[property] = type.input(sourceLayer[property]);
+// 			if (animation.startTime === null || typeof animation.startTime === "undefined") animation.startTime = time;
+// 			if (animation.from === null || typeof animation.from === "undefined") animation.from = animation.type.zero();
+// 			else animation.from = animation.type.input(animation.from);
+// 			if (animation.to === null || typeof animation.to === "undefined") animation.to = animation.type.zero();
+// 			else animation.to = animation.type.input(animation.to);
+// 			if (animation.blend !== "absolute") animation.delta = animation.type.subtract(animation.from,animation.to);
+// 			resultAnimations[key] = animation;
+// 		});
+// 		var result = composite(copyLayer, resultAnimations, time);
+// 		Object.keys(sourceAnimations).forEach( function(key) {
+// 			var animation = sourceAnimations[key];
+// 			var property = animation.property;
+// 			var type = typeForStyle(property);
+// 			copyLayer[property] = type.output(result[property]);
+// 		});
+// 	}
+// 	return copyLayer;
+// }
+
+
+HyperStyle.activate = function (element, receiver) {
+	///console.log("activate element:%s; receiver:%s; layer:%s; delegate:%s;",element,receiver,layer,delegate);
+
+	var hyperStyleDelegate = {};
+
+	hyperStyleDelegate.typeOfProperty = function (property, value) {
+		if (delegate && isFunction$4(delegate.typeOfProperty)) return delegate.typeOfProperty.call(delegate, property, value); // Not very useful.
+		return typeForStyle(property);
+	};
+	hyperStyleDelegate.input = function (property, prettyValue) {
+		if (delegate && isFunction$4(delegate.input)) return delegate.input.call(delegate, property, prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
+		var type = typeForStyle(property);
+		var uglyValue = type.input(prettyValue);
+		//console.log("___ hyperStyleDelegate.input:%s; type:%s; pretty:%s; ugly:%s;",property,type.toString(),JSON.stringify(prettyValue),JSON.stringify(uglyValue));
+		//throw new Error("I have no idea why this is backwards");
+		return uglyValue;
+	};
+	hyperStyleDelegate.output = function (property, uglyValue) {
+		// value is the ugly value // BUG FIXME: sometimes a string
+		if (delegate && isFunction$4(delegate.output)) {
+			//var result = delegate.output.call(delegate,property,uglyValue); // Not as useful because it includes unit suffix. Also unsure about native
+			//console.log("_one_hyperStyleDelegate.output:%s; VALUE:%s; result:%s;",property,JSON.stringify(uglyValue),result);
+			return delegate.output.call(delegate, property, uglyValue);
+		}
+		var type = typeForStyle(property);
+		var result = void 0;
+		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type.output(uglyValue);
+		if (typeof uglyValue === "string") {}
+		//if (uglyValue === null || typeof uglyValue === "undefined" || result.substring(0,4) === "calc") {
+		//console.log("? STRING ? toCss result:%s; uglyValue:%s;",JSON.stringify(result),JSON.stringify(uglyValue));
+
+		//console.log("___ hyperStyleDelegate.output:%s; type:%s; ugly:%s; pretty:%s;",property,type.toString(),JSON.stringify(uglyValue),result);
+		//throw new Error("I have no idea why this is backwards");
+		return result;
+	};
+	hyperStyleDelegate.animationForKey = function (key, uglyValue, uglyPrevious, target) {
+		// sometimesUglySometimesPrettyPrevious // prettyPrevious needs to be uglyPrevious. This is a Pyon problem
+		var propertyType = typeForStyle(key);
+		if (uglyValue === null || typeof uglyValue === "undefined") {
+			///console.log("~~~~~~ HyperStyle hyperStyleDelegate key:%s; value:%s; prev:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious));
+			//throw new Error("~~~~~~ HyperStyle hyperStyleDelegate animationForKey uglyValue null or undefined");
+		}
+		if (uglyPrevious === null || typeof uglyPrevious === "undefined") {
+			//console.log("####### HyperStyle hyperStyleDelegate uglyPrevious fuct");
+			uglyPrevious = uglyValue;
+		}
+		//if (!features) features = detectFeatures(); // Duplicate
+		if (typeof uglyPrevious === "string") {
+			///console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious));
+			//throw new Error("? ? ? ? ? ? ? ? ? string:"+JSON.stringify(uglyPrevious)+";"); // this is not an error
+		}
+		var prettyValue = propertyType.output(uglyValue);
+		var prettyPrevious = propertyType.output(uglyPrevious);
+		if (prettyPrevious === null || typeof prettyPrevious === "undefined") prettyPrevious = prettyValue;
+
+		//console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s; prettyV:%s; prettyP:%s; function:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious),prettyValue,prettyPrevious,isFunction(delegate.animationForKey));
+		var description; // initially undefined
+		if (delegate && isFunction$4(delegate.animationForKey)) description = delegate.animationForKey(key, prettyValue, prettyPrevious, element);
+		//console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s; prettyV:%s; prettyP:%s; result:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious),prettyValue,prettyPrevious,JSON.stringify(description));
+		var animation = animationFromDescription(description);
+		if (animation && typeof animation.property === "undefined") animation.property = key;
+		return animation;
+	};
+	hyperStyleDelegate.animationFromDescription = function (description) {
+		// deprecate this because delegate.typeOfProperty is enough?
+		var animation = animationFromDescription(description);
+		if (animation.property) animation.type = typeForStyle(animation.property);
+		return animation;
+	};
+	hyperStyleDelegate.display = function () {
+		//var presentation = layer;
+		var presentation = receiver.presentation; // TODO: this should be provided
+		var presentationKeys = Object.keys(presentation);
+		presentationKeys.forEach(function (key) {
+			var value = presentation[key];
+			style[key] = value; // HyperStyleDeclaration is meant to be mutated.
+		});
+
+		var previousKeys = Object.keys(previousLayer);
+		previousKeys.forEach(function (key) {
+			// Must nullify properties that are no longer animated, if not on presentation.
+			if (presentationKeys.indexOf(key) === -1) {
+				// FIXME: Sort & walk keys? Not too bad if animating few properties.
+				style[key] = "";
+			}
+		});
+		//console.log("style.js display presentation:%s;",JSON.stringify(presentation));
+		previousLayer = presentation;
+	};
+
+	var style = element.style;
+	var delegate = null;
+
+	//if (receiver === null || typeof receiver === "undefined") receiver = this;
+	//if (layer === null || typeof layer === "undefined") layer = this;
+
+	var layer = {};
+	for (var property in usedPropertyTypes) {
+		var prettyValue = element.style[property];
+		//const uglyValue = hyperStyleDelegate.input(property, prettyValue);
+		layer[property] = prettyValue;
+	}
+	var hyperStyleDeclaration = new HyperStyleDeclaration(layer, receiver);
+	var previousLayer = {};
+	///console.log("initial layer:%s;",JSON.stringify(layer));
+	activate(receiver, hyperStyleDelegate, layer);
+
+	try {
+		Object.defineProperty(element, "style", {
+			get: function get() {
+				return hyperStyleDeclaration;
+			},
+			configurable: true,
+			enumerable: true
+		});
+	} catch (error) {}
+	//			patchInlineStyleForAnimation(target.style);
+	///console.warn("not animatable by any craft known to Pyon");
+
+
+	//hyperStyleDelegate.display();
+};
+
+//	var HyperStyleDeclaration = function(element, layer, controller) {
+var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
+
+	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
+		get: function get() {
+			return layer;
+		},
+		//			 set: function(value) {
+		//				 _layer = value;
+		//			 },
+		enumerable: false,
+		configurable: false
+	});
+
+	Object.defineProperty(this, "hyperStyleController", { // these will collide with css
+		get: function get() {
+			return controller;
+		},
+		//			 set: function(value) {
+		//				 _controller = value;
+		//			 },
+		enumerable: false,
+		configurable: false
+	});
+};
+
+HyperStyleDeclaration.prototype = {
+	constructor: HyperStyleDeclaration
+};
+
+////export HyperStyleDeclaration; // (layer, controller)
+// export const typeOfProperty = function(property,value) {
+// 	return getCssOnlyType(property,value);
+// }
+// export const activateStyleAnimation = HyperStyle.activate; // (element, receiver, layer, delegate)
+// export const addAnimation = HyperStyle.addAnimation; // (element, animation, named)
+// export const setDelegateOfElement = HyperStyle.setDelegateOfElement; // (delegate,element,oldStyle)
+// export const setDelegate = HyperStyle.setDelegate; // (element, delegate, oldStyle)
+// export const compositeStyleAnimation = HyperStyle.composite; // (sourceLayer, sourceAnimations, time)
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
@@ -1707,9 +2084,9 @@ var lengthAutoType = typeWithKeywords(["auto"], lengthType);
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-var numberType = {
+var cssNumberType = {
 	toString: function toString() {
-		return "numberType";
+		return "cssNumberType";
 	},
 	toJSON: function toJSON() {
 		return this.toString();
@@ -1749,7 +2126,7 @@ var numberType = {
 	//output: function(value) { return value + ""; }, // original
 	output: function output(value) {
 		return value;
-	}, // no strings damn it. Unknown side effects
+	}, // no strings damn it. Unknown side effects. Because used by transformType ?
 	input: function input(value) {
 		if (value === "auto") {
 			return "auto";
@@ -1759,7 +2136,13 @@ var numberType = {
 	}
 };
 
-var integerType = createObject(numberType, {
+var cssIntegerType = createObject(cssNumberType, {
+	toString: function toString() {
+		return "cssIntergerType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
 	interpolate: function interpolate(from, to, f) {
 		// If from or to are "auto", we fall back to step interpolation.
 		if (from === "auto" || to === "auto") {
@@ -1769,7 +2152,13 @@ var integerType = createObject(numberType, {
 	}
 });
 
-var opacityType = createObject(numberType, {
+var cssOpacityType = createObject(cssNumberType, {
+	toString: function toString() {
+		return "cssOpacityType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
 	zero: function zero() {
 		return 0.0; // zero is definitely zero, I need to expose initialValue from propertyValueAliases
 	},
@@ -2280,8 +2669,8 @@ var transformType = {
 		return this.toString();
 	},
 	inverse: function inverse(value) {
-		// KxDx // TODO: SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+		// KxDx // TODO: SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
 		if (!value || !value.length) {
 			// This happens often...
 			//console.log("transformType inverse with no base!");
@@ -2297,22 +2686,22 @@ var transformType = {
 				case "rotateZ":
 				case "skewX":
 				case "skewY":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0])] }); // new style, have to unwrap then re-wrap
+					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0])] }); // new style, have to unwrap then re-wrap
 					break;
 				case "skew":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1])] });
+					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0]), cssNumberType.inverse(value[i].d[1])] });
 					break;
 				case "translateX":
 				case "translateY":
 				case "translateZ":
 				case "perspective":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0])] });
+					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0])] });
 					break;
 				case "translate":
-					out.push({ t: value[i].t, d: [{ px: numberType.inverse(value[i].d[0].px) }, { px: numberType.inverse(value[i].d[1].px) }] });
+					out.push({ t: value[i].t, d: [{ px: cssNumberType.inverse(value[i].d[0].px) }, { px: cssNumberType.inverse(value[i].d[1].px) }] });
 					break;
 				case "translate3d":
-					out.push({ t: value[i].t, d: [{ px: numberType.inverse(value[i].d[0].px) }, { px: numberType.inverse(value[i].d[1].px) }, { px: numberType.inverse(value[i].d[2].px) }] });
+					out.push({ t: value[i].t, d: [{ px: cssNumberType.inverse(value[i].d[0].px) }, { px: cssNumberType.inverse(value[i].d[1].px) }, { px: cssNumberType.inverse(value[i].d[2].px) }] });
 					break;
 				case "scale":
 					out.push({ t: value[i].t, d: [delta[i].d[0] / value[i].d[0], delta[i].d[1] / value[i].d[1]] }); // inverse of 2 is 1/2
@@ -2326,7 +2715,7 @@ var transformType = {
 					out.push({ t: value[i].t, d: [delta[i].d[0] / value[i].d[0], delta[i].d[1] / value[i].d[1], -1 / value[i].d[2]] }); // inverse of 2 is 1/2
 					break;
 				case "matrix":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1]), numberType.inverse(value[i].d[2]), numberType.inverse(value[i].d[3]), numberType.inverse(value[i].d[4]), numberType.inverse(value[i].d[5])] });
+					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0]), cssNumberType.inverse(value[i].d[1]), cssNumberType.inverse(value[i].d[2]), cssNumberType.inverse(value[i].d[3]), cssNumberType.inverse(value[i].d[4]), cssNumberType.inverse(value[i].d[5])] });
 					break;
 			}
 		}
@@ -2334,8 +2723,8 @@ var transformType = {
 	},
 
 	add: function add(base, delta) {
-		//console.log("ADD base:%s;",JSON.stringify(base));
-		//console.log("ADD delta:%s;",JSON.stringify(delta));
+		// 		console.log("ADD base:%s;",JSON.stringify(base));
+		// 		console.log("ADD delta:%s;",JSON.stringify(delta));
 
 		if (!base || !base.length) return delta;
 		if (!delta || !delta.length) return base;
@@ -2359,8 +2748,10 @@ var transformType = {
 	},
 
 	sum: function sum(value, delta) {
-		// add is for the full values, sum is for their components // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+		// add is for the full values, sum is for their components // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// 		console.log("SUM base:%s;",JSON.stringify(value));
+		// 		console.log("SUM delta:%s;",JSON.stringify(delta));
 		var out = [];
 		var valueLength = value.length;
 		var deltaLength = delta.length;
@@ -2378,22 +2769,22 @@ var transformType = {
 					case "rotateZ":
 					case "skewX":
 					case "skewY":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0])] }); // new style, have to unwrap then re-wrap
+						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0])] }); // new style, have to unwrap then re-wrap
 						break;
 					case "skew":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0]), numberType.add(value[i].d[1], delta[j].d[1])] });
+						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0]), cssNumberType.add(value[i].d[1], delta[j].d[1])] });
 						break;
 					case "translateX":
 					case "translateY":
 					case "translateZ":
 					case "perspective":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0])] });
+						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0])] });
 						break;
 					case "translate":
-						out.push({ t: value[i].t, d: [{ px: numberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: numberType.add(value[i].d[1].px, delta[j].d[1].px) }] });
+						out.push({ t: value[i].t, d: [{ px: cssNumberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: cssNumberType.add(value[i].d[1].px, delta[j].d[1].px) }] });
 						break;
 					case "translate3d":
-						out.push({ t: value[i].t, d: [{ px: numberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: numberType.add(value[i].d[1].px, delta[j].d[1].px) }, { px: numberType.add(value[i].d[2].px, delta[j].d[2].px) }] });
+						out.push({ t: value[i].t, d: [{ px: cssNumberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: cssNumberType.add(value[i].d[1].px, delta[j].d[1].px) }, { px: cssNumberType.add(value[i].d[2].px, delta[j].d[2].px) }] });
 						break;
 					case "scale":
 						out.push({ t: value[i].t, d: [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1]] });
@@ -2407,7 +2798,7 @@ var transformType = {
 						out.push({ t: value[i].t, d: [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1], value[i].d[2] * delta[j].d[2]] });
 						break;
 					case "matrix":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0]), numberType.add(value[i].d[1], delta[j].d[1]), numberType.add(value[i].d[2], delta[j].d[2]), numberType.add(value[i].d[3], delta[j].d[3]), numberType.add(value[i].d[4], delta[j].d[4]), numberType.add(value[i].d[5], delta[j].d[5])] });
+						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0]), cssNumberType.add(value[i].d[1], delta[j].d[1]), cssNumberType.add(value[i].d[2], delta[j].d[2]), cssNumberType.add(value[i].d[3], delta[j].d[3]), cssNumberType.add(value[i].d[4], delta[j].d[4]), cssNumberType.add(value[i].d[5], delta[j].d[5])] });
 						break;
 					case "matrix3d":
 						break;
@@ -2422,8 +2813,8 @@ var transformType = {
 	},
 
 	zero: function zero(value) {
-		// KxDx // requires an old value for type // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+		// KxDx // requires an old value for type // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
 		var identity2dMatrix = [1, 0, 0, 1, 0, 0];
 		if (!value) return [{ t: "matrix", d: identity2dMatrix }];
 		var out = [];
@@ -2479,7 +2870,7 @@ var transformType = {
 	},
 
 	interpolate: function interpolate(from, to, f) {
-		//console.log("transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
+		//console.log("!!! transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
 		var out = [];
 		var i;
 		for (i = 0; i < Math.min(from.length, to.length); i++) {
@@ -3406,170 +3797,4 @@ var visibilityType = createObject(nonNumericType, {
 	}
 });
 
-//import { positionType } from "./position.js";
-function typeForStyle(property) {
-	return propertyTypes[property] || nonNumericType;
-}
-
-var propertyTypes = {
-	backgroundColor: colorType,
-	backgroundPosition: positionListType,
-	borderBottomColor: colorType,
-	borderBottomLeftRadius: lengthType,
-	borderBottomRightRadius: lengthType,
-	borderBottomWidth: lengthType,
-	borderLeftColor: colorType,
-	borderLeftWidth: lengthType,
-	borderRightColor: colorType,
-	borderRightWidth: lengthType,
-	borderSpacing: lengthType,
-	borderTopColor: colorType,
-	borderTopLeftRadius: lengthType,
-	borderTopRightRadius: lengthType,
-	borderTopWidth: lengthType,
-	bottom: lengthAutoType,
-	boxShadow: shadowType,
-	clip: typeWithKeywords(["auto"], rectangleType),
-	color: colorType,
-	cx: lengthType,
-
-	// TODO: Handle these keywords properly.
-	fontSize: typeWithKeywords(["smaller", "larger"], lengthType),
-	fontWeight: typeWithKeywords(["lighter", "bolder"], fontWeightType),
-
-	height: lengthAutoType,
-	left: lengthAutoType,
-	letterSpacing: typeWithKeywords(["normal"], lengthType),
-	lineHeight: lengthType, // TODO: Should support numberType as well.
-	marginBottom: lengthAutoType,
-	marginLeft: lengthAutoType,
-	marginRight: lengthAutoType,
-	marginTop: lengthAutoType,
-	maxHeight: typeWithKeywords(["none", "max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	maxWidth: typeWithKeywords(["none", "max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	minHeight: typeWithKeywords(["max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	minWidth: typeWithKeywords(["max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	//opacity: numberType, // does NOT use 1 as the default underlying value when not specified. animations relative to zero not one. Need to use propertyValueAliases
-	opacity: opacityType, //
-	outlineColor: typeWithKeywords(["invert"], colorType),
-	outlineOffset: lengthType,
-	outlineWidth: lengthType,
-	paddingBottom: lengthType,
-	paddingLeft: lengthType,
-	paddingRight: lengthType,
-	paddingTop: lengthType,
-	right: lengthAutoType,
-	textIndent: typeWithKeywords(["each-line", "hanging"], lengthType),
-	textShadow: shadowType,
-	top: lengthAutoType,
-	transform: transformType,
-	WebkitTransform: transformType, // React?
-	webkitTransform: transformType, // temporary
-	msTransform: transformType, // temporary
-
-	verticalAlign: typeWithKeywords(["baseline", "sub", "super", "text-top", "text-bottom", "middle", "top", "bottom"], lengthType),
-	visibility: visibilityType,
-	width: typeWithKeywords(["border-box", "content-box", "auto", "max-content", "min-content", "available", "fit-content"], lengthType),
-	wordSpacing: typeWithKeywords(["normal"], lengthType),
-	x: lengthType,
-	y: lengthType,
-	zIndex: typeWithKeywords(["auto"], integerType)
-};
-
-/*
-var svgProperties = {
-	"cx": 1,
-	"width": 1,
-	"x": 1,
-	"y": 1
-};
-
-var borderWidthAliases = {
-	initial: "3px",
-	thin: "1px",
-	medium: "3px",
-	thick: "5px"
-};
-
-var propertyValueAliases = {
-	backgroundColor: { initial: "transparent" },
-	backgroundPosition: { initial: "0% 0%" },
-	borderBottomColor: { initial: "currentColor" },
-	borderBottomLeftRadius: { initial: "0px" },
-	borderBottomRightRadius: { initial: "0px" },
-	borderBottomWidth: borderWidthAliases,
-	borderLeftColor: { initial: "currentColor" },
-	borderLeftWidth: borderWidthAliases,
-	borderRightColor: { initial: "currentColor" },
-	borderRightWidth: borderWidthAliases,
-	// Spec says this should be 0 but in practise it is 2px.
-	borderSpacing: { initial: "2px" },
-	borderTopColor: { initial: "currentColor" },
-	borderTopLeftRadius: { initial: "0px" },
-	borderTopRightRadius: { initial: "0px" },
-	borderTopWidth: borderWidthAliases,
-	bottom: { initial: "auto" },
-	clip: { initial: "rect(0px, 0px, 0px, 0px)" },
-	color: { initial: "black" }, // Depends on user agent.
-	fontSize: {
-		initial: "100%",
-		"xx-small": "60%",
-		"x-small": "75%",
-		"small": "89%",
-		"medium": "100%",
-		"large": "120%",
-		"x-large": "150%",
-		"xx-large": "200%"
-	},
-	fontWeight: {
-		initial: "400",
-		normal: "400",
-		bold: "700"
-	},
-	height: { initial: "auto" },
-	left: { initial: "auto" },
-	letterSpacing: { initial: "normal" },
-	lineHeight: {
-		initial: "120%",
-		normal: "120%"
-	},
-	marginBottom: { initial: "0px" },
-	marginLeft: { initial: "0px" },
-	marginRight: { initial: "0px" },
-	marginTop: { initial: "0px" },
-	maxHeight: { initial: "none" },
-	maxWidth: { initial: "none" },
-	minHeight: { initial: "0px" },
-	minWidth: { initial: "0px" },
-	opacity: { initial: "1.0" },
-	outlineColor: { initial: "invert" },
-	outlineOffset: { initial: "0px" },
-	outlineWidth: borderWidthAliases,
-	paddingBottom: { initial: "0px" },
-	paddingLeft: { initial: "0px" },
-	paddingRight: { initial: "0px" },
-	paddingTop: { initial: "0px" },
-	right: { initial: "auto" },
-	textIndent: { initial: "0px" },
-	textShadow: {
-		initial: "0px 0px 0px transparent",
-		none: "0px 0px 0px transparent"
-	},
-	top: { initial: "auto" },
-	transform: {
-		initial: "matrix(1, 0, 0, 1, 0, 0)",
-		none: "matrix(1, 0, 0, 1, 0, 0)"
-	},
-	verticalAlign: { initial: "0px" },
-	visibility: { initial: "visible" },
-	width: { initial: "auto" },
-	wordSpacing: { initial: "normal" },
-	zIndex: { initial: "auto" }
-};
-
-var propertyIsSVGAttrib = function(property, target) {
-	return target.namespaceURI === SVG_NS && property in svgProperties;
-};
-*/
-
-export { typeForStyle, transformType, colorType, nonNumericType, numberType, integerType, opacityType, lengthType, lengthAutoType, positionType, positionListType, rectangleType, shadowType, fontWeightType, visibilityType, beginTransaction, commitTransaction, currentTransaction, flushTransaction, disableAnimation, decorate, activate, HyperNumber, HyperScale, HyperArray, HyperSet, HyperPoint, HyperSize, HyperRect, HyperRange, hyperNotFound, hyperMakeRect, hyperZeroRect, hyperEqualRects, hyperMakePoint, hyperZeroPoint, hyperEqualPoints, hyperMakeSize, hyperZeroSize, hyperEqualSizes, hyperMakeRange, hyperZeroRange, hyperNullRange, hyperIndexInRange, hyperEqualRanges, hyperIntersectionRange };
+export { typeForStyle, registerAnimatableStyles, activateElement, transformType, colorType, nonNumericType, cssNumberType, cssIntegerType, cssOpacityType, lengthType, lengthAutoType, positionType, positionListType, rectangleType, shadowType, fontWeightType, visibilityType, beginTransaction, commitTransaction, currentTransaction, flushTransaction, disableAnimation, decorate, activate, HyperNumber, HyperScale, HyperArray, HyperSet, HyperPoint, HyperSize, HyperRect, HyperRange, hyperNotFound, hyperMakeRect, hyperZeroRect, hyperEqualRects, hyperMakePoint, hyperZeroPoint, hyperEqualPoints, hyperMakeSize, hyperZeroSize, hyperEqualSizes, hyperMakeRange, hyperZeroRange, hyperNullRange, hyperIndexInRange, hyperEqualRanges, hyperIntersectionRange };

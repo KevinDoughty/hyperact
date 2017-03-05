@@ -39,9 +39,9 @@ module.exports = [
 		entry: "./source/hyperact.js",
 		output: {
 			path: __dirname,
-			filename: "hyperact.js",
-			library: "Hyperact",
-			libraryTarget: "umd"
+			filename: "hyperact.js"//,
+// 			library: "Hyperact",
+// 			libraryTarget: "umd"
 		},
 		module: {
 			loaders: [
@@ -49,11 +49,12 @@ module.exports = [
 					test: /\.js$/,
 					loader: "babel-loader",
 					exclude: /node_modules/,
-					query: {
-						presets: [
-							["es2015", { "modules": false }]
-						]
-					}
+					options: { presets: [ ["es2015", { modules: false }] ] }
+// 					query: {
+// 						presets: [
+// 							["es2015", { "modules": false }]
+// 						]
+// 					}
 				}
 			]
 		},

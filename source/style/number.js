@@ -4,9 +4,9 @@
 import { interp, createObject } from "./shared.js";
 import { nonNumericType } from "./nonNumeric.js";
 
-export const numberType = {
+export const cssNumberType = {
 	toString: function() {
-		return "numberType";
+		return "cssNumberType";
 	},
 	toJSON: function() {
 		return this.toString();
@@ -47,7 +47,7 @@ export const numberType = {
 		return interp(from, to, f);
 	},
 	//output: function(value) { return value + ""; }, // original
-	output: function(value) { return value; }, // no strings damn it. Unknown side effects
+	output: function(value) { return value; }, // no strings damn it. Unknown side effects. Because used by transformType ?
 	input: function(value) {
 		if (value === "auto") {
 			return "auto";
@@ -57,7 +57,13 @@ export const numberType = {
 	}
 };
 
-export const integerType = createObject(numberType, {
+export const cssIntegerType = createObject(cssNumberType, {
+	toString: function() {
+		return "cssIntergerType";
+	},
+	toJSON: function() {
+		return this.toString();
+	},
 	interpolate: function(from, to, f) {
 		// If from or to are "auto", we fall back to step interpolation.
 		if (from === "auto" || to === "auto") {
@@ -67,7 +73,13 @@ export const integerType = createObject(numberType, {
 	}
 });
 
-export const opacityType = createObject(numberType, {
+export const cssOpacityType = createObject(cssNumberType, {
+	toString: function() {
+		return "cssOpacityType";
+	},
+	toJSON: function() {
+		return this.toString();
+	},
 	zero: function() {
 		return 0.0; // zero is definitely zero, I need to expose initialValue from propertyValueAliases
 	},

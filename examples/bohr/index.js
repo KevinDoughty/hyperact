@@ -1,4 +1,4 @@
-import { activate } from "../../hyperact.js";
+import { activate } from "../../hyperact.mjs";
 
 function push(progress) {
 	var result = 1 + 0.5 * (1-progress) * Math.sin(progress * Math.PI * 2);

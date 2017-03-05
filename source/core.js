@@ -21,16 +21,9 @@ function isFunction(w) { // WET
 }
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
-	if (animation instanceof HyperAnimation) {
+	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
 		if (delegate.typeForProperty && animation.property) {
 			const type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
-			if (type) animation.type = type;
-		}
-	} else if (animation instanceof HyperKeyframes) {
-		if (delegate.typeForProperty && animation.property) {
-			let keyframe = null;
-			if (animation.keyframes.length) keyframe = animation.keyframes[animation.keyframes.length-1];
-			const type = delegate.typeForProperty.call(delegate, animation.property, keyframe);
 			if (type) animation.type = type;
 		}
 	} else if (animation instanceof HyperGroup) { // recursive
@@ -65,58 +58,7 @@ function convertPropertiesOfLayerWithFunction(properties,object,funky,self) { //
 		convertPropertyOfLayerWithFunction(property,object,funky,self);
 	});
 }
-function convertPropertiesOfAnimationWithFunction(animation,funky,self) { // mutates // animation from, to, and delta
-	if (animation && isFunction(funky)) {
-		const properties = ["from","to","delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
-		if (animation instanceof HyperAnimation) {
-			if (animation.property) properties.forEach( function(item) { // HyperAnimation
-				const value = animation[item];
-				if (value !== null && typeof value !== "undefined") animation[item] = funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
-			});
-		} else if (animation instanceof HyperKeyframes) {
-			const properties = ["keyframes","delta"];
-			if (animation.property) properties.forEach( function(item) { // HyperKeyframes
-				const array = animation[item];
-				if (array !== null && typeof array !== "undefined") {
-					animation[item] = array.map( value => {
-						funky.call(self,animation.property, value); // intentionally allows animations with an undefined property
-					});
-				}
-			});
-		} else if (animation instanceof HyperGroup) { // recursive
-			animation.group.forEach( function(childAnimation) {
-				convertPropertiesOfAnimationWithFunction(properties,childAnimation,funky,self);
-			});
-		} else if (animation instanceof HyperChain) { // recursive
-			animation.chain.forEach( function(childAnimation) {
-				convertPropertiesOfAnimationWithFunction(properties,childAnimation,funky,self);
-			});
-		}
-	}
-}
 
-// function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnimations,presentationBacking) { // COMPOSITING
-// 	const presentationLayer = Object.assign({},sourceLayer); // Need to make sure display has non animated properties for example this.element
-// 	if (!sourceAnimations || !sourceAnimations.length) return presentationLayer;
-// 	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
-// 		sourceAnimations.sort( function(a,b) {
-// 			const A = a.index || 0;
-// 			const B = b.index || 0;
-// 			let result = A - B;
-// 			if (!result) result = a.startTime - b.startTime;
-// 			if (!result) result = a.sortIndex - b.sortIndex; // animation number is needed because sort is not guaranteed to be stable
-// 			return result;
-// 		});
-// 	}
-// 	let progressChanged = false;
-// 	sourceAnimations.forEach( function(animation) {
-// 		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
-// 	});
-// 	if (!progressChanged && sourceAnimations.length) {
-// 		if (presentationBacking) return presentationBacking;
-// 	}
-// 	return presentationLayer;
-// }
 function presentationTransform(presentationLayer,sourceAnimations,time,shouldSortAnimations) { // COMPOSITING
 	if (!sourceAnimations || !sourceAnimations.length) return false;
 	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
@@ -215,13 +157,14 @@ export function activate(controller, delegate, layerInstance) {
 	function setValueForKey(prettyValue,property) {
 		const layer = {};
 		layer[property] = prettyValue;
+		///console.log("core setValueForKey:%s; pretty:%s;",property,JSON.stringify(prettyValue));
 		setValuesOfLayer(layer);
 	}
 	function setValuesOfLayer(layer) {
 		
 		const transaction = hyperContext.currentTransaction();
 		const presentationLayer = controller.presentation;
-		//console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
+		///console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
 		var result = {};
 // 		var prettyKeys = Object.keys(layer);
 // 		var index = prettyKeys.length;
@@ -234,6 +177,7 @@ export function activate(controller, delegate, layerInstance) {
 			controller.registerAnimatableProperty(uglyKey);
 			const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,prettyKey,delegate.input,delegate);
 			const uglyPrevious = modelBacking[uglyKey];
+			///console.log("core setValuesOfLayer1 key:%s; pretty:%s; ugly:%s;",uglyKey,JSON.stringify(prettyValue),JSON.stringify(uglyValue));
 			previousBacking[uglyKey] = uglyPrevious;
 			modelBacking[uglyKey] = uglyValue;
 			result[prettyKey] = prettyValue;
@@ -243,6 +187,8 @@ export function activate(controller, delegate, layerInstance) {
 				let uglyKey = prettyKey;
 				if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey,delegate.keyInput,delegate);
 				const prettyValue = result[prettyKey];
+				///console.log("core setValuesOfLayer2 key:%s; pretty:%s;",uglyKey,JSON.stringify(prettyValue));
+			
 				const prettyPresentation = presentationLayer[prettyKey];
 				const prettyPrevious = convertedValueOfPropertyWithFunction(previousBacking[uglyKey],prettyKey,delegate.output,delegate);
 				const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[prettyKey],transaction);
@@ -341,6 +287,7 @@ export function activate(controller, delegate, layerInstance) {
 		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
 		if (!descriptor || descriptor.configurable === true) {
 			const uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input, delegate);
+			///console.log("core register property:%s; pretty:%s; ugly:%s;",property,layerInstance[property],JSON.stringify(uglyValue));
 			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
 			if (typeof uglyValue === "undefined") modelBacking[property] = null;
 			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
@@ -382,7 +329,7 @@ export function activate(controller, delegate, layerInstance) {
 		get: function() {
 			const array = allAnimations.map(function (animation) {
 				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				convertPropertiesOfAnimationWithFunction(copy,delegate.output,delegate);
+				copy.convert.call(copy,delegate.output,delegate);
 				return copy;
 			});
 			return array;
@@ -416,6 +363,7 @@ export function activate(controller, delegate, layerInstance) {
 // 				if (verbose) console.log("... presentation result:%s;",JSON.stringify(presentationLayer));
 // 				return presentationLayer;
 // 			}
+			///console.log("core presentationLayer pre:%s; model:%s;",JSON.stringify(presentationLayer),JSON.stringify(modelBacking));
 			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			if (allAnimations.length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
 			if (changed || presentationBacking === null) {
@@ -425,6 +373,7 @@ export function activate(controller, delegate, layerInstance) {
 			}
 			presentationTime = transactionTime;
 			shouldSortAnimations = false;
+			///console.log("core presentationLayer post:%s; model:%s;",JSON.stringify(presentationBacking),JSON.stringify(modelBacking));
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -474,9 +423,10 @@ export function activate(controller, delegate, layerInstance) {
 	};
 
 	controller.addAnimation = function(description,name) { // does not register. // should be able to pass a description if type is registered
+		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description);
 		const copy = animationFromDescription(description);
 		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:"+JSON.stringify(copy));
-		convertPropertiesOfAnimationWithFunction(copy, delegate.input,delegate); // delta is calculated from ugly values in runAnimation
+		copy.convert.call(copy, delegate.input,delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy,delegate);
 		if (!allAnimations.length) registerWithContext();
 		allAnimations.push(copy);
@@ -488,10 +438,8 @@ export function activate(controller, delegate, layerInstance) {
 		if (typeof name === "undefined" || name === null || name === false) allNames.push(null);
 		else allNames.push(name);
 		shouldSortAnimations = true;
-		
 		const transaction = hyperContext.currentTransaction();
 		copy.runAnimation(controller, name, transaction);
-		
 	};
 
 	controller.removeAnimation = function(name) {
@@ -517,7 +465,7 @@ export function activate(controller, delegate, layerInstance) {
 		const animation = namedAnimations[name];
 		if (animation) {
 			const copy = animation.copy.call(animation);
-			convertPropertiesOfAnimationWithFunction(copy,delegate.output,delegate);
+			copy.convert.call(copy,delegate.output,delegate);
 			return copy;
 		}
 		return null;

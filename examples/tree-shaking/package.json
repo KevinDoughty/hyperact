@@ -1,7 +1,7 @@
 {
   "name": "tree-shaking",
   "version": "0.0.1",
-  "description": "Tree-shaking in all its glory",
+  "description": "Tree-shaking in almost all its glory",
   "main": "bundle.js",
   "scripts": {
     "build": "./node_modules/.bin/rollup index.js --format es --output bundle.js",
@@ -13,8 +13,8 @@
   "devDependencies": {
     "babel-plugin-external-helpers": "^6.18.0",
     "babel-preset-es2015-rollup": "^3.0.0",
-    "rollup": "^0.39.2",
+    "rollup": "^0.41.4",
     "rollup-plugin-babel": "^2.7.1",
-    "rollup-watch": "^3.1.0"
+    "rollup-watch": "^3.2.2"
   }
 }

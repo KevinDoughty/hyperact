@@ -79,6 +79,11 @@ HyperChain.prototype = {
 			changed = animation.composite.call(animation,onto,now) || changed;
 		}
 		return changed;
+	},
+	convert: function(funky,self) { // mutates // animation from, to, and delta
+		if (isFunction(funky)) this.chain.forEach( function(animation) {
+			animation.convert.call(animation,funky,self);
+		});
 	}
 };
 
@@ -127,6 +132,11 @@ HyperGroup.prototype = {
 			changed = animation.composite.call(animation,onto,now) || changed;
 		});
 		return changed;
+	},
+	convert: function(funky,self) { // mutates // animation from, to, and delta
+		if (isFunction(funky)) this.group.forEach( function(animation) {
+			animation.convert.call(animation,funky,self);
+		});
 	}
 };
 
@@ -148,7 +158,7 @@ function HyperAction() {
 	this.sort;
 	this.finished = false;
 	this.startTime; // float // Should this be private?
-	this.progress;//null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers. No longer initialized in runAnimation
+	this.progress; //null; // 0 would mean first frame does not count as a change which I want for stepEnd but probably not anything else. Also complicating is separate cachedPresentationlayer and context displayLayers. No longer initialized in runAnimation
 	this.onend; // NOT FINISHED. callback function, fires regardless of fillMode. Should rename. Should also implement didStart, maybe didTick, etc.
 	//this.naming; // "default","exact","increment","nil" // why not a key property?
 	this.remove = true;
@@ -156,13 +166,14 @@ function HyperAction() {
 
 HyperAction.prototype = {
 	copy: function() { // TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
-		const copy = new this.constructor(this.settings);
-		const keys = Object.getOwnPropertyNames(this);
-		const length = keys.length;
-		for (let i = 0; i < length; i++) {
-			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
-		}
-		return copy;
+		return new this.constructor(this);
+// 		const copy = new this.constructor(this.settings);
+// 		const keys = Object.getOwnPropertyNames(this);
+// 		const length = keys.length;
+// 		for (let i = 0; i < length; i++) {
+// 			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
+// 		}
+// 		return copy;
 	},
 	composite: function(onto,now) {
 		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
@@ -218,19 +229,26 @@ HyperAction.prototype = {
 			if (length === 1) throw new Error("HyperAction composite need to be able to handle one keyframe");
 			//let i = length;
 			//while (i--) { // TODO: This is also just wrong
-			let i;
-			for (i=0; i<length-1; i++) {
-				//const offset = this.offsets[i];
-				//console.log("%s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
-				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i+1]) {
-					break;
-				}
+			// let i;
+// 			for (i=0; i<length-1; i++) {
+// 				//const offset = this.offsets[i];
+// 				//console.log("actions composite1 %s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
+// 				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i+1]) {
+// 					break;
+// 				}
+// 			}
+			let i = length-1;
+			while (i--) { // TODO: test that this works in reverse
+				if (iterationProgress >= this.offsets[i]) break;
 			}
 			const previous = i;
 			let next = previous+1;
-			if (this.blend === "absolute") value = this.type.interpolate(this.keyframes[previous],this.keyframes[next],iterationProgress-this.offsets[previous]);
-			else value = this.type.interpolate(this.delta[previous],this.delta[next],iterationProgress-this.offsets[previous]); // sending argument to zero() for css transforms (or custom types)
-			//console.log("%s prev:%s; next:%s; progress:%s; offset prev:%s; next:%s; keyframes prev:%s; next:%s; value:%s; offsets:%s; keyframes:%s;",this.property,previous,next,iterationProgress,this.offsets[previous],this.offsets[next],this.keyframes[previous],this.keyframes[next],value,JSON.stringify(this.offsets),JSON.stringify(this.keyframes));
+			const frameSpan = this.offsets[next]-this.offsets[previous];
+			if (frameSpan === 0) throw new Error("can't divide by zero. check your keyframe offsets.");
+			const frameLocation = iterationProgress-this.offsets[previous];
+			const frameProgress = frameLocation/frameSpan;
+			if (this.blend === "absolute") value = this.type.interpolate(this.keyframes[previous],this.keyframes[next],frameProgress);
+			else value = this.type.interpolate(this.delta[previous],this.delta[next],frameProgress); // sending argument to zero() for css transforms (or custom types)
 		} else { // HyperAnimation
 			if (this.blend === "absolute") value = this.type.interpolate(this.from,this.to,iterationProgress);
 			else value = this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms (or custom types)
@@ -239,16 +257,13 @@ HyperAction.prototype = {
 		if (typeof property !== "undefined" && property !== null) { // allow animating without declaring property
 			let result = value;
 			let underlying = onto[property];
-			if (typeof underlying === "undefined" || underlying === null) {
-				underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
-			}
+			if (typeof underlying === "undefined" || underlying === null) underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
 			if (this.additive) result = this.type.add(underlying,value);
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
 		const changed = (iterationProgress !== this.progress || this.finished);
 		this.progress = iterationProgress;
-
 		return changed;
 	}
 };
@@ -265,7 +280,10 @@ export function HyperKeyframes(settings) {
 	if (settings) Object.keys(settings).forEach( function(key) {
 		if (key !== "keyframes") this[key] = settings[key];
 	}.bind(this));
-
+	
+	// TODO: lots of validation
+	// TODO: composite assumes offsets are in order, and not equal (need to prevent dividing by zero)
+	
 	if (!Array.isArray(this.offsets) || this.offsets.length !== length) { // TODO: handle zero or one frames
 		if (length < 2) this.offsets = [];
 		else this.offsets = this.keyframes.map( function(item,index) {
@@ -274,21 +292,23 @@ export function HyperKeyframes(settings) {
 	} else this.offsets.sort((a,b) => { // TODO: maybe verify all offset are actually numbers, between 0 and 1
 		return a-b;
 	});
+	this.progress = null;
 }
 
 HyperKeyframes.prototype = Object.create(HyperAction.prototype);
 HyperKeyframes.prototype.constructor = HyperKeyframes;
+HyperKeyframes.prototype.copy = function() {
+	return new this.constructor(this);
+};
 HyperKeyframes.prototype.runAnimation = function(layer,key,transaction) {
+	//console.log("run frames:%s;",JSON.stringify(this.keyframes));
 	if (isFunction(this.type)) this.type = new this.type();
 	if (this.type && isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
-// 			if (!this.from) this.from = this.type.zero(this.to);
-// 			if (!this.to) this.to = this.type.zero(this.from);
-// 			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
 		if (this.blend !== "absolute" && this.keyframes.length) {
-			const last = this.keyfames.length-1;
+			const last = this.keyframes.length-1;
 			const array = [];
 			for (let i=0; i<last; i++) {
-				array[i] = this.type.subtract(array[i],array[i+1]);
+				array[i] = this.type.subtract(this.keyframes[i],this.keyframes[last]);
 			}
 			array[last] = this.type.zero(this.keyframes[last]);
 			this.delta = array;
@@ -300,8 +320,21 @@ HyperKeyframes.prototype.runAnimation = function(layer,key,transaction) {
 		if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
+	//console.log("run delta:%s;",JSON.stringify(this.delta));
 };
-
+HyperKeyframes.prototype.convert = function(funky,self) { // mutates // animation from, to, and delta
+	if (isFunction(funky) && this.property) {
+		const properties = ["keyframes","delta"];
+		properties.forEach( function(item) { // HyperKeyframes
+			if (this[item]) {
+				const array = this[item].slice(0);
+				this[item] = array.map( value => {
+					return funky.call(self,this.property, value); // intentionally allows animations with an undefined property
+				});
+			}
+		}.bind(this));
+	}
+};
 
 
 export function HyperAnimation(settings) {
@@ -313,13 +346,14 @@ export function HyperAnimation(settings) {
 	if (settings) Object.keys(settings).forEach( function(key) {
 		this[key] = settings[key];
 	}.bind(this));
+	this.progress = null;
 }
 
 HyperAnimation.prototype = Object.create(HyperAction.prototype);
 HyperAnimation.prototype.constructor = HyperAnimation;
 HyperAnimation.prototype.runAnimation = function(layer,key,transaction) {
 	if (!this.type) {
-		console.log("HyperAnimation runAnimation questionable type assignment");
+		///console.log("HyperAnimation runAnimation questionable type assignment");
 		this.type = wetNumberType; // questionable if I should do this here
 	}
 	if (isFunction(this.type)) this.type = new this.type();
@@ -327,6 +361,8 @@ HyperAnimation.prototype.runAnimation = function(layer,key,transaction) {
 		if (!this.from) this.from = this.type.zero(this.to);
 		if (!this.to) this.to = this.type.zero(this.from);
 		if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
+		///console.log("actions runAnimation type:%s;",this.type.toString());
+		///console.log("actions runAnimation from:%s; to:%s; delta:%s;",JSON.stringify(this.from),JSON.stringify(this.to),JSON.stringify(this.delta));
 		if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
@@ -336,18 +372,30 @@ HyperAnimation.prototype.runAnimation = function(layer,key,transaction) {
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
+HyperAnimation.prototype.convert = function(funky,self) { // mutates // animation from, to, and delta
+	if (isFunction(funky) && this.property) {
+		const properties = ["from","to","delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
+		properties.forEach( function(item) { // HyperAnimation
+			const value = this[item];
+			if (value !== null && typeof value !== "undefined") this[item] = funky.call(self,this.property, value); // intentionally allows animations with an undefined property
+		}.bind(this));
+	}
+};
 
 
 
 export function animationFromDescription(description) {
 	let animation;
 	if (!description) return description;
-	if (description instanceof HyperAction || description instanceof HyperGroup || description instanceof HyperChain) {
+	if (description instanceof HyperAction || description instanceof HyperKeyframes || description instanceof HyperGroup || description instanceof HyperChain) {
 		animation = description.copy.call(description);
 	} else if (Array.isArray(description)) {
 		animation = new HyperGroup(description);
-	} else if (isObject(description)) {
-		animation = new HyperAnimation(description);
+	} else if (isObject(description)) { // TODO: if has both keyframes and from/to, descriptions could return a group of both. But why?
+		if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);
+		else if (Array.isArray(description.group)) animation = new HyperGroup(description);
+		else if (Array.isArray(description.chain)) animation = new HyperChain(description);
+		else animation = new HyperAnimation(description);
 	} else if (isNumber(description)) animation = new HyperAnimation({duration:description});
 	else if (description === true) animation = new HyperAnimation({});
 	else throw new Error("is this an animation:"+JSON.stringify(description));

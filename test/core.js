@@ -1118,9 +1118,64 @@ describe("core", function() {
 			core.flushTransaction();
 			assert.equal(view.presentation.a,1);
 		});
-
 	});
 
+	describe("input output value transforms", function() {
+		it("calls delegate input on value change", function(done) {
+			const controller = {};
+			const delegate = {
+				input: function(property,value) {
+					if (value === 1) done();
+					return value;
+				},
+				output: function(property,value) {
+					return value;
+				}
+			};
+			const layer = {a:0}; // properties must exist prior
+			core.activate(controller,delegate,layer);
+			layer.a = 1;
+		});
+		it("input output parity", function() {
+			const type = {
+				add: function(a,b) {
+					return [a[0] + b[0]];
+				},
+				subtract: function(a,b) {
+					return [a[0] - b[0]];
+				},
+				zero: function(a) {
+					return [0];
+				},
+				interpolate: function(a, b, progress) {
+					return [a[0] + (b[0] - a[0]) * progress];
+				}
+			};
+			const controller = {};
+			const delegate = {
+				input: function(property,value) {
+					return [value];
+				},
+				output: function(property,value) {
+					return value[0];
+				},
+				animationForKey: function() {
+					return {
+						type:type,
+						duration:duration/2,
+						from:2,
+						to:2,
+						blend:"absolute"
+					};
+				}
+			};
+			const layer = {a:0};
+			core.activate(controller,delegate,layer);
+			layer.a = 1;
+			core.flushTransaction();
+			assert.equal(controller.presentation.a,3);
+		});
+	});
 
 	describe("ten", function() {
 		var one;
@@ -1277,6 +1332,12 @@ describe("core", function() {
 			assert(false);
 		});
 		it("no controller mode", function() {
+			assert(false);
+		});
+		it("display function only instead of delegate", function() {
+			assert(false);
+		});
+		it("style transform 3d matrix and slerpalerp", function() {
 			assert(false);
 		});
 	});

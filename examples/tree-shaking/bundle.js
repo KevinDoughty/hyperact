@@ -233,6 +233,12 @@ HyperChain.prototype = {
 			changed = animation.composite.call(animation, onto, now) || changed;
 		}
 		return changed;
+	},
+	convert: function convert(funky, self) {
+		// mutates // animation from, to, and delta
+		if (isFunction$2(funky)) this.chain.forEach(function (animation) {
+			animation.convert.call(animation, funky, self);
+		});
 	}
 };
 
@@ -280,6 +286,12 @@ HyperGroup.prototype = {
 			changed = animation.composite.call(animation, onto, now) || changed;
 		});
 		return changed;
+	},
+	convert: function convert(funky, self) {
+		// mutates // animation from, to, and delta
+		if (isFunction$2(funky)) this.group.forEach(function (animation) {
+			animation.convert.call(animation, funky, self);
+		});
 	}
 };
 
@@ -308,13 +320,14 @@ function HyperAction() {
 HyperAction.prototype = {
 	copy: function copy() {
 		// TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
-		var copy = new this.constructor(this.settings);
-		var keys = Object.getOwnPropertyNames(this);
-		var length = keys.length;
-		for (var i = 0; i < length; i++) {
-			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
-		}
-		return copy;
+		return new this.constructor(this);
+		// 		const copy = new this.constructor(this.settings);
+		// 		const keys = Object.getOwnPropertyNames(this);
+		// 		const length = keys.length;
+		// 		for (let i = 0; i < length; i++) {
+		// 			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
+		// 		}
+		// 		return copy;
 	},
 	composite: function composite(onto, now) {
 		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
@@ -365,18 +378,26 @@ HyperAction.prototype = {
 			if (length === 1) throw new Error("HyperAction composite need to be able to handle one keyframe");
 			//let i = length;
 			//while (i--) { // TODO: This is also just wrong
-			var i = void 0;
-			for (i = 0; i < length - 1; i++) {
-				//const offset = this.offsets[i];
-				//console.log("%s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
-				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i + 1]) {
-					break;
-				}
+			// let i;
+			// 			for (i=0; i<length-1; i++) {
+			// 				//const offset = this.offsets[i];
+			// 				//console.log("actions composite1 %s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
+			// 				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i+1]) {
+			// 					break;
+			// 				}
+			// 			}
+			var i = length - 1;
+			while (i--) {
+				// TODO: test that this works in reverse
+				if (iterationProgress >= this.offsets[i]) break;
 			}
 			var previous = i;
 			var next = previous + 1;
-			if (this.blend === "absolute") value = this.type.interpolate(this.keyframes[previous], this.keyframes[next], iterationProgress - this.offsets[previous]);else value = this.type.interpolate(this.delta[previous], this.delta[next], iterationProgress - this.offsets[previous]); // sending argument to zero() for css transforms (or custom types)
-			//console.log("%s prev:%s; next:%s; progress:%s; offset prev:%s; next:%s; keyframes prev:%s; next:%s; value:%s; offsets:%s; keyframes:%s;",this.property,previous,next,iterationProgress,this.offsets[previous],this.offsets[next],this.keyframes[previous],this.keyframes[next],value,JSON.stringify(this.offsets),JSON.stringify(this.keyframes));
+			var frameSpan = this.offsets[next] - this.offsets[previous];
+			if (frameSpan === 0) throw new Error("can't divide by zero. check your keyframe offsets.");
+			var frameLocation = iterationProgress - this.offsets[previous];
+			var frameProgress = frameLocation / frameSpan;
+			if (this.blend === "absolute") value = this.type.interpolate(this.keyframes[previous], this.keyframes[next], frameProgress);else value = this.type.interpolate(this.delta[previous], this.delta[next], frameProgress); // sending argument to zero() for css transforms (or custom types)
 		} else {
 			// HyperAnimation
 			if (this.blend === "absolute") value = this.type.interpolate(this.from, this.to, iterationProgress);else value = this.type.interpolate(this.delta, this.type.zero(this.to), iterationProgress); // sending argument to zero() for css transforms (or custom types)
@@ -386,16 +407,13 @@ HyperAction.prototype = {
 			// allow animating without declaring property
 			var result = value;
 			var underlying = onto[property];
-			if (typeof underlying === "undefined" || underlying === null) {
-				underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
-			}
+			if (typeof underlying === "undefined" || underlying === null) underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
 			if (this.additive) result = this.type.add(underlying, value);
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
 		var changed = iterationProgress !== this.progress || this.finished;
 		this.progress = iterationProgress;
-
 		return changed;
 	}
 };
@@ -411,6 +429,9 @@ function HyperKeyframes(settings) {
 		if (key !== "keyframes") this[key] = settings[key];
 	}.bind(this));
 
+	// TODO: lots of validation
+	// TODO: composite assumes offsets are in order, and not equal (need to prevent dividing by zero)
+
 	if (!Array.isArray(this.offsets) || this.offsets.length !== length) {
 		// TODO: handle zero or one frames
 		if (length < 2) this.offsets = [];else this.offsets = this.keyframes.map(function (item, index) {
@@ -420,21 +441,23 @@ function HyperKeyframes(settings) {
 		// TODO: maybe verify all offset are actually numbers, between 0 and 1
 		return a - b;
 	});
+	this.progress = null;
 }
 
 HyperKeyframes.prototype = Object.create(HyperAction.prototype);
 HyperKeyframes.prototype.constructor = HyperKeyframes;
+HyperKeyframes.prototype.copy = function () {
+	return new this.constructor(this);
+};
 HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
+	//console.log("run frames:%s;",JSON.stringify(this.keyframes));
 	if (isFunction$2(this.type)) this.type = new this.type();
 	if (this.type && isFunction$2(this.type.zero) && isFunction$2(this.type.add) && isFunction$2(this.type.subtract) && isFunction$2(this.type.interpolate)) {
-		// 			if (!this.from) this.from = this.type.zero(this.to);
-		// 			if (!this.to) this.to = this.type.zero(this.from);
-		// 			if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
 		if (this.blend !== "absolute" && this.keyframes.length) {
-			var last = this.keyfames.length - 1;
+			var last = this.keyframes.length - 1;
 			var array = [];
 			for (var i = 0; i < last; i++) {
-				array[i] = this.type.subtract(array[i], array[i + 1]);
+				array[i] = this.type.subtract(this.keyframes[i], this.keyframes[last]);
 			}
 			array[last] = this.type.zero(this.keyframes[last]);
 			this.delta = array;
@@ -446,6 +469,24 @@ HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
 		if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
+	//console.log("run delta:%s;",JSON.stringify(this.delta));
+};
+HyperKeyframes.prototype.convert = function (funky, self) {
+	// mutates // animation from, to, and delta
+	if (isFunction$2(funky) && this.property) {
+		var properties = ["keyframes", "delta"];
+		properties.forEach(function (item) {
+			var _this = this;
+
+			// HyperKeyframes
+			if (this[item]) {
+				var array = this[item].slice(0);
+				this[item] = array.map(function (value) {
+					return funky.call(self, _this.property, value); // intentionally allows animations with an undefined property
+				});
+			}
+		}.bind(this));
+	}
 };
 
 function HyperAnimation(settings) {
@@ -457,13 +498,14 @@ function HyperAnimation(settings) {
 	if (settings) Object.keys(settings).forEach(function (key) {
 		this[key] = settings[key];
 	}.bind(this));
+	this.progress = null;
 }
 
 HyperAnimation.prototype = Object.create(HyperAction.prototype);
 HyperAnimation.prototype.constructor = HyperAnimation;
 HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 	if (!this.type) {
-		console.log("HyperAnimation runAnimation questionable type assignment");
+		///console.log("HyperAnimation runAnimation questionable type assignment");
 		this.type = wetNumberType; // questionable if I should do this here
 	}
 	if (isFunction$2(this.type)) this.type = new this.type();
@@ -471,6 +513,8 @@ HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 		if (!this.from) this.from = this.type.zero(this.to);
 		if (!this.to) this.to = this.type.zero(this.from);
 		if (this.blend !== "absolute") this.delta = this.type.subtract(this.from, this.to);
+		///console.log("actions runAnimation type:%s;",this.type.toString());
+		///console.log("actions runAnimation from:%s; to:%s; delta:%s;",JSON.stringify(this.from),JSON.stringify(this.to),JSON.stringify(this.delta));
 		if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
@@ -480,16 +524,28 @@ HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
+HyperAnimation.prototype.convert = function (funky, self) {
+	// mutates // animation from, to, and delta
+	if (isFunction$2(funky) && this.property) {
+		var properties = ["from", "to", "delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
+		properties.forEach(function (item) {
+			// HyperAnimation
+			var value = this[item];
+			if (value !== null && typeof value !== "undefined") this[item] = funky.call(self, this.property, value); // intentionally allows animations with an undefined property
+		}.bind(this));
+	}
+};
 
 function animationFromDescription(description) {
 	var animation = void 0;
 	if (!description) return description;
-	if (description instanceof HyperAction || description instanceof HyperGroup || description instanceof HyperChain) {
+	if (description instanceof HyperAction || description instanceof HyperKeyframes || description instanceof HyperGroup || description instanceof HyperChain) {
 		animation = description.copy.call(description);
 	} else if (Array.isArray(description)) {
 		animation = new HyperGroup(description);
 	} else if (isObject(description)) {
-		animation = new HyperAnimation(description);
+		// TODO: if has both keyframes and from/to, descriptions could return a group of both. But why?
+		if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);else if (Array.isArray(description.group)) animation = new HyperGroup(description);else if (Array.isArray(description.chain)) animation = new HyperChain(description);else animation = new HyperAnimation(description);
 	} else if (isNumber(description)) animation = new HyperAnimation({ duration: description });else if (description === true) animation = new HyperAnimation({});else throw new Error("is this an animation:" + JSON.stringify(description));
 	return animation;
 }
@@ -515,17 +571,10 @@ function isFunction(w) {
 }
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
-	if (animation instanceof HyperAnimation) {
+	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
 		if (delegate.typeForProperty && animation.property) {
 			var type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
 			if (type) animation.type = type;
-		}
-	} else if (animation instanceof HyperKeyframes) {
-		if (delegate.typeForProperty && animation.property) {
-			var keyframe = null;
-			if (animation.keyframes.length) keyframe = animation.keyframes[animation.keyframes.length - 1];
-			var _type = delegate.typeForProperty.call(delegate, animation.property, keyframe);
-			if (_type) animation.type = _type;
 		}
 	} else if (animation instanceof HyperGroup) {
 		// recursive
@@ -565,65 +614,7 @@ function convertPropertiesOfLayerWithFunction(properties, object, funky, self) {
 		convertPropertyOfLayerWithFunction(property, object, funky, self);
 	});
 }
-function convertPropertiesOfAnimationWithFunction(animation, funky, self) {
-	// mutates // animation from, to, and delta
-	if (animation && isFunction(funky)) {
-		(function () {
-			var properties = ["from", "to", "delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
-			if (animation instanceof HyperAnimation) {
-				if (animation.property) properties.forEach(function (item) {
-					// HyperAnimation
-					var value = animation[item];
-					if (value !== null && typeof value !== "undefined") animation[item] = funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
-				});
-			} else if (animation instanceof HyperKeyframes) {
-				var _properties = ["keyframes", "delta"];
-				if (animation.property) _properties.forEach(function (item) {
-					// HyperKeyframes
-					var array = animation[item];
-					if (array !== null && typeof array !== "undefined") {
-						animation[item] = array.map(function (value) {
-							funky.call(self, animation.property, value); // intentionally allows animations with an undefined property
-						});
-					}
-				});
-			} else if (animation instanceof HyperGroup) {
-				// recursive
-				animation.group.forEach(function (childAnimation) {
-					convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
-				});
-			} else if (animation instanceof HyperChain) {
-				// recursive
-				animation.chain.forEach(function (childAnimation) {
-					convertPropertiesOfAnimationWithFunction(properties, childAnimation, funky, self);
-				});
-			}
-		})();
-	}
-}
 
-// function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnimations,presentationBacking) { // COMPOSITING
-// 	const presentationLayer = Object.assign({},sourceLayer); // Need to make sure display has non animated properties for example this.element
-// 	if (!sourceAnimations || !sourceAnimations.length) return presentationLayer;
-// 	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
-// 		sourceAnimations.sort( function(a,b) {
-// 			const A = a.index || 0;
-// 			const B = b.index || 0;
-// 			let result = A - B;
-// 			if (!result) result = a.startTime - b.startTime;
-// 			if (!result) result = a.sortIndex - b.sortIndex; // animation number is needed because sort is not guaranteed to be stable
-// 			return result;
-// 		});
-// 	}
-// 	let progressChanged = false;
-// 	sourceAnimations.forEach( function(animation) {
-// 		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
-// 	});
-// 	if (!progressChanged && sourceAnimations.length) {
-// 		if (presentationBacking) return presentationBacking;
-// 	}
-// 	return presentationLayer;
-// }
 function presentationTransform(presentationLayer, sourceAnimations, time, shouldSortAnimations) {
 	// COMPOSITING
 	if (!sourceAnimations || !sourceAnimations.length) return false;
@@ -717,13 +708,14 @@ function activate(controller, delegate, layerInstance) {
 	function setValueForKey(prettyValue, property) {
 		var layer = {};
 		layer[property] = prettyValue;
+		///console.log("core setValueForKey:%s; pretty:%s;",property,JSON.stringify(prettyValue));
 		setValuesOfLayer(layer);
 	}
 	function setValuesOfLayer(layer) {
 
 		var transaction = hyperContext.currentTransaction();
 		var presentationLayer = controller.presentation;
-		//console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
+		///console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
 		var result = {};
 		// 		var prettyKeys = Object.keys(layer);
 		// 		var index = prettyKeys.length;
@@ -736,6 +728,7 @@ function activate(controller, delegate, layerInstance) {
 			controller.registerAnimatableProperty(uglyKey);
 			var uglyValue = convertedValueOfPropertyWithFunction(prettyValue, prettyKey, delegate.input, delegate);
 			var uglyPrevious = modelBacking[uglyKey];
+			///console.log("core setValuesOfLayer1 key:%s; pretty:%s; ugly:%s;",uglyKey,JSON.stringify(prettyValue),JSON.stringify(uglyValue));
 			previousBacking[uglyKey] = uglyPrevious;
 			modelBacking[uglyKey] = uglyValue;
 			result[prettyKey] = prettyValue;
@@ -746,6 +739,8 @@ function activate(controller, delegate, layerInstance) {
 				var uglyKey = prettyKey;
 				if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey, delegate.keyInput, delegate);
 				var prettyValue = result[prettyKey];
+				///console.log("core setValuesOfLayer2 key:%s; pretty:%s;",uglyKey,JSON.stringify(prettyValue));
+
 				var prettyPresentation = presentationLayer[prettyKey];
 				var prettyPrevious = convertedValueOfPropertyWithFunction(previousBacking[uglyKey], prettyKey, delegate.output, delegate);
 				var animation = implicitAnimation(prettyKey, prettyValue, prettyPrevious, prettyPresentation, delegate, defaultAnimations[prettyKey], transaction);
@@ -848,6 +843,7 @@ function activate(controller, delegate, layerInstance) {
 		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
 		if (!descriptor || descriptor.configurable === true) {
 			var uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input, delegate);
+			///console.log("core register property:%s; pretty:%s; ugly:%s;",property,layerInstance[property],JSON.stringify(uglyValue));
 			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
 			if (typeof uglyValue === "undefined") modelBacking[property] = null;
 			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
@@ -889,7 +885,7 @@ function activate(controller, delegate, layerInstance) {
 		get: function get() {
 			var array = allAnimations.map(function (animation) {
 				var copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				convertPropertiesOfAnimationWithFunction(copy, delegate.output, delegate);
+				copy.convert.call(copy, delegate.output, delegate);
 				return copy;
 			});
 			return array;
@@ -923,6 +919,7 @@ function activate(controller, delegate, layerInstance) {
 			// 				if (verbose) console.log("... presentation result:%s;",JSON.stringify(presentationLayer));
 			// 				return presentationLayer;
 			// 			}
+			///console.log("core presentationLayer pre:%s; model:%s;",JSON.stringify(presentationLayer),JSON.stringify(modelBacking));
 			var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			if (allAnimations.length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
 			if (changed || presentationBacking === null) {
@@ -932,6 +929,7 @@ function activate(controller, delegate, layerInstance) {
 			}
 			presentationTime = transactionTime;
 			shouldSortAnimations = false;
+			///console.log("core presentationLayer post:%s; model:%s;",JSON.stringify(presentationBacking),JSON.stringify(modelBacking));
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -983,9 +981,10 @@ function activate(controller, delegate, layerInstance) {
 
 	controller.addAnimation = function (description, name) {
 		// does not register. // should be able to pass a description if type is registered
+		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description);
 		var copy = animationFromDescription(description);
 		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:" + JSON.stringify(copy));
-		convertPropertiesOfAnimationWithFunction(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
+		copy.convert.call(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy, delegate);
 		if (!allAnimations.length) registerWithContext();
 		allAnimations.push(copy);
@@ -996,7 +995,6 @@ function activate(controller, delegate, layerInstance) {
 		}
 		if (typeof name === "undefined" || name === null || name === false) allNames.push(null);else allNames.push(name);
 		shouldSortAnimations = true;
-
 		var transaction = hyperContext.currentTransaction();
 		copy.runAnimation(controller, name, transaction);
 	};
@@ -1024,7 +1022,7 @@ function activate(controller, delegate, layerInstance) {
 		var animation = namedAnimations[name];
 		if (animation) {
 			var copy = animation.copy.call(animation);
-			convertPropertiesOfAnimationWithFunction(copy, delegate.output, delegate);
+			copy.convert.call(copy, delegate.output, delegate);
 			return copy;
 		}
 		return null;
@@ -1059,41 +1057,6 @@ HyperScale.prototype = {
 	},
 	interpolate: function interpolate(a, b, progress) {
 		return a + (b - a) * progress;
-	}
-};
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
-var nonNumericType = {
-	toString: function toString() {
-		return "nonNumericType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	zero: function zero() {
-		return "";
-	},
-	inverse: function inverse(value) {
-		return value;
-	},
-	add: function add(base, delta) {
-		return isDefined(delta) ? delta : base;
-	},
-	subtract: function subtract(base, delta) {
-		// same as add? or return base?
-		return base; // Sure why not
-		//return this.add(base,this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		return f < 0.5 ? from : to;
-	},
-	output: function output(value) {
-		return value;
-	},
-	input: function input(value) {
-		return value;
 	}
 };
 
@@ -1211,6 +1174,81 @@ function detectFeatures() {
 function createDummyElement() {
 	return document.documentElement.namespaceURI === SVG_NS ? document.createElementNS(SVG_NS, "g") : document.createElement("div");
 }
+
+// This file is a heavily modified derivative work of:
+// https://github.com/web-animations/web-animations-js-legacy
+
+var nonNumericType = {
+	toString: function toString() {
+		return "nonNumericType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
+	zero: function zero() {
+		return "";
+	},
+	inverse: function inverse(value) {
+		return value;
+	},
+	add: function add(base, delta) {
+		return isDefined(delta) ? delta : base;
+	},
+	subtract: function subtract(base, delta) {
+		// same as add? or return base?
+		return base; // Sure why not
+		//return this.add(base,this.inverse(delta));
+	},
+	interpolate: function interpolate(from, to, f) {
+		return f < 0.5 ? from : to;
+	},
+	output: function output(value) {
+		return value;
+	},
+	input: function input(value) {
+		return value;
+	}
+};
+
+//	var HyperStyleDeclaration = function(element, layer, controller) {
+var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
+
+	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
+		get: function get() {
+			return layer;
+		},
+		//			 set: function(value) {
+		//				 _layer = value;
+		//			 },
+		enumerable: false,
+		configurable: false
+	});
+
+	Object.defineProperty(this, "hyperStyleController", { // these will collide with css
+		get: function get() {
+			return controller;
+		},
+		//			 set: function(value) {
+		//				 _controller = value;
+		//			 },
+		enumerable: false,
+		configurable: false
+	});
+};
+
+HyperStyleDeclaration.prototype = {
+	constructor: HyperStyleDeclaration
+};
+
+////export HyperStyleDeclaration; // (layer, controller)
+// export const typeOfProperty = function(property,value) {
+// 	return getCssOnlyType(property,value);
+// }
+// export const activateStyleAnimation = HyperStyle.activate; // (element, receiver, layer, delegate)
+// export const addAnimation = HyperStyle.addAnimation; // (element, animation, named)
+// export const setDelegateOfElement = HyperStyle.setDelegateOfElement; // (delegate,element,oldStyle)
+// export const setDelegate = HyperStyle.setDelegate; // (element, delegate, oldStyle)
+// export const compositeStyleAnimation = HyperStyle.composite; // (sourceLayer, sourceAnimations, time)
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
@@ -1377,9 +1415,9 @@ var lengthAutoType = typeWithKeywords(["auto"], lengthType);
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-var numberType = {
+var cssNumberType = {
 	toString: function toString() {
-		return "numberType";
+		return "cssNumberType";
 	},
 	toJSON: function toJSON() {
 		return this.toString();
@@ -1419,7 +1457,7 @@ var numberType = {
 	//output: function(value) { return value + ""; }, // original
 	output: function output(value) {
 		return value;
-	}, // no strings damn it. Unknown side effects
+	}, // no strings damn it. Unknown side effects. Because used by transformType ?
 	input: function input(value) {
 		if (value === "auto") {
 			return "auto";
@@ -1429,7 +1467,13 @@ var numberType = {
 	}
 };
 
-var integerType = createObject(numberType, {
+var cssIntegerType = createObject(cssNumberType, {
+	toString: function toString() {
+		return "cssIntergerType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
 	interpolate: function interpolate(from, to, f) {
 		// If from or to are "auto", we fall back to step interpolation.
 		if (from === "auto" || to === "auto") {
@@ -1439,7 +1483,13 @@ var integerType = createObject(numberType, {
 	}
 });
 
-var opacityType = createObject(numberType, {
+var cssOpacityType = createObject(cssNumberType, {
+	toString: function toString() {
+		return "cssOpacityType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
 	zero: function zero() {
 		return 0.0; // zero is definitely zero, I need to expose initialValue from propertyValueAliases
 	},
@@ -1589,689 +1639,6 @@ function build3DRotationMatcher() {
 }
 
 var transformREs = [buildRotationMatcher("rotate", 1, false), buildRotationMatcher("rotateX", 1, false), buildRotationMatcher("rotateY", 1, false), buildRotationMatcher("rotateZ", 1, false), build3DRotationMatcher(), buildRotationMatcher("skew", 1, true, 0), buildRotationMatcher("skewX", 1, false), buildRotationMatcher("skewY", 1, false), buildMatcher("translateX", 1, false, true, { px: 0 }), buildMatcher("translateY", 1, false, true, { px: 0 }), buildMatcher("translateZ", 1, false, true, { px: 0 }), buildMatcher("translate", 1, true, true, { px: 0 }), buildMatcher("translate3d", 3, false, true), buildMatcher("scale", 1, true, false, "copy"), buildMatcher("scaleX", 1, false, false, 1), buildMatcher("scaleY", 1, false, false, 1), buildMatcher("scaleZ", 1, false, false, 1), buildMatcher("scale3d", 3, false, false), buildMatcher("perspective", 1, false, true), buildMatcher("matrix", 6, false, false)];
-
-var decomposeMatrix = function () {
-	// this is only ever used on the perspective matrix, which has 0, 0, 0, 1 as
-	// last column
-
-	function determinant(m) {
-		return m[0][0] * m[1][1] * m[2][2] + m[1][0] * m[2][1] * m[0][2] + m[2][0] * m[0][1] * m[1][2] - m[0][2] * m[1][1] * m[2][0] - m[1][2] * m[2][1] * m[0][0] - m[2][2] * m[0][1] * m[1][0];
-	}
-
-	// this is only ever used on the perspective matrix, which has 0, 0, 0, 1 as
-	// last column
-	//
-	// from Wikipedia:
-	//
-	// [A B]^-1 = [A^-1 + A^-1B(D - CA^-1B)^-1CA^-1		-A^-1B(D - CA^-1B)^-1]
-	// [C D]			[-(D - CA^-1B)^-1CA^-1								(D - CA^-1B)^-1			]
-	//
-	// Therefore
-	//
-	// [A [0]]^-1 = [A^-1			[0]]
-	// [C	1 ]			[ -CA^-1		1 ]
-	function inverse(m) {
-		var iDet = 1 / determinant(m);
-		var a = m[0][0],
-		    b = m[0][1],
-		    c = m[0][2];
-		var d = m[1][0],
-		    e = m[1][1],
-		    f = m[1][2];
-		var g = m[2][0],
-		    h = m[2][1],
-		    k = m[2][2];
-		var Ainv = [[(e * k - f * h) * iDet, (c * h - b * k) * iDet, (b * f - c * e) * iDet, 0], [(f * g - d * k) * iDet, (a * k - c * g) * iDet, (c * d - a * f) * iDet, 0], [(d * h - e * g) * iDet, (g * b - a * h) * iDet, (a * e - b * d) * iDet, 0]];
-		var lastRow = [];
-		for (var i = 0; i < 3; i++) {
-			var val = 0;
-			for (var j = 0; j < 3; j++) {
-				val += m[3][j] * Ainv[j][i];
-			}
-			lastRow.push(val);
-		}
-		lastRow.push(1);
-		Ainv.push(lastRow);
-		return Ainv;
-	}
-
-	function transposeMatrix4(m) {
-		return [[m[0][0], m[1][0], m[2][0], m[3][0]], [m[0][1], m[1][1], m[2][1], m[3][1]], [m[0][2], m[1][2], m[2][2], m[3][2]], [m[0][3], m[1][3], m[2][3], m[3][3]]];
-	}
-
-	function multVecMatrix(v, m) {
-		var result = [];
-		for (var i = 0; i < 4; i++) {
-			var val = 0;
-			for (var j = 0; j < 4; j++) {
-				val += v[j] * m[j][i];
-			}
-			result.push(val);
-		}
-		return result;
-	}
-
-	function normalize(v) {
-		var len = length(v);
-		return [v[0] / len, v[1] / len, v[2] / len];
-	}
-
-	function length(v) {
-		return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-	}
-
-	function combine(v1, v2, v1s, v2s) {
-		return [v1s * v1[0] + v2s * v2[0], v1s * v1[1] + v2s * v2[1], v1s * v1[2] + v2s * v2[2]];
-	}
-
-	function cross(v1, v2) {
-		return [v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0]];
-	}
-
-	function decomposeMatrix(matrix) {
-		var m3d = [[matrix[0], matrix[1], 0, 0], [matrix[2], matrix[3], 0, 0], [0, 0, 1, 0], [matrix[4], matrix[5], 0, 1]];
-
-		// skip normalization step as m3d[3][3] should always be 1
-		if (m3d[3][3] !== 1) {
-			throw "attempt to decompose non-normalized matrix";
-		}
-
-		var perspectiveMatrix = m3d.concat(); // copy m3d
-		for (var i = 0; i < 3; i++) {
-			perspectiveMatrix[i][3] = 0;
-		}
-
-		if (determinant(perspectiveMatrix) === 0) {
-			return false;
-		}
-
-		var rhs = [];
-
-		var perspective;
-		if (m3d[0][3] !== 0 || m3d[1][3] !== 0 || m3d[2][3] !== 0) {
-			rhs.push(m3d[0][3]);
-			rhs.push(m3d[1][3]);
-			rhs.push(m3d[2][3]);
-			rhs.push(m3d[3][3]);
-
-			var inversePerspectiveMatrix = inverse(perspectiveMatrix);
-			var transposedInversePerspectiveMatrix = transposeMatrix4(inversePerspectiveMatrix);
-			perspective = multVecMatrix(rhs, transposedInversePerspectiveMatrix);
-		} else {
-			perspective = [0, 0, 0, 1];
-		}
-
-		var translate = m3d[3].slice(0, 3);
-
-		var row = [];
-		row.push(m3d[0].slice(0, 3));
-		var scale = [];
-		scale.push(length(row[0]));
-		row[0] = normalize(row[0]);
-
-		var skew = [];
-		row.push(m3d[1].slice(0, 3));
-		skew.push(dot(row[0], row[1]));
-		row[1] = combine(row[1], row[0], 1.0, -skew[0]);
-
-		scale.push(length(row[1]));
-		row[1] = normalize(row[1]);
-		skew[0] /= scale[1];
-
-		row.push(m3d[2].slice(0, 3));
-		skew.push(dot(row[0], row[2]));
-		row[2] = combine(row[2], row[0], 1.0, -skew[1]);
-		skew.push(dot(row[1], row[2]));
-		row[2] = combine(row[2], row[1], 1.0, -skew[2]);
-
-		scale.push(length(row[2]));
-		row[2] = normalize(row[2]);
-		skew[1] /= scale[2];
-		skew[2] /= scale[2];
-
-		var pdum3 = cross(row[1], row[2]);
-		if (dot(row[0], pdum3) < 0) {
-			for (var _i = 0; _i < 3; _i++) {
-				scale[_i] *= -1;
-				row[_i][0] *= -1;
-				row[_i][1] *= -1;
-				row[_i][2] *= -1;
-			}
-		}
-
-		var t = row[0][0] + row[1][1] + row[2][2] + 1;
-		var s;
-		var quaternion;
-
-		if (t > 1e-4) {
-			s = 0.5 / Math.sqrt(t);
-			quaternion = [(row[2][1] - row[1][2]) * s, (row[0][2] - row[2][0]) * s, (row[1][0] - row[0][1]) * s, 0.25 / s];
-		} else if (row[0][0] > row[1][1] && row[0][0] > row[2][2]) {
-			s = Math.sqrt(1 + row[0][0] - row[1][1] - row[2][2]) * 2.0;
-			quaternion = [0.25 * s, (row[0][1] + row[1][0]) / s, (row[0][2] + row[2][0]) / s, (row[2][1] - row[1][2]) / s];
-		} else if (row[1][1] > row[2][2]) {
-			s = Math.sqrt(1.0 + row[1][1] - row[0][0] - row[2][2]) * 2.0;
-			quaternion = [(row[0][1] + row[1][0]) / s, 0.25 * s, (row[1][2] + row[2][1]) / s, (row[0][2] - row[2][0]) / s];
-		} else {
-			s = Math.sqrt(1.0 + row[2][2] - row[0][0] - row[1][1]) * 2.0;
-			quaternion = [(row[0][2] + row[2][0]) / s, (row[1][2] + row[2][1]) / s, 0.25 * s, (row[1][0] - row[0][1]) / s];
-		}
-
-		return {
-			translate: translate, scale: scale, skew: skew,
-			quaternion: quaternion, perspective: perspective
-		};
-	}
-	return decomposeMatrix;
-}();
-
-function dot(v1, v2) {
-	var result = 0;
-	for (var i = 0; i < v1.length; i++) {
-		result += v1[i] * v2[i];
-	}
-	return result;
-}
-
-function multiplyMatrices(a, b) {
-	return [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1], a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3], a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]];
-}
-
-function convertItemToMatrix(item) {
-	switch (item.t) {// TODO: lots of types to implement:
-		case "rotate":
-			var amount = item.d * Math.PI / 180;
-			return [Math.cos(amount), Math.sin(amount), -Math.sin(amount), Math.cos(amount), 0, 0];
-		case "scale":
-			return [item.d[0], 0, 0, item.d[1], 0, 0];
-		// TODO: Work out what to do with non-px values.
-		case "translate":
-			return [1, 0, 0, 1, item.d[0].px, item.d[1].px];
-		case "translate3d":
-			return [1, 0, 0, 1, item.d[0].px, item.d[1].px]; // This needs a 3d matrix of course
-		case "matrix":
-			return item.d;
-		default:
-			throw new Error("HyperStyle convertItemToMatrix unimplemented type:%s;", item.t);
-	}
-}
-
-function convertToMatrix(transformList) {
-	return transformList.map(convertItemToMatrix).reduce(multiplyMatrices);
-}
-
-var composeMatrix = function () {
-	function multiply(a, b) {
-		var result = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
-		for (var i = 0; i < 4; i++) {
-			for (var j = 0; j < 4; j++) {
-				for (var k = 0; k < 4; k++) {
-					result[i][j] += b[i][k] * a[k][j];
-				}
-			}
-		}
-		return result;
-	}
-
-	function composeMatrix(translate, scale, skew, quat, perspective) {
-		var matrix = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
-
-		for (var i = 0; i < 4; i++) {
-			matrix[i][3] = perspective[i];
-		}
-
-		for (var _i2 = 0; _i2 < 3; _i2++) {
-			for (var j = 0; j < 3; j++) {
-				matrix[3][_i2] += translate[j] * matrix[j][_i2];
-			}
-		}
-
-		var x = quat[0],
-		    y = quat[1],
-		    z = quat[2],
-		    w = quat[3];
-
-		var rotMatrix = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
-
-		rotMatrix[0][0] = 1 - 2 * (y * y + z * z);
-		rotMatrix[0][1] = 2 * (x * y - z * w);
-		rotMatrix[0][2] = 2 * (x * z + y * w);
-		rotMatrix[1][0] = 2 * (x * y + z * w);
-		rotMatrix[1][1] = 1 - 2 * (x * x + z * z);
-		rotMatrix[1][2] = 2 * (y * z - x * w);
-		rotMatrix[2][0] = 2 * (x * z - y * w);
-		rotMatrix[2][1] = 2 * (y * z + x * w);
-		rotMatrix[2][2] = 1 - 2 * (x * x + y * y);
-
-		matrix = multiply(matrix, rotMatrix);
-
-		var temp = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
-		if (skew[2]) {
-			temp[2][1] = skew[2];
-			matrix = multiply(matrix, temp);
-		}
-
-		if (skew[1]) {
-			temp[2][1] = 0;
-			temp[2][0] = skew[0];
-			matrix = multiply(matrix, temp);
-		}
-
-		for (var _i3 = 0; _i3 < 3; _i3++) {
-			for (var _j = 0; _j < 3; _j++) {
-				matrix[_i3][_j] *= scale[_i3];
-			}
-		}
-
-		return { t: "matrix", d: [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[3][0], matrix[3][1]] };
-	}
-	return composeMatrix;
-}();
-
-function interpolateTransformsWithMatrices(from, to, f) {
-	var fromM = decomposeMatrix(convertToMatrix(from));
-	var toM = decomposeMatrix(convertToMatrix(to));
-
-	var product = dot(fromM.quaternion, toM.quaternion);
-	product = clamp(product, -1.0, 1.0);
-
-	var quat = [];
-	if (product === 1.0) {
-		quat = fromM.quaternion;
-	} else {
-		var theta = Math.acos(product);
-		var w = Math.sin(f * theta) * 1 / Math.sqrt(1 - product * product);
-		for (var i = 0; i < 4; i++) {
-			quat.push(fromM.quaternion[i] * (Math.cos(f * theta) - product * w) + toM.quaternion[i] * w);
-		}
-	}
-
-	var translate = interp(fromM.translate, toM.translate, f);
-	var scale = interp(fromM.scale, toM.scale, f);
-	var skew = interp(fromM.skew, toM.skew, f);
-	var perspective = interp(fromM.perspective, toM.perspective, f);
-
-	return composeMatrix(translate, scale, skew, quat, perspective);
-}
-
-function interpTransformValue(from, to, f) {
-	//console.log("interpTransformValue:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
-	var type = from.t ? from.t : to.t;
-	switch (type) {
-		// Transforms with unitless parameters.
-		case "rotate":
-		case "rotateX":
-		case "rotateY":
-		case "rotateZ":
-		case "scale":
-		case "scaleX":
-		case "scaleY":
-		case "scaleZ":
-		case "scale3d":
-		case "skew":
-		case "skewX":
-		case "skewY":
-		case "matrix":
-			return { t: type, d: interp(from.d, to.d, f, type) }; // are rotate and skew ok here? should be wrapped in an array. and rotate is not unitless...
-		default:
-			// Transforms with lengthType parameters.
-			var result = [];
-			var maxVal = 0;
-			if (from.d && to.d) {
-				maxVal = Math.max(from.d.length, to.d.length);
-			} else if (from.d) {
-				maxVal = from.d.length;
-			} else if (to.d) {
-				maxVal = to.d.length;
-			}
-			for (var j = 0; j < maxVal; j++) {
-				var fromVal = from.d ? from.d[j] : {};
-				var toVal = to.d ? to.d[j] : {};
-				result.push(lengthType.interpolate(fromVal, toVal, f));
-			}
-			return { t: type, d: result };
-	}
-}
-
-// The CSSWG decided to disallow scientific notation in CSS property strings
-// (see http://lists.w3.org/Archives/Public/www-style/2010Feb/0050.html).
-// We need this function to hakonitize all numbers before adding them to
-// property strings.
-// TODO: Apply this function to all property strings
-function n(num) {
-	return Number(num).toFixed(4);
-}
-
-var transformType = {
-	toString: function toString() {
-		return "transformType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	inverse: function inverse(value) {
-		// KxDx // TODO: SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		if (!value || !value.length) {
-			// This happens often...
-			//console.log("transformType inverse with no base!");
-			value = this.zero();
-		}
-		var delta = this.zero(value);
-		var out = [];
-		for (var i = 0; i < value.length; i++) {
-			switch (value[i].t) {
-				case "rotate":
-				case "rotateX":
-				case "rotateY":
-				case "rotateZ":
-				case "skewX":
-				case "skewY":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0])] }); // new style, have to unwrap then re-wrap
-					break;
-				case "skew":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1])] });
-					break;
-				case "translateX":
-				case "translateY":
-				case "translateZ":
-				case "perspective":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0])] });
-					break;
-				case "translate":
-					out.push({ t: value[i].t, d: [{ px: numberType.inverse(value[i].d[0].px) }, { px: numberType.inverse(value[i].d[1].px) }] });
-					break;
-				case "translate3d":
-					out.push({ t: value[i].t, d: [{ px: numberType.inverse(value[i].d[0].px) }, { px: numberType.inverse(value[i].d[1].px) }, { px: numberType.inverse(value[i].d[2].px) }] });
-					break;
-				case "scale":
-					out.push({ t: value[i].t, d: [delta[i].d[0] / value[i].d[0], delta[i].d[1] / value[i].d[1]] }); // inverse of 2 is 1/2
-					break;
-				case "scaleX":
-				case "scaleY":
-				case "scaleZ":
-					out.push({ t: value[i].t, d: [delta[i].d[0] / value[i].d[0]] }); // inverse of 2 is 1/2
-					break;
-				case "scale3d":
-					out.push({ t: value[i].t, d: [delta[i].d[0] / value[i].d[0], delta[i].d[1] / value[i].d[1], -1 / value[i].d[2]] }); // inverse of 2 is 1/2
-					break;
-				case "matrix":
-					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1]), numberType.inverse(value[i].d[2]), numberType.inverse(value[i].d[3]), numberType.inverse(value[i].d[4]), numberType.inverse(value[i].d[5])] });
-					break;
-			}
-		}
-		return out;
-	},
-
-	add: function add(base, delta) {
-		//console.log("ADD base:%s;",JSON.stringify(base));
-		//console.log("ADD delta:%s;",JSON.stringify(delta));
-
-		if (!base || !base.length) return delta;
-		if (!delta || !delta.length) return base;
-		var baseLength = base.length;
-		var deltaLength = delta.length;
-		if (baseLength && deltaLength && baseLength >= deltaLength) {
-			var diff = baseLength - deltaLength;
-			var match = true;
-			var j = 0;
-			for (var i = diff; i < baseLength; i++) {
-				if (base[i].t !== delta[j].t) {
-					match = false;
-					break;
-				}
-				j++;
-			}
-			if (match) return this.sum(base, delta);
-		}
-
-		return base.concat(delta);
-	},
-
-	sum: function sum(value, delta) {
-		// add is for the full values, sum is for their components // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		var out = [];
-		var valueLength = value.length;
-		var deltaLength = delta.length;
-		var diff = valueLength - deltaLength;
-		var j = 0;
-		for (var i = 0; i < valueLength; i++) {
-			if (i < diff) {
-				out.push(value[i]);
-			} else {
-				switch (value[i].t) {
-					// TODO: rotate3d(1, 2.0, 3.0, 10deg);
-					case "rotate":
-					case "rotateX":
-					case "rotateY":
-					case "rotateZ":
-					case "skewX":
-					case "skewY":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0])] }); // new style, have to unwrap then re-wrap
-						break;
-					case "skew":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0]), numberType.add(value[i].d[1], delta[j].d[1])] });
-						break;
-					case "translateX":
-					case "translateY":
-					case "translateZ":
-					case "perspective":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0])] });
-						break;
-					case "translate":
-						out.push({ t: value[i].t, d: [{ px: numberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: numberType.add(value[i].d[1].px, delta[j].d[1].px) }] });
-						break;
-					case "translate3d":
-						out.push({ t: value[i].t, d: [{ px: numberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: numberType.add(value[i].d[1].px, delta[j].d[1].px) }, { px: numberType.add(value[i].d[2].px, delta[j].d[2].px) }] });
-						break;
-					case "scale":
-						out.push({ t: value[i].t, d: [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1]] });
-						break;
-					case "scaleX":
-					case "scaleY":
-					case "scaleZ":
-						out.push({ t: value[i].t, d: [value[i].d[0] * delta[j].d[0]] });
-						break;
-					case "scale3d":
-						out.push({ t: value[i].t, d: [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1], value[i].d[2] * delta[j].d[2]] });
-						break;
-					case "matrix":
-						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0]), numberType.add(value[i].d[1], delta[j].d[1]), numberType.add(value[i].d[2], delta[j].d[2]), numberType.add(value[i].d[3], delta[j].d[3]), numberType.add(value[i].d[4], delta[j].d[4]), numberType.add(value[i].d[5], delta[j].d[5])] });
-						break;
-					case "matrix3d":
-						break;
-					//console.warn("TransformType sum matrix3d not supported");
-					default:
-					//throw new Error("TransformType sum no type?"+JSON.stringify(value[i].t));
-				}
-				j++;
-			}
-		}
-		return out;
-	},
-
-	zero: function zero(value) {
-		// KxDx // requires an old value for type // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
-		var identity2dMatrix = [1, 0, 0, 1, 0, 0];
-		if (!value) return [{ t: "matrix", d: identity2dMatrix }];
-		var out = [];
-		for (var i = 0; i < value.length; i++) {
-			switch (value[i].t) {
-				// TODO: rotate3d(1, 2.0, 3.0, 10deg);
-				case "rotate":
-				case "rotateX":
-				case "rotateY":
-				case "rotateZ":
-				case "skewX":
-				case "skewY":
-					out.push({ t: value[i].t, d: [0] }); // new style
-					break;
-				case "skew":
-					out.push({ t: value[i].t, d: [0, 0] });
-					break;
-				case "translateX":
-				case "translateY":
-				case "translateZ":
-				case "perspective":
-					out.push({ t: value[i].t, d: [0] });
-					break;
-				case "translate":
-					out.push({ t: value[i].t, d: [{ px: 0 }, { px: 0 }] });
-					break;
-				case "translate3d":
-					out.push({ t: value[i].t, d: [{ px: 0 }, { px: 0 }, { px: 0 }] });
-					break;
-				case "scale":
-					out.push({ t: value[i].t, d: [1, 1] });
-					break;
-				case "scaleX":
-				case "scaleY":
-				case "scaleZ":
-					out.push({ t: value[i].t, d: [1] });
-					break;
-				case "scale3d":
-					out.push({ t: value[i].t, d: [1, 1, 1] });
-					break;
-				case "matrix":
-					out.push({ t: value[i].t, d: identity2dMatrix });
-					break;
-			}
-		}
-		return out;
-	},
-
-	subtract: function subtract(base, delta) {
-		var inverse = this.inverse(delta);
-		var result = this.add(base, inverse);
-		return result;
-	},
-
-	interpolate: function interpolate(from, to, f) {
-		//console.log("transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
-		var out = [];
-		var i;
-		for (i = 0; i < Math.min(from.length, to.length); i++) {
-			if (from[i].t !== to[i].t) {
-				break;
-			}
-			out.push(interpTransformValue(from[i], to[i], f));
-		}
-		if (i < Math.min(from.length, to.length)) {
-			out.push(interpolateTransformsWithMatrices(from.slice(i), to.slice(i), f));
-			return out;
-		}
-
-		for (; i < from.length; i++) {
-			out.push(interpTransformValue(from[i], { t: null, d: null }, f));
-		}
-		for (; i < to.length; i++) {
-			out.push(interpTransformValue({ t: null, d: null }, to[i], f));
-		}
-		return out;
-	},
-
-	output: function output(value, svgMode) {
-		// TODO: fix this :)
-		//console.log("output:%s;",JSON.stringify(value));
-		//if (typeof value === "string") throw new Error("this should not be a string");
-		if (value === null || typeof value === "undefined") return "";
-		if (typeof value === "string") return value;
-		var out = "";
-		var unit;
-		for (var i = 0; i < value.length; i++) {
-			switch (value[i].t) {
-				// TODO: rotate3d(1, 2.0, 3.0, 10deg);
-				case "rotate":
-				case "rotateX":
-				case "rotateY":
-				case "rotateZ":
-				case "skewX":
-				case "skewY":
-					unit = svgMode ? "" : "deg";
-					out += value[i].t + "(" + value[i].d[0] + unit + ") "; // modified. value[i].d is wrapped in an array, converting array to string worked previously but this is correct. If you don"t like it, fix input and change inverse, sum, and zero
-					break;
-				case "skew":
-					unit = svgMode ? "" : "deg";
-					out += value[i].t + "(" + value[i].d[0] + unit;
-					if (value[i].d[1] === 0) {
-						out += ") ";
-					} else {
-						out += ", " + value[i].d[1] + unit + ") ";
-					}
-					break;
-				case "translateX":
-				case "translateY":
-				case "translateZ":
-				case "perspective":
-					out += value[i].t + "(" + lengthType.output(value[i].d[0]) + ") ";
-					break;
-				case "translate":
-					if (svgMode) {
-						if (value[i].d[1] === undefined) {
-							out += value[i].t + "(" + value[i].d[0].px + ") ";
-						} else {
-							out += value[i].t + "(" + value[i].d[0].px + ", " + value[i].d[1].px + ") ";
-						}
-						break;
-					}
-					if (value[i].d[1] === undefined) {
-						out += value[i].t + "(" + lengthType.output(value[i].d[0]) + ") ";
-					} else {
-						out += value[i].t + "(" + lengthType.output(value[i].d[0]) + ", " + lengthType.output(value[i].d[1]) + ") ";
-					}
-					break;
-				case "translate3d":
-					var values = value[i].d.map(lengthType.output);
-					out += value[i].t + "(" + values[0] + ", " + values[1] + ", " + values[2] + ") ";
-					break;
-				case "scale":
-					if (value[i].d[0] === value[i].d[1]) {
-						out += value[i].t + "(" + value[i].d[0] + ") ";
-					} else {
-						out += value[i].t + "(" + value[i].d[0] + ", " + value[i].d[1] + ") ";
-					}
-					break;
-				case "scaleX":
-				case "scaleY":
-				case "scaleZ":
-					out += value[i].t + "(" + value[i].d[0] + ") ";
-					break;
-				case "scale3d":
-					out += value[i].t + "(" + value[i].d[0] + ", " + value[i].d[1] + ", " + value[i].d[2] + ") ";
-					break;
-				case "matrix":
-					out += value[i].t + "(" + n(value[i].d[0]) + ", " + n(value[i].d[1]) + ", " + n(value[i].d[2]) + ", " + n(value[i].d[3]) + ", " + n(value[i].d[4]) + ", " + n(value[i].d[5]) + ") ";
-					break;
-			}
-		}
-		var result = out.substring(0, out.length - 1);
-		//console.log("output result:%s;",JSON.stringify(result));
-		return result;
-	},
-
-	input: function input(value) {
-		var result = [];
-		while (typeof value === "string" && value.length > 0) {
-			var r;
-			for (var i = 0; i < transformREs.length; i++) {
-				var reSpec = transformREs[i];
-				r = reSpec[0].exec(value);
-				if (r) {
-					result.push({ t: reSpec[2], d: reSpec[1](r) });
-					value = value.substring(r[0].length);
-					break;
-				}
-			}
-			if (!isDefinedAndNotNull(r)) {
-				return result;
-			}
-		}
-		//console.log("input result:%s;",JSON.stringify(result));
-		return result;
-	}
-};
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
@@ -2572,467 +1939,6 @@ var colorType = typeWithKeywords(["currentColor"], {
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-var positionKeywordRE = /^\s*left|^\s*center|^\s*right|^\s*top|^\s*bottom/i;
-
-var positionType = {
-	toString: function toString() {
-		return "positionType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	inverse: function inverse(base) {
-		// KxDx
-		return [lengthType.inverse(base[0]), lengthType.add(base[1])];
-	},
-	zero: function zero() {
-		return [{ px: 0 }, { px: 0 }];
-	},
-	add: function add(base, delta) {
-		return [lengthType.add(base[0], delta[0]), lengthType.add(base[1], delta[1])];
-	},
-	subtract: function subtract(base, delta) {
-		// KxDx
-		return this.add(base, this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		return [lengthType.interpolate(from[0], to[0], f), lengthType.interpolate(from[1], to[1], f)];
-	},
-	output: function output(value) {
-		return value.map(lengthType.output).join(" ");
-	},
-	input: function input(value) {
-		var tokens = [];
-		var remaining = value;
-		while (true) {
-			var result = positionType.consumeTokenFromString(remaining);
-			if (!result) {
-				return undefined;
-			}
-			tokens.push(result.value);
-			remaining = result.remaining;
-			if (!result.remaining.trim()) {
-				break;
-			}
-			if (tokens.length >= 4) {
-				return undefined;
-			}
-		}
-
-		if (tokens.length === 1) {
-			var token = tokens[0];
-			return (positionType.isHorizontalToken(token) ? [token, "center"] : ["center", token]).map(positionType.resolveToken);
-		}
-
-		if (tokens.length === 2 && positionType.isHorizontalToken(tokens[0]) && positionType.isVerticalToken(tokens[1])) {
-			return tokens.map(positionType.resolveToken);
-		}
-
-		if (tokens.filter(positionType.isKeyword).length !== 2) {
-			return undefined;
-		}
-
-		var out = [undefined, undefined];
-		var center = false;
-		for (var i = 0; i < tokens.length; i++) {
-			var _token = tokens[i];
-			if (!positionType.isKeyword(_token)) {
-				return undefined;
-			}
-			if (_token === "center") {
-				if (center) {
-					return undefined;
-				}
-				center = true;
-				continue;
-			}
-			var axis = Number(positionType.isVerticalToken(_token));
-			if (out[axis]) {
-				return undefined;
-			}
-			if (i === tokens.length - 1 || positionType.isKeyword(tokens[i + 1])) {
-				out[axis] = positionType.resolveToken(_token);
-				continue;
-			}
-			var percentLength = tokens[++i];
-			if (_token === "bottom" || _token === "right") {
-				percentLength = lengthType.inverse(percentLength);
-				percentLength["%"] = (percentLength["%"] || 0) + 100;
-			}
-			out[axis] = percentLength;
-		}
-		if (center) {
-			if (!out[0]) {
-				out[0] = positionType.resolveToken("center");
-			} else if (!out[1]) {
-				out[1] = positionType.resolveToken("center");
-			} else {
-				return undefined;
-			}
-		}
-		return out.every(isDefinedAndNotNull) ? out : undefined;
-	},
-	consumeTokenFromString: function consumeTokenFromString(value) {
-		var keywordMatch = positionKeywordRE.exec(value);
-		if (keywordMatch) {
-			return {
-				value: keywordMatch[0].trim().toLowerCase(),
-				remaining: value.substring(keywordMatch[0].length)
-			};
-		}
-		return lengthType.consumeValueFromString(value);
-	},
-	resolveToken: function resolveToken(token) {
-		if (typeof token === "string") {
-			return lengthType.input({
-				left: "0%",
-				center: "50%",
-				right: "100%",
-				top: "0%",
-				bottom: "100%"
-			}[token]);
-		}
-		return token;
-	},
-	isHorizontalToken: function isHorizontalToken(token) {
-		if (typeof token === "string") {
-			return token in { left: true, center: true, right: true };
-		}
-		return true;
-	},
-	isVerticalToken: function isVerticalToken(token) {
-		if (typeof token === "string") {
-			return token in { top: true, center: true, bottom: true };
-		}
-		return true;
-	},
-	isKeyword: function isKeyword(token) {
-		return typeof token === "string";
-	}
-};
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
-// Spec: http://dev.w3.org/csswg/css-backgrounds/#background-position
-var positionListType = {
-	toString: function toString() {
-		return "positionListType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	inverse: function inverse(base) {
-		// KxDx
-		var out = [];
-		var maxLength = base.length;
-		for (var i = 0; i < maxLength; i++) {
-			var basePosition = base[i] ? base[i] : positionType.zero();
-			out.push(positionType.inverse(basePosition));
-		}
-		return out;
-	},
-	zero: function zero() {
-		return [positionType.zero()];
-	},
-	add: function add(base, delta) {
-		var out = [];
-		var maxLength = Math.max(base.length, delta.length);
-		for (var i = 0; i < maxLength; i++) {
-			var basePosition = base[i] ? base[i] : positionType.zero();
-			var deltaPosition = delta[i] ? delta[i] : positionType.zero();
-			out.push(positionType.add(basePosition, deltaPosition));
-		}
-		return out;
-	},
-	subtract: function subtract(base, delta) {
-		// KxDx
-		return this.add(base, this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		var out = [];
-		var maxLength = Math.max(from.length, to.length);
-		for (var i = 0; i < maxLength; i++) {
-			var fromPosition = from[i] ? from[i] : positionType.zero();
-			var toPosition = to[i] ? to[i] : positionType.zero();
-			out.push(positionType.interpolate(fromPosition, toPosition, f));
-		}
-		return out;
-	},
-	output: function output(value) {
-		return value.map(positionType.output).join(", ");
-	},
-	input: function input(value) {
-		if (!isDefinedAndNotNull(value)) {
-			return undefined;
-		}
-		if (!value.trim()) {
-			return [positionType.input("0% 0%")];
-		}
-		var positionValues = value.split(",");
-		var out = positionValues.map(positionType.input);
-		return out.every(isDefinedAndNotNull) ? out : undefined;
-	}
-};
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
-var rectangleRE = /rect\(([^,]+),([^,]+),([^,]+),([^)]+)\)/;
-
-var rectangleType = {
-
-	toString: function toString() {
-		return "rectangleType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	inverse: function inverse(value) {
-		// KxDx
-		return {
-			top: lengthType.inverse(value.top),
-			right: lengthType.inverse(value.right),
-			bottom: lengthType.inverse(value.bottom),
-			left: lengthType.inverse(value.left)
-		};
-	},
-	zero: function zero() {
-		return { top: 0, right: 0, bottom: 0, left: 0 };
-	}, // KxDx
-	add: function add(base, delta) {
-		return {
-			top: lengthType.add(base.top, delta.top),
-			right: lengthType.add(base.right, delta.right),
-			bottom: lengthType.add(base.bottom, delta.bottom),
-			left: lengthType.add(base.left, delta.left)
-		};
-	},
-	subtract: function subtract(base, delta) {
-		// KxDx
-		return this.add(base, this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		return {
-			top: lengthType.interpolate(from.top, to.top, f),
-			right: lengthType.interpolate(from.right, to.right, f),
-			bottom: lengthType.interpolate(from.bottom, to.bottom, f),
-			left: lengthType.interpolate(from.left, to.left, f)
-		};
-	},
-	output: function output(value) {
-		return "rect(" + lengthType.output(value.top) + "," + lengthType.output(value.right) + "," + lengthType.output(value.bottom) + "," + lengthType.output(value.left) + ")";
-	},
-	input: function input(value) {
-		var match = rectangleRE.exec(value);
-		if (!match) {
-			return undefined;
-		}
-		var out = {
-			top: lengthType.input(match[1]),
-			right: lengthType.input(match[2]),
-			bottom: lengthType.input(match[3]),
-			left: lengthType.input(match[4])
-		};
-		if (out.top && out.right && out.bottom && out.left) {
-			return out;
-		}
-		return undefined;
-	}
-};
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
-var shadowType = {
-	toString: function toString() {
-		return "shadowType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	inverse: function inverse(value) {
-		return nonNumericType.inverse(value);
-	},
-	zero: function zero() {
-		return {
-			hOffset: lengthType.zero(),
-			vOffset: lengthType.zero()
-		};
-	},
-	_addSingle: function _addSingle(base, delta) {
-		if (base && delta && base.inset !== delta.inset) {
-			return delta;
-		}
-		var result = {
-			inset: base ? base.inset : delta.inset,
-			hOffset: lengthType.add(base ? base.hOffset : lengthType.zero(), delta ? delta.hOffset : lengthType.zero()),
-			vOffset: lengthType.add(base ? base.vOffset : lengthType.zero(), delta ? delta.vOffset : lengthType.zero()),
-			blur: lengthType.add(base && base.blur || lengthType.zero(), delta && delta.blur || lengthType.zero())
-		};
-		if (base && base.spread || delta && delta.spread) {
-			result.spread = lengthType.add(base && base.spread || lengthType.zero(), delta && delta.spread || lengthType.zero());
-		}
-		if (base && base.color || delta && delta.color) {
-			result.color = colorType.add(base && base.color || colorType.zero(), delta && delta.color || colorType.zero());
-		}
-		return result;
-	},
-	add: function add(base, delta) {
-		var result = [];
-		for (var i = 0; i < base.length || i < delta.length; i++) {
-			result.push(this._addSingle(base[i], delta[i]));
-		}
-		return result;
-	},
-	subtract: function subtract(base, delta) {
-		// KxDx
-		return this.add(base, this.inverse(delta));
-	},
-	_interpolateSingle: function _interpolateSingle(from, to, f) {
-		if (from && to && from.inset !== to.inset) {
-			return f < 0.5 ? from : to;
-		}
-		var result = {
-			inset: from ? from.inset : to.inset,
-			hOffset: lengthType.interpolate(from ? from.hOffset : lengthType.zero(), to ? to.hOffset : lengthType.zero(), f),
-			vOffset: lengthType.interpolate(from ? from.vOffset : lengthType.zero(), to ? to.vOffset : lengthType.zero(), f),
-			blur: lengthType.interpolate(from && from.blur || lengthType.zero(), to && to.blur || lengthType.zero(), f)
-		};
-		if (from && from.spread || to && to.spread) {
-			result.spread = lengthType.interpolate(from && from.spread || lengthType.zero(), to && to.spread || lengthType.zero(), f);
-		}
-		if (from && from.color || to && to.color) {
-			result.color = colorType.interpolate(from && from.color || colorType.zero(), to && to.color || colorType.zero(), f);
-		}
-		return result;
-	},
-	interpolate: function interpolate(from, to, f) {
-		var result = [];
-		for (var i = 0; i < from.length || i < to.length; i++) {
-			result.push(this._interpolateSingle(from[i], to[i], f));
-		}
-		return result;
-	},
-	_outputSingle: function _outputSingle(value) {
-		return (value.inset ? "inset " : "") + lengthType.output(value.hOffset) + " " + lengthType.output(value.vOffset) + " " + lengthType.output(value.blur) + (value.spread ? " " + lengthType.output(value.spread) : "") + (value.color ? " " + colorType.output(value.color) : "");
-	},
-	output: function output(value) {
-		return value.map(this._outputSingle).join(", ");
-	},
-	input: function input(value) {
-		var shadowRE = /(([^(,]+(\([^)]*\))?)+)/g;
-		var match;
-		var shadows = [];
-		while ((match = shadowRE.exec(value)) !== null) {
-			shadows.push(match[0]);
-		}
-
-		var result = shadows.map(function (value) {
-			if (value === "none") {
-				return shadowType.zero();
-			}
-			value = value.replace(/^\s+|\s+$/g, "");
-
-			var partsRE = /([^ (]+(\([^)]*\))?)/g;
-			var parts = [];
-			while ((match = partsRE.exec(value)) !== null) {
-				parts.push(match[0]);
-			}
-
-			if (parts.length < 2 || parts.length > 7) {
-				return undefined;
-			}
-			var result = {
-				inset: false
-			};
-
-			var lengths = [];
-			while (parts.length) {
-				var part = parts.shift();
-
-				var length = lengthType.input(part);
-				if (length) {
-					lengths.push(length);
-					continue;
-				}
-
-				var color = colorType.input(part);
-				if (color) {
-					result.color = color;
-				}
-
-				if (part === "inset") {
-					result.inset = true;
-				}
-			}
-
-			if (lengths.length < 2 || lengths.length > 4) {
-				return undefined;
-			}
-			result.hOffset = lengths[0];
-			result.vOffset = lengths[1];
-			if (lengths.length > 2) {
-				result.blur = lengths[2];
-			}
-			if (lengths.length > 3) {
-				result.spread = lengths[3];
-			}
-			return result;
-		});
-
-		return result.every(isDefined) ? result : undefined;
-	}
-};
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
-var fontWeightType = {
-	toString: function toString() {
-		return "fontWeightType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	inverse: function inverse(value) {
-		// KxDx
-		return value * -1;
-	},
-	add: function add(base, delta) {
-		return base + delta;
-	},
-	subtract: function subtract(base, delta) {
-		// KxDx
-		return this.add(base, this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		return interp(from, to, f);
-	},
-	output: function output(value) {
-		value = Math.round(value / 100) * 100;
-		value = clamp(value, 100, 900);
-		if (value === 400) {
-			return "normal";
-		}
-		if (value === 700) {
-			return "bold";
-		}
-		return String(value);
-	},
-	input: function input(value) {
-		// TODO: support lighter / darker ?
-		var out = Number(value);
-		if (isNaN(out) || out < 100 || out > 900 || out % 100 !== 0) {
-			return undefined;
-		}
-		return out;
-	}
-};
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
 var visibilityType = createObject(nonNumericType, {
 	toString: function toString() {
 		return "visibilityType";
@@ -3075,71 +1981,6 @@ var visibilityType = createObject(nonNumericType, {
 		return undefined;
 	}
 });
-
-var propertyTypes = {
-	backgroundColor: colorType,
-	backgroundPosition: positionListType,
-	borderBottomColor: colorType,
-	borderBottomLeftRadius: lengthType,
-	borderBottomRightRadius: lengthType,
-	borderBottomWidth: lengthType,
-	borderLeftColor: colorType,
-	borderLeftWidth: lengthType,
-	borderRightColor: colorType,
-	borderRightWidth: lengthType,
-	borderSpacing: lengthType,
-	borderTopColor: colorType,
-	borderTopLeftRadius: lengthType,
-	borderTopRightRadius: lengthType,
-	borderTopWidth: lengthType,
-	bottom: lengthAutoType,
-	boxShadow: shadowType,
-	clip: typeWithKeywords(["auto"], rectangleType),
-	color: colorType,
-	cx: lengthType,
-
-	// TODO: Handle these keywords properly.
-	fontSize: typeWithKeywords(["smaller", "larger"], lengthType),
-	fontWeight: typeWithKeywords(["lighter", "bolder"], fontWeightType),
-
-	height: lengthAutoType,
-	left: lengthAutoType,
-	letterSpacing: typeWithKeywords(["normal"], lengthType),
-	lineHeight: lengthType, // TODO: Should support numberType as well.
-	marginBottom: lengthAutoType,
-	marginLeft: lengthAutoType,
-	marginRight: lengthAutoType,
-	marginTop: lengthAutoType,
-	maxHeight: typeWithKeywords(["none", "max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	maxWidth: typeWithKeywords(["none", "max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	minHeight: typeWithKeywords(["max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	minWidth: typeWithKeywords(["max-content", "min-content", "fill-available", "fit-content"], lengthType),
-	//opacity: numberType, // does NOT use 1 as the default underlying value when not specified. animations relative to zero not one. Need to use propertyValueAliases
-	opacity: opacityType, //
-	outlineColor: typeWithKeywords(["invert"], colorType),
-	outlineOffset: lengthType,
-	outlineWidth: lengthType,
-	paddingBottom: lengthType,
-	paddingLeft: lengthType,
-	paddingRight: lengthType,
-	paddingTop: lengthType,
-	right: lengthAutoType,
-	textIndent: typeWithKeywords(["each-line", "hanging"], lengthType),
-	textShadow: shadowType,
-	top: lengthAutoType,
-	transform: transformType,
-	WebkitTransform: transformType, // React?
-	webkitTransform: transformType, // temporary
-	msTransform: transformType, // temporary
-
-	verticalAlign: typeWithKeywords(["baseline", "sub", "super", "text-top", "text-bottom", "middle", "top", "bottom"], lengthType),
-	visibility: visibilityType,
-	width: typeWithKeywords(["border-box", "content-box", "auto", "max-content", "min-content", "available", "fit-content"], lengthType),
-	wordSpacing: typeWithKeywords(["normal"], lengthType),
-	x: lengthType,
-	y: lengthType,
-	zIndex: typeWithKeywords(["auto"], integerType)
-};
 
 // import { activate } from "../../source/core.js";
 // import { HyperScale } from "../../source/types.js";

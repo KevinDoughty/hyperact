@@ -3,6 +3,7 @@ function isFunction(w) { // WET
 }
 
 export function HyperNumber(settings) {
+	this.debug = "HyperNumber";
 }
 HyperNumber.prototype = {
 	constructor: HyperNumber,
@@ -21,6 +22,7 @@ HyperNumber.prototype = {
 };
 
 export function HyperScale(settings) {
+	this.debug = "HyperScale";
 }
 HyperScale.prototype = {
 	constructor: HyperScale,
@@ -43,6 +45,7 @@ export function HyperArray(type,length,settings) {
 	this.type = type;
 	if (isFunction(type)) this.type = new type(settings);
 	this.length = length;
+	this.debug = "HyperScale";
 }
 HyperArray.prototype = {
 	constructor: HyperArray,
@@ -78,6 +81,7 @@ HyperArray.prototype = {
 export function HyperSet(settings) {
 	if (isFunction(settings)) this.sort = settings;
 	else if (settings && isFunction(settings.sort)) this.sort = settings.sort;
+	this.debug = "HyperSet";
 }
 HyperSet.prototype = {
 	constructor: HyperSet,

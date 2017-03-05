@@ -1,4 +1,4 @@
-import { activate, HyperScale, transformType } from "../../hyperact.js";
+import { activate, HyperScale, transformType } from "../../hyperact.mjs";
 
 function One(element) {
 	activate(this);

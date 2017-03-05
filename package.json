@@ -1,12 +1,12 @@
 {
   "name": "hyperact",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Hyperactive animation layers",
   "main": "hyperact.js",
   "module": "hyperact.mjs",
   "scripts": {
-    "build": "HYPERACT=build ./node_modules/.bin/rollup -c && HYPERACT=build webpack --progress --colors",
-    "dev": "./node_modules/.bin/rollup -c && webpack --progress --colors",
+    "build": "HYPERACT=build ./node_modules/.bin/rollup -c && HYPERACT=build webpack -p --progress --colors",
+    "dev": "./node_modules/.bin/rollup -c && webpack --progress --colors --watch",
     "test": "eslint source/*.js && eslint test/*.js --rule 'no-undef:0' && mocha --compilers js:babel-core/register --colors",
     "gcc": "gcc -framework Cocoa -framework QuartzCore -x objective-c -o ./test/objc ./test/objc.m ; ./test/objc ; rm ./test/objc"
   },
@@ -28,13 +28,13 @@
   },
   "homepage": "https://github.com/KevinDoughty/hyperact#readme",
   "devDependencies": {
-    "babel-core": "^6.21.0",
+    "babel-core": "^6.22.1",
     "babel-eslint": "^7.1.1",
     "babel-loader": "^6.2.10",
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-es2015-rollup": "^3.0.0",
     "chai": "^3.5.0",
-    "eslint": "^3.12.2",
+    "eslint": "^3.14.0",
     "mocha": "^3.2.0",
     "rollup": "^0.39.2",
     "rollup-plugin-babel": "^2.7.1",
