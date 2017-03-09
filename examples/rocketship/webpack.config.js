@@ -2,7 +2,6 @@ var path = require("path");
 var webpack = require("webpack");
 
 var plugins = [
-	new webpack.LoaderOptionsPlugin({ minimize: true }),
 	new webpack.optimize.UglifyJsPlugin({
 		compress: false,
 		mangle: false,
@@ -14,7 +13,6 @@ var plugins = [
 ];
 if (process.env.WEBPACK_ENV === "build") {
 	plugins = [
-		new webpack.LoaderOptionsPlugin({ minimize: true }),
 		new webpack.optimize.UglifyJsPlugin({
 			compress: true,
 			mangle: true,

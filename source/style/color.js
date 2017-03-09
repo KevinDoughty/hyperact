@@ -208,6 +208,12 @@ var namedColors = {
 
 
 export const colorType = typeWithKeywords(["currentColor"], {
+	toString: function() {
+		return "ColorType";
+	},
+	toJSON: function() {
+		return this.toString();
+	},
 	inverse: function(value) { // KxDx
 		return this.subtract(value,[255,255,255,1]);
 	},

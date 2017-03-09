@@ -1,6 +1,7 @@
 {
   "name": "tree-shaking",
   "version": "0.0.1",
+  "private": true,
   "description": "Tree-shaking in almost all its glory",
   "main": "bundle.js",
   "scripts": {

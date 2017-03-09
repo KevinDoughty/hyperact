@@ -3,7 +3,7 @@
 // import { transformType } from "./transform.js";
 // import { colorType } from "./color.js";
 import { nonNumericType } from "./nonNumeric.js";
-// import { cssIntegerType, cssOpacityType } from "./number.js";
+// import { integerType, opacityType } from "./number.js";
 // import { lengthType, lengthAutoType } from "./length.js";
 // //import { positionType } from "./position.js";
 // import { positionListType } from "./positionList.js";

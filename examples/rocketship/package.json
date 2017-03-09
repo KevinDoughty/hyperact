@@ -1,10 +1,11 @@
 {
   "name": "bohr",
   "version": "0.0.1",
-  "description": "The not quite bohr model of the atom",
+  "private": true,
+  "description": "Blending path animation vs. angular acceleration",
   "main": "bundle.js",
   "scripts": {
-    "build": "WEBPACK_ENV=build webpack -p",
+    "build": "WEBPACK_ENV=build webpack",
     "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

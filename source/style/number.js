@@ -1,12 +1,15 @@
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-import { interp, createObject } from "./shared.js";
+//import { interp, createObject } from "./shared.js";
+import { interp } from "./shared.js";
 import { nonNumericType } from "./nonNumeric.js";
 
-export const cssNumberType = {
+function NumberType() {} // Used privately by transformType only
+NumberType.prototype = {
+//export const cssNumberType = {
 	toString: function() {
-		return "cssNumberType";
+		return "NumberType";
 	},
 	toJSON: function() {
 		return this.toString();
@@ -56,10 +59,13 @@ export const cssNumberType = {
 		return isNaN(result) ? undefined : result;
 	}
 };
+export const numberType = new NumberType(); // Private, only used by transformType
 
-export const cssIntegerType = createObject(cssNumberType, {
+function IntegerType() {}
+IntegerType.prototype = Object.create(NumberType.prototype,{
+//export const cssIntegerType = createObject(cssNumberType, {
 	toString: function() {
-		return "cssIntergerType";
+		return "IntergerType";
 	},
 	toJSON: function() {
 		return this.toString();
@@ -72,10 +78,13 @@ export const cssIntegerType = createObject(cssNumberType, {
 		return Math.floor(interp(from, to, f));
 	}
 });
+export const integerType = new IntegerType();
 
-export const cssOpacityType = createObject(cssNumberType, {
+function OpacityType() {}
+OpacityType.prototype = Object.create(NumberType, {
+//export const cssOpacityType = createObject(cssNumberType, {
 	toString: function() {
-		return "cssOpacityType";
+		return "OpacityType";
 	},
 	toJSON: function() {
 		return this.toString();
@@ -88,3 +97,4 @@ export const cssOpacityType = createObject(cssNumberType, {
 		//return propertyValueAliases["opacity"].initial;
 	}
 });
+export const opacityType = new OpacityType();

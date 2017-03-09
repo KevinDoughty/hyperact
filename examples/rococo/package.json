@@ -1,6 +1,7 @@
 {
   "name": "rococo",
   "version": "0.0.1",
+  "private": true,
   "description": "Hyperact canvas example",
   "main": "bundle.js",
   "scripts": {

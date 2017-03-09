@@ -47,12 +47,12 @@ function makeFrames(toggled) {
 
 function layout(animate) {
 	toggled = !toggled;
-	
+
 	if (rocket1) { // shorter path (result of additive blending)
 		if (animate) rocket1.addAnimation({
 			property:"transform",
-			keyframes:makeFrames(toggled), // keyframes are automatically converted to relative values with default ink:"relative", to use values unmodified you must specify ink:"absolute"
 			duration:duration,
+			keyframes:makeFrames(toggled), // keyframes are automatically converted to relative values with default ink:"relative", to use values unmodified you must specify ink:"absolute"
 			//easing: "cubic-bezier(.5,0,.5,1)", // default
 		});
 		if (toggled) {
@@ -66,9 +66,9 @@ function layout(animate) {
 		if (animate) rocket2.addAnimation({
 			property:"transform",
 			duration:duration,
-			//easing: "cubic-bezier(.5,0,.5,1)", // default
 			from: "rotate(180deg) translate3d(0,0,0) rotate(0deg)",
 			to: "rotate(0deg) translate3d(0,0,0) rotate(0deg)", // have to specify all three values, even though we just rotate, because of the way additive transforms work.
+			//easing: "cubic-bezier(.5,0,.5,1)", // default
 		});
 		if (toggled) {
 			rocket2.style.transform = "rotate(180deg) translate3d(200px,0,0) rotate(-45deg)";
@@ -76,7 +76,7 @@ function layout(animate) {
 			rocket2.style.transform = "rotate(0deg) translate3d(200px,0,0) rotate(-45deg)";
 		}
 	}
-	
+
 	if (planet) { // queued, total duration is longer (animations are not interrupted)
 		if (animate) {
 			var animation = planet.animationNamed("planetRotation"+(counter-1)); // get the previous animation
@@ -87,10 +87,10 @@ function layout(animate) {
 				planet.addAnimation({
 					property:"transform",
 					duration:duration,
-					fillMode:"backwards",
-					//easing: "cubic-bezier(.5,0,.5,1)", // default
 					from: "rotate(180deg)",
 					to: "rotate(0deg)",
+					fillMode:"backwards",
+					//easing: "cubic-bezier(.5,0,.5,1)", // default
 				},"planetRotation"+(counter++)); // animation name is optional second argument, if you need to access it later
 			}
 		}

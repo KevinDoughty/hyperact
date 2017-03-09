@@ -153,6 +153,40 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
   return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
 };
 
+
+
+
+
+
+
+
+
+
+
+var classCallCheck = function (instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+};
+
+var createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }
+
+  return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) defineProperties(Constructor, staticProps);
+    return Constructor;
+  };
+}();
+
 var animationNumber = 0;
 
 var wetNumberType = { // WET
@@ -1046,9 +1080,7 @@ function isFunction$3(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-function HyperNumber(settings) {
-	this.debug = "HyperNumber";
-}
+function HyperNumber() {/*#__PURE__*/}
 HyperNumber.prototype = {
 	constructor: HyperNumber,
 	zero: function zero() {
@@ -1063,12 +1095,16 @@ HyperNumber.prototype = {
 	},
 	interpolate: function interpolate(a, b, progress) {
 		return a + (b - a) * progress;
+	},
+	toString: function toString() {
+		return "HyperNumber";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
 	}
 };
 
-function HyperScale(settings) {
-	this.debug = "HyperScale";
-}
+function HyperScale() {/*#__PURE__*/}
 HyperScale.prototype = {
 	constructor: HyperScale,
 	zero: function zero() {
@@ -1084,6 +1120,12 @@ HyperScale.prototype = {
 	},
 	interpolate: function interpolate(a, b, progress) {
 		return a + (b - a) * progress;
+	},
+	toString: function toString() {
+		return "HyperScale";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
 	}
 };
 
@@ -1091,7 +1133,6 @@ function HyperArray(type, length, settings) {
 	this.type = type;
 	if (isFunction$3(type)) this.type = new type(settings);
 	this.length = length;
-	this.debug = "HyperScale";
 }
 HyperArray.prototype = {
 	constructor: HyperArray,
@@ -1123,6 +1164,12 @@ HyperArray.prototype = {
 			array.push(this.type.interpolate(a[i], b[i], progress));
 		}
 		return array;
+	},
+	toString: function toString() {
+		return "HyperArray";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
 	}
 };
 
@@ -1224,111 +1271,191 @@ HyperSet.prototype = {
 	interpolate: function interpolate(a, b, progress) {
 		if (progress >= 1) return b;
 		return a;
+	},
+	toString: function toString() {
+		return "HyperSet";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
 	}
 };
 
-function HyperPoint(settings) {}
-HyperPoint.prototype = {
-	constructor: HyperPoint,
-	zero: function zero() {
-		return hyperZeroPoint();
-	},
-	add: function add(a, b) {
-		return hyperMakePoint(a.x + b.x, a.y + b.y);
-	},
-	subtract: function subtract(a, b) {
-		// subtract b from a
-		return hyperMakePoint(a.x - b.x, a.y - b.y);
-	},
-	interpolate: function interpolate(a, b, progress) {
-		return hyperMakePoint(a.x + (b.x - a.x) * progress, a.y + (b.y - a.y) * progress);
-	}
-};
+/*#__PURE__*/var HyperPoint = function () {
+	function HyperPoint() {
+		/*#__PURE__*/
 
-function HyperSize(settings) {}
-HyperSize.prototype = {
-	constructor: HyperSize,
-	zero: function zero() {
-		return hyperZeroSize();
-	},
-	add: function add(a, b) {
-		return hyperMakeSize(a.width + b.width, a.height + b.height);
-	},
-	subtract: function subtract(a, b) {
-		// subtract b from a
-		return hyperMakeSize(a.width - b.width, a.height - b.height);
-	},
-	interpolate: function interpolate(a, b, progress) {
-		return hyperMakeSize(a.width + (b.width - a.width) * progress, a.height + (b.height - a.height) * progress);
+		classCallCheck(this, HyperPoint);
 	}
-};
 
-function HyperRect(settings) {}
-HyperRect.prototype = {
-	constructor: HyperRect,
-	zero: function zero() {
-		return hyperZeroRect();
-	},
-	add: function add(a, b) {
-		return {
-			origin: HyperPoint.prototype.add(a.origin, b.origin),
-			size: HyperSize.prototype.add(a.size, b.size)
-		};
-	},
-	subtract: function subtract(a, b) {
-		// subtract b from a
-		return {
-			origin: HyperPoint.prototype.subtract(a.origin, b.origin),
-			size: HyperSize.prototype.subtract(a.size, b.size)
-		};
-	},
-	interpolate: function interpolate(a, b, progress) {
-		return {
-			origin: HyperPoint.prototype.interpolate(a.origin, b.origin, progress),
-			size: HyperSize.prototype.interpolate(a.size, b.size, progress)
-		};
-	}
-};
+	createClass(HyperPoint, [{
+		key: "zero",
+		value: function zero() {
+			return hyperZeroPoint();
+		}
+	}, {
+		key: "add",
+		value: function add(a, b) {
+			return hyperMakePoint(a.x + b.x, a.y + b.y);
+		}
+	}, {
+		key: "subtract",
+		value: function subtract(a, b) {
+			// subtract b from a
+			return hyperMakePoint(a.x - b.x, a.y - b.y);
+		}
+	}, {
+		key: "interpolate",
+		value: function interpolate(a, b, progress) {
+			return hyperMakePoint(a.x + (b.x - a.x) * progress, a.y + (b.y - a.y) * progress);
+		}
+	}, {
+		key: "toString",
+		value: function toString() {
+			return "HyperPoint";
+		}
+	}, {
+		key: "toJSON",
+		value: function toJSON() {
+			return this.toString();
+		}
+	}]);
+	return HyperPoint;
+}();
 
-function HyperRange(settings) {
-	// TODO: negative values? // This should union the whole range, not add the individual values. NSUnionRange, not NSIntersectionRange, which is a range containing the indices that exist in both ranges.
-	throw new Error("HyperRange not supported");
-}
-HyperRange.prototype = {
-	constructor: HyperRange,
-	zero: function zero() {
-		return hyperNullRange();
-	},
-	add: function add(a, b) {
-		// union?
-		if (a.location === hyperNotFound && b.location === hyperNotFound) return hyperNullRange();
-		if (a.length === 0 && b.length === 0) return hyperNullRange();
-		if (a.location === hyperNotFound || a.length === 0) return b;
-		if (b.location === hyperNotFound || b.length === 0) return a;
-		var finalLocation = Math.min(a.location, b.location);
-		var finalEnd = Math.max(a.location + a.length, b.location + b.length);
-		var result = hyperMakeRange(finalLocation, finalEnd - finalLocation);
-		return result;
-	},
-	subtract: function subtract(a, b) {
-		// Subtraction is completely different.
-		var result = a;
-		if (a.location === hyperNotFound && b.location === hyperNotFound) result = hyperNullRange();else if (a.length === 0 && b.length === 0) result = hyperNullRange();else if (a.location === hyperNotFound || a.length === 0) result = hyperNullRange();else if (b.location === hyperNotFound || b.length === 0) result = a;else if (b.location <= a.location && b.location + b.length >= a.location + a.length) result = hyperNullRange();else if (b.location <= a.location && b.location + b.length > a.location && b.location + b.length < a.location + a.length) result = hyperMakeRange(b.location + b.length, a.location + a.length - (b.location + b.length));else if (b.location > a.location && b.location < a.location + a.length && b.location + b.length >= a.location + a.length) result = hyperMakeRange(a.location, b.location + b.length - a.location);
-		return result;
-	},
-	interpolate: function interpolate(a, b, progress) {
-		if (progress >= 1) return b;
-		return a;
-	},
-	intersection: function intersection(a, b) {
-		// 0,1 and 1,1 do not intersect
-		if (a.location === hyperNotFound || b.location === hyperNotFound || a.length === 0 || b.length === 0) return hyperNullRange();
-		if (a.location + a.length <= b.location || b.location + b.length <= a.location) return hyperNullRange(); // TODO: Consider location should be NSNotFound (INT_MAX) not zero.
-		var finalLocation = Math.max(a.location, b.location);
-		var finalEnd = Math.min(a.location + a.length, b.location + b.length);
-		return hyperMakeRange(finalLocation, finalEnd - finalLocation);
+/*#__PURE__*/var HyperSize = function () {
+	function HyperSize() {
+		/*#__PURE__*/
+
+		classCallCheck(this, HyperSize);
 	}
-};
+
+	createClass(HyperSize, [{
+		key: "zero",
+		value: function zero() {
+			return hyperZeroSize();
+		}
+	}, {
+		key: "add",
+		value: function add(a, b) {
+			return hyperMakeSize(a.width + b.width, a.height + b.height);
+		}
+	}, {
+		key: "subtract",
+		value: function subtract(a, b) {
+			// subtract b from a
+			return hyperMakeSize(a.width - b.width, a.height - b.height);
+		}
+	}, {
+		key: "interpolate",
+		value: function interpolate(a, b, progress) {
+			return hyperMakeSize(a.width + (b.width - a.width) * progress, a.height + (b.height - a.height) * progress);
+		}
+	}, {
+		key: "toString",
+		value: function toString() {
+			return "HyperSize";
+		}
+	}, {
+		key: "toJSON",
+		value: function toJSON() {
+			return this.toString();
+		}
+	}]);
+	return HyperSize;
+}();
+
+/*#__PURE__*/var HyperRect = function () {
+	function HyperRect() {
+		/*#__PURE__*/
+
+		classCallCheck(this, HyperRect);
+	}
+
+	createClass(HyperRect, [{
+		key: "zero",
+		value: function zero() {
+			return hyperZeroRect();
+		}
+	}, {
+		key: "add",
+		value: function add(a, b) {
+			return {
+				origin: HyperPoint.prototype.add(a.origin, b.origin),
+				size: HyperSize.prototype.add(a.size, b.size)
+			};
+		}
+	}, {
+		key: "subtract",
+		value: function subtract(a, b) {
+			// subtract b from a
+			return {
+				origin: HyperPoint.prototype.subtract(a.origin, b.origin),
+				size: HyperSize.prototype.subtract(a.size, b.size)
+			};
+		}
+	}, {
+		key: "interpolate",
+		value: function interpolate(a, b, progress) {
+			return {
+				origin: HyperPoint.prototype.interpolate(a.origin, b.origin, progress),
+				size: HyperSize.prototype.interpolate(a.size, b.size, progress)
+			};
+		}
+	}, {
+		key: "toString",
+		value: function toString() {
+			return "HyperRect";
+		}
+	}, {
+		key: "toJSON",
+		value: function toJSON() {
+			return this.toString();
+		}
+	}]);
+	return HyperRect;
+}();
+
+// export function HyperRange() { // TODO: negative values? // This should union the whole range, not add the individual values. NSUnionRange, not NSIntersectionRange, which is a range containing the indices that exist in both ranges.
+// 	throw new Error("HyperRange not supported");
+// }
+// HyperRange.prototype = {
+// 	constructor: HyperRange,
+// 	zero: function() {
+// 		return hyperNullRange();
+// 	},
+// 	add: function(a,b) { // union?
+// 		if (a.location === hyperNotFound && b.location === hyperNotFound) return hyperNullRange();
+// 		if (a.length === 0 && b.length === 0) return hyperNullRange();
+// 		if (a.location === hyperNotFound || a.length === 0) return b;
+// 		if (b.location === hyperNotFound || b.length === 0) return a;
+// 		const finalLocation = Math.min( a.location, b.location );
+// 		const finalEnd = Math.max( a.location + a.length, b.location + b.length );
+// 		const result = hyperMakeRange(finalLocation, finalEnd - finalLocation );
+// 		return result;
+// 	},
+// 	subtract: function(a,b) { // Subtraction is completely different.
+// 		let result = a;
+// 		if (a.location === hyperNotFound && b.location === hyperNotFound) result = hyperNullRange();
+// 		else if (a.length === 0 && b.length === 0) result = hyperNullRange();
+// 		else if (a.location === hyperNotFound || a.length === 0) result = hyperNullRange();
+// 		else if (b.location === hyperNotFound || b.length === 0) result = a;
+// 		else if (b.location <= a.location && b.location + b.length >= a.location + a.length) result = hyperNullRange();
+// 		else if (b.location <= a.location && b.location + b.length > a.location && b.location + b.length < a.location + a.length) result = hyperMakeRange(b.location + b.length, (a.location + a.length) - (b.location + b.length));
+// 		else if (b.location > a.location && b.location < a.location + a.length && b.location + b.length >= a.location + a.length) result = hyperMakeRange(a.location, (b.location + b.length) - a.location);
+// 		return result;
+// 	},
+// 	interpolate: function(a,b,progress) {
+// 		if (progress >= 1) return b;
+// 		return a;
+// 	},
+// 	intersection: function(a,b) { // 0,1 and 1,1 do not intersect
+// 		if (a.location === hyperNotFound || b.location === hyperNotFound || a.length === 0 || b.length === 0) return hyperNullRange();
+// 		if (a.location + a.length <= b.location || b.location + b.length <= a.location) return hyperNullRange(); // TODO: Consider location should be NSNotFound (INT_MAX) not zero.
+// 		const finalLocation = Math.max( a.location, b.location );
+// 		const finalEnd = Math.min( a.location + a.length, b.location + b.length );
+// 		return hyperMakeRange(finalLocation, finalEnd - finalLocation);
+// 	}
+// };
 
 var hyperNotFound = Number.MAX_VALUE;
 // struct convenience constructors:
@@ -1401,6 +1528,16 @@ function hyperIntersectionRange(a, b) {
 
 var SVG_NS = "http://www.w3.org/2000/svg";
 
+// Tree shaking is only possible in cases where the constructor args and shape of the object match,
+// (ie no work other than assignment is done in the constructor.)
+function createObject(proto, obj) {
+	var newObject = Object.create(proto);
+	Object.getOwnPropertyNames(obj).forEach(function (name) {
+		Object.defineProperty(newObject, name, Object.getOwnPropertyDescriptor(obj, name));
+	});
+	return newObject;
+}
+
 function typeWithKeywords(keywords, type) {
 	//console.log("HyperStyle typeWithKeywords:%s; type:%s;",keywords,type);
 	var isKeyword;
@@ -1443,16 +1580,6 @@ function typeWithKeywords(keywords, type) {
 			return isKeyword(value) ? value : type.input(value);
 		}
 	});
-}
-
-function createObject(proto, obj) {
-	if (proto === null || typeof proto === "undefined") throw new Error("HyperStyle createObject no proto damn it");
-	//console.log("createObject proto:%s; object:%s;",proto,obj);
-	var newObject = Object.create(proto);
-	Object.getOwnPropertyNames(obj).forEach(function (name) {
-		Object.defineProperty(newObject, name, Object.getOwnPropertyDescriptor(obj, name));
-	});
-	return newObject;
 }
 
 function clamp(x, min, max) {
@@ -1622,11 +1749,189 @@ function prepareDocument(dict, HyperStyleDeclaration) {
 // 	};
 // };
 
+
+// var propertyTypes = {
+// 	backgroundColor: colorType,
+// 	backgroundPosition: positionListType,
+// 	borderBottomColor: colorType,
+// 	borderBottomLeftRadius: percentLengthType,
+// 	borderBottomRightRadius: percentLengthType,
+// 	borderBottomWidth: lengthType,
+// 	borderLeftColor: colorType,
+// 	borderLeftWidth: lengthType,
+// 	borderRightColor: colorType,
+// 	borderRightWidth: lengthType,
+// 	borderSpacing: lengthType,
+// 	borderTopColor: colorType,
+// 	borderTopLeftRadius: percentLengthType,
+// 	borderTopRightRadius: percentLengthType,
+// 	borderTopWidth: lengthType,
+// 	bottom: percentLengthAutoType,
+// 	boxShadow: shadowType,
+// 	clip: typeWithKeywords(['auto'], rectangleType),
+// 	color: colorType,
+// 	cx: lengthType,
+// 	// TODO: Handle these keywords properly.
+// 	fontSize: typeWithKeywords(['smaller', 'larger'], percentLengthType),
+// 	fontWeight: typeWithKeywords(['lighter', 'bolder'], fontWeightType),
+// 	height: percentLengthAutoType,
+// 	left: percentLengthAutoType,
+// 	letterSpacing: typeWithKeywords(['normal'], lengthType),
+// 	lineHeight: percentLengthType, // TODO: Should support numberType as well.
+// 	marginBottom: lengthAutoType,
+// 	marginLeft: lengthAutoType,
+// 	marginRight: lengthAutoType,
+// 	marginTop: lengthAutoType,
+// 	maxHeight: typeWithKeywords(
+// 			['none', 'max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	maxWidth: typeWithKeywords(
+// 			['none', 'max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	minHeight: typeWithKeywords(
+// 			['max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	minWidth: typeWithKeywords(
+// 			['max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	//opacity: numberType, // does NOT use 1 as the default underlying value when not specified. animations relative to zero not one. Need to use propertyValueAliases
+// 	opacity: opacityType, //
+// 	outlineColor: typeWithKeywords(['invert'], colorType),
+// 	outlineOffset: lengthType,
+// 	outlineWidth: lengthType,
+// 	paddingBottom: lengthType,
+// 	paddingLeft: lengthType,
+// 	paddingRight: lengthType,
+// 	paddingTop: lengthType,
+// 	right: percentLengthAutoType,
+// 	textIndent: typeWithKeywords(['each-line', 'hanging'], percentLengthType),
+// 	textShadow: shadowType,
+// 	top: percentLengthAutoType,
+// 	transform: transformType,
+// 	WebkitTransform: transformType, // React?
+// 	webkitTransform: transformType, // temporary
+// 	msTransform: transformType, // temporary
+// 	verticalAlign: typeWithKeywords([
+// 		'baseline',
+// 		'sub',
+// 		'super',
+// 		'text-top',
+// 		'text-bottom',
+// 		'middle',
+// 		'top',
+// 		'bottom'
+// 	], percentLengthType),
+// 	visibility: visibilityType,
+// 	width: typeWithKeywords([
+// 		'border-box',
+// 		'content-box',
+// 		'auto',
+// 		'max-content',
+// 		'min-content',
+// 		'available',
+// 		'fit-content'
+// 	], percentLengthType),
+// 	wordSpacing: typeWithKeywords(['normal'], percentLengthType),
+// 	x: lengthType,
+// 	y: lengthType,
+// 	zIndex: typeWithKeywords(['auto'], integerType)
+// };
+
+// var svgProperties = {
+// 	'cx': 1,
+// 	'width': 1,
+// 	'x': 1,
+// 	'y': 1
+// };
+
+// var borderWidthAliases = {
+// 	initial: '3px',
+// 	thin: '1px',
+// 	medium: '3px',
+// 	thick: '5px'
+// };
+
+// var propertyValueAliases = {
+// 	backgroundColor: { initial: 'transparent' },
+// 	backgroundPosition: { initial: '0% 0%' },
+// 	borderBottomColor: { initial: 'currentColor' },
+// 	borderBottomLeftRadius: { initial: '0px' },
+// 	borderBottomRightRadius: { initial: '0px' },
+// 	borderBottomWidth: borderWidthAliases,
+// 	borderLeftColor: { initial: 'currentColor' },
+// 	borderLeftWidth: borderWidthAliases,
+// 	borderRightColor: { initial: 'currentColor' },
+// 	borderRightWidth: borderWidthAliases,
+// 	// Spec says this should be 0 but in practise it is 2px.
+// 	borderSpacing: { initial: '2px' },
+// 	borderTopColor: { initial: 'currentColor' },
+// 	borderTopLeftRadius: { initial: '0px' },
+// 	borderTopRightRadius: { initial: '0px' },
+// 	borderTopWidth: borderWidthAliases,
+// 	bottom: { initial: 'auto' },
+// 	clip: { initial: 'rect(0px, 0px, 0px, 0px)' },
+// 	color: { initial: 'black' }, // Depends on user agent.
+// 	fontSize: {
+// 		initial: '100%',
+// 		'xx-small': '60%',
+// 		'x-small': '75%',
+// 		'small': '89%',
+// 		'medium': '100%',
+// 		'large': '120%',
+// 		'x-large': '150%',
+// 		'xx-large': '200%'
+// 	},
+// 	fontWeight: {
+// 		initial: '400',
+// 		normal: '400',
+// 		bold: '700'
+// 	},
+// 	height: { initial: 'auto' },
+// 	left: { initial: 'auto' },
+// 	letterSpacing: { initial: 'normal' },
+// 	lineHeight: {
+// 		initial: '120%',
+// 		normal: '120%'
+// 	},
+// 	marginBottom: { initial: '0px' },
+// 	marginLeft: { initial: '0px' },
+// 	marginRight: { initial: '0px' },
+// 	marginTop: { initial: '0px' },
+// 	maxHeight: { initial: 'none' },
+// 	maxWidth: { initial: 'none' },
+// 	minHeight: { initial: '0px' },
+// 	minWidth: { initial: '0px' },
+// 	opacity: { initial: '1.0' },
+// 	outlineColor: { initial: 'invert' },
+// 	outlineOffset: { initial: '0px' },
+// 	outlineWidth: borderWidthAliases,
+// 	paddingBottom: { initial: '0px' },
+// 	paddingLeft: { initial: '0px' },
+// 	paddingRight: { initial: '0px' },
+// 	paddingTop: { initial: '0px' },
+// 	right: { initial: 'auto' },
+// 	textIndent: { initial: '0px' },
+// 	textShadow: {
+// 		initial: '0px 0px 0px transparent',
+// 		none: '0px 0px 0px transparent'
+// 	},
+// 	top: { initial: 'auto' },
+// 	transform: {
+// 		initial: "matrix(1, 0, 0, 1, 0, 0)",
+// 		none: "matrix(1, 0, 0, 1, 0, 0)"
+// 	},
+// 	verticalAlign: { initial: '0px' },
+// 	visibility: { initial: 'visible' },
+// 	width: { initial: 'auto' },
+// 	wordSpacing: { initial: 'normal' },
+// 	zIndex: { initial: 'auto' }
+// };
+
 //import { typeWithKeywords } from "./shared.js";
 
 // import { transformType } from "./transform.js";
 // import { colorType } from "./color.js";
-// import { cssIntegerType, cssOpacityType } from "./number.js";
+// import { integerType, opacityType } from "./number.js";
 // import { lengthType, lengthAutoType } from "./length.js";
 // //import { positionType } from "./position.js";
 // import { positionListType } from "./positionList.js";
@@ -2084,9 +2389,12 @@ var lengthAutoType = typeWithKeywords(["auto"], lengthType);
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
-var cssNumberType = {
+//import { interp, createObject } from "./shared.js";
+function NumberType() {} // Used privately by transformType only
+NumberType.prototype = {
+	//export const cssNumberType = {
 	toString: function toString() {
-		return "cssNumberType";
+		return "NumberType";
 	},
 	toJSON: function toJSON() {
 		return this.toString();
@@ -2135,10 +2443,13 @@ var cssNumberType = {
 		return isNaN(result) ? undefined : result;
 	}
 };
+var numberType = new NumberType(); // Private, only used by transformType
 
-var cssIntegerType = createObject(cssNumberType, {
+function IntegerType() {}
+IntegerType.prototype = Object.create(NumberType.prototype, {
+	//export const cssIntegerType = createObject(cssNumberType, {
 	toString: function toString() {
-		return "cssIntergerType";
+		return "IntergerType";
 	},
 	toJSON: function toJSON() {
 		return this.toString();
@@ -2151,10 +2462,13 @@ var cssIntegerType = createObject(cssNumberType, {
 		return Math.floor(interp(from, to, f));
 	}
 });
+var integerType = new IntegerType();
 
-var cssOpacityType = createObject(cssNumberType, {
+function OpacityType() {}
+OpacityType.prototype = Object.create(NumberType, {
+	//export const cssOpacityType = createObject(cssNumberType, {
 	toString: function toString() {
-		return "cssOpacityType";
+		return "OpacityType";
 	},
 	toJSON: function toJSON() {
 		return this.toString();
@@ -2168,6 +2482,7 @@ var cssOpacityType = createObject(cssNumberType, {
 		//return propertyValueAliases["opacity"].initial;
 	}
 });
+var opacityType = new OpacityType();
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
@@ -2669,8 +2984,8 @@ var transformType = {
 		return this.toString();
 	},
 	inverse: function inverse(value) {
-		// KxDx // TODO: SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// KxDx // TODO: SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
 		if (!value || !value.length) {
 			// This happens often...
 			//console.log("transformType inverse with no base!");
@@ -2686,22 +3001,22 @@ var transformType = {
 				case "rotateZ":
 				case "skewX":
 				case "skewY":
-					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0])] }); // new style, have to unwrap then re-wrap
+					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0])] }); // new style, have to unwrap then re-wrap
 					break;
 				case "skew":
-					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0]), cssNumberType.inverse(value[i].d[1])] });
+					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1])] });
 					break;
 				case "translateX":
 				case "translateY":
 				case "translateZ":
 				case "perspective":
-					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0])] });
+					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0])] });
 					break;
 				case "translate":
-					out.push({ t: value[i].t, d: [{ px: cssNumberType.inverse(value[i].d[0].px) }, { px: cssNumberType.inverse(value[i].d[1].px) }] });
+					out.push({ t: value[i].t, d: [{ px: numberType.inverse(value[i].d[0].px) }, { px: numberType.inverse(value[i].d[1].px) }] });
 					break;
 				case "translate3d":
-					out.push({ t: value[i].t, d: [{ px: cssNumberType.inverse(value[i].d[0].px) }, { px: cssNumberType.inverse(value[i].d[1].px) }, { px: cssNumberType.inverse(value[i].d[2].px) }] });
+					out.push({ t: value[i].t, d: [{ px: numberType.inverse(value[i].d[0].px) }, { px: numberType.inverse(value[i].d[1].px) }, { px: numberType.inverse(value[i].d[2].px) }] });
 					break;
 				case "scale":
 					out.push({ t: value[i].t, d: [delta[i].d[0] / value[i].d[0], delta[i].d[1] / value[i].d[1]] }); // inverse of 2 is 1/2
@@ -2715,7 +3030,7 @@ var transformType = {
 					out.push({ t: value[i].t, d: [delta[i].d[0] / value[i].d[0], delta[i].d[1] / value[i].d[1], -1 / value[i].d[2]] }); // inverse of 2 is 1/2
 					break;
 				case "matrix":
-					out.push({ t: value[i].t, d: [cssNumberType.inverse(value[i].d[0]), cssNumberType.inverse(value[i].d[1]), cssNumberType.inverse(value[i].d[2]), cssNumberType.inverse(value[i].d[3]), cssNumberType.inverse(value[i].d[4]), cssNumberType.inverse(value[i].d[5])] });
+					out.push({ t: value[i].t, d: [numberType.inverse(value[i].d[0]), numberType.inverse(value[i].d[1]), numberType.inverse(value[i].d[2]), numberType.inverse(value[i].d[3]), numberType.inverse(value[i].d[4]), numberType.inverse(value[i].d[5])] });
 					break;
 			}
 		}
@@ -2748,8 +3063,8 @@ var transformType = {
 	},
 
 	sum: function sum(value, delta) {
-		// add is for the full values, sum is for their components // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// add is for the full values, sum is for their components // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
 		// 		console.log("SUM base:%s;",JSON.stringify(value));
 		// 		console.log("SUM delta:%s;",JSON.stringify(delta));
 		var out = [];
@@ -2769,22 +3084,22 @@ var transformType = {
 					case "rotateZ":
 					case "skewX":
 					case "skewY":
-						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0])] }); // new style, have to unwrap then re-wrap
+						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0])] }); // new style, have to unwrap then re-wrap
 						break;
 					case "skew":
-						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0]), cssNumberType.add(value[i].d[1], delta[j].d[1])] });
+						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0]), numberType.add(value[i].d[1], delta[j].d[1])] });
 						break;
 					case "translateX":
 					case "translateY":
 					case "translateZ":
 					case "perspective":
-						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0])] });
+						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0])] });
 						break;
 					case "translate":
-						out.push({ t: value[i].t, d: [{ px: cssNumberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: cssNumberType.add(value[i].d[1].px, delta[j].d[1].px) }] });
+						out.push({ t: value[i].t, d: [{ px: numberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: numberType.add(value[i].d[1].px, delta[j].d[1].px) }] });
 						break;
 					case "translate3d":
-						out.push({ t: value[i].t, d: [{ px: cssNumberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: cssNumberType.add(value[i].d[1].px, delta[j].d[1].px) }, { px: cssNumberType.add(value[i].d[2].px, delta[j].d[2].px) }] });
+						out.push({ t: value[i].t, d: [{ px: numberType.add(value[i].d[0].px, delta[j].d[0].px) }, { px: numberType.add(value[i].d[1].px, delta[j].d[1].px) }, { px: numberType.add(value[i].d[2].px, delta[j].d[2].px) }] });
 						break;
 					case "scale":
 						out.push({ t: value[i].t, d: [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1]] });
@@ -2798,7 +3113,7 @@ var transformType = {
 						out.push({ t: value[i].t, d: [value[i].d[0] * delta[j].d[0], value[i].d[1] * delta[j].d[1], value[i].d[2] * delta[j].d[2]] });
 						break;
 					case "matrix":
-						out.push({ t: value[i].t, d: [cssNumberType.add(value[i].d[0], delta[j].d[0]), cssNumberType.add(value[i].d[1], delta[j].d[1]), cssNumberType.add(value[i].d[2], delta[j].d[2]), cssNumberType.add(value[i].d[3], delta[j].d[3]), cssNumberType.add(value[i].d[4], delta[j].d[4]), cssNumberType.add(value[i].d[5], delta[j].d[5])] });
+						out.push({ t: value[i].t, d: [numberType.add(value[i].d[0], delta[j].d[0]), numberType.add(value[i].d[1], delta[j].d[1]), numberType.add(value[i].d[2], delta[j].d[2]), numberType.add(value[i].d[3], delta[j].d[3]), numberType.add(value[i].d[4], delta[j].d[4]), numberType.add(value[i].d[5], delta[j].d[5])] });
 						break;
 					case "matrix3d":
 						break;
@@ -2813,8 +3128,8 @@ var transformType = {
 	},
 
 	zero: function zero(value) {
-		// KxDx // requires an old value for type // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
-		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using cssNumberType not lengthType for transforms and perspective, probably should revert back
+		// KxDx // requires an old value for type // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
 		var identity2dMatrix = [1, 0, 0, 1, 0, 0];
 		if (!value) return [{ t: "matrix", d: identity2dMatrix }];
 		var out = [];
@@ -3190,6 +3505,12 @@ var namedColors = {
 };
 
 var colorType = typeWithKeywords(["currentColor"], {
+	toString: function toString() {
+		return "ColorType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
 	inverse: function inverse(value) {
 		// KxDx
 		return this.subtract(value, [255, 255, 255, 1]);
@@ -3797,4 +4118,4 @@ var visibilityType = createObject(nonNumericType, {
 	}
 });
 
-export { typeForStyle, registerAnimatableStyles, activateElement, transformType, colorType, nonNumericType, cssNumberType, cssIntegerType, cssOpacityType, lengthType, lengthAutoType, positionType, positionListType, rectangleType, shadowType, fontWeightType, visibilityType, beginTransaction, commitTransaction, currentTransaction, flushTransaction, disableAnimation, decorate, activate, HyperNumber, HyperScale, HyperArray, HyperSet, HyperPoint, HyperSize, HyperRect, HyperRange, hyperNotFound, hyperMakeRect, hyperZeroRect, hyperEqualRects, hyperMakePoint, hyperZeroPoint, hyperEqualPoints, hyperMakeSize, hyperZeroSize, hyperEqualSizes, hyperMakeRange, hyperZeroRange, hyperNullRange, hyperIndexInRange, hyperEqualRanges, hyperIntersectionRange };
+export { typeForStyle, registerAnimatableStyles, activateElement, transformType, colorType, nonNumericType, integerType, opacityType, lengthType, lengthAutoType, positionType, positionListType, rectangleType, shadowType, fontWeightType, visibilityType, beginTransaction, commitTransaction, currentTransaction, flushTransaction, disableAnimation, decorate, activate, HyperNumber, HyperScale, HyperArray, HyperSet, HyperPoint, HyperSize, HyperRect, hyperNotFound, hyperMakeRect, hyperZeroRect, hyperEqualRects, hyperMakePoint, hyperZeroPoint, hyperEqualPoints, hyperMakeSize, hyperZeroSize, hyperEqualSizes, hyperMakeRange, hyperZeroRange, hyperNullRange, hyperIndexInRange, hyperEqualRanges, hyperIntersectionRange };

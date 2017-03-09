@@ -5,6 +5,17 @@ import { nonNumericType } from "./nonNumeric.js";
 
 var SVG_NS = "http://www.w3.org/2000/svg";
 
+
+// Tree shaking is only possible in cases where the constructor args and shape of the object match,
+// (ie no work other than assignment is done in the constructor.)
+export function createObject(proto, obj) {
+	var newObject = Object.create(proto);
+	Object.getOwnPropertyNames(obj).forEach(function(name) {
+		Object.defineProperty( newObject, name, Object.getOwnPropertyDescriptor(obj, name));
+	});
+	return newObject;
+}
+
 export function typeWithKeywords(keywords, type) {
 	//console.log("HyperStyle typeWithKeywords:%s; type:%s;",keywords,type);
 	var isKeyword;
@@ -47,16 +58,6 @@ export function typeWithKeywords(keywords, type) {
 			return isKeyword(value) ? value : type.input(value);
 		}
 	});
-}
-
-export function createObject(proto, obj) {
-	if (proto === null || typeof proto === "undefined") throw new Error("HyperStyle createObject no proto damn it");
-	//console.log("createObject proto:%s; object:%s;",proto,obj);
-	var newObject = Object.create(proto);
-	Object.getOwnPropertyNames(obj).forEach(function(name) {
-		Object.defineProperty( newObject, name, Object.getOwnPropertyDescriptor(obj, name));
-	});
-	return newObject;
 }
 
 export function clamp(x, min, max) {

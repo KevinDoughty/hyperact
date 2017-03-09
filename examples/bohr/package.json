@@ -1,6 +1,7 @@
 {
   "name": "bohr",
   "version": "0.0.1",
+  "private": true,
   "description": "The not quite bohr model of the atom",
   "main": "bundle.js",
   "scripts": {

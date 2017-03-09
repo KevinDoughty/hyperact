@@ -1,6 +1,7 @@
 {
   "name": "basic",
   "version": "0.0.1",
+  "private": true,
   "description": "Hyperact basic example",
   "main": "bundle.js",
   "scripts": {

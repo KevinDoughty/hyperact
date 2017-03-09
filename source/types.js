@@ -2,9 +2,7 @@ function isFunction(w) { // WET
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-export function HyperNumber(settings) {
-	this.debug = "HyperNumber";
-}
+export function HyperNumber() {/*#__PURE__*/}
 HyperNumber.prototype = {
 	constructor: HyperNumber,
 	zero: function() {
@@ -18,12 +16,16 @@ HyperNumber.prototype = {
 	},
 	interpolate: function(a,b,progress) {
 		return a + (b-a) * progress;
+	},
+	toString: function() {
+		return "HyperNumber";
+	},
+	toJSON: function() {
+		return this.toString();
 	}
 };
 
-export function HyperScale(settings) {
-	this.debug = "HyperScale";
-}
+export function HyperScale() {/*#__PURE__*/}
 HyperScale.prototype = {
 	constructor: HyperScale,
 	zero: function() {
@@ -38,6 +40,12 @@ HyperScale.prototype = {
 	},
 	interpolate: function(a,b,progress) {
 		return a + (b-a) * progress;
+	},
+	toString: function() {
+		return "HyperScale";
+	},
+	toJSON: function() {
+		return this.toString();
 	}
 };
 
@@ -45,7 +53,6 @@ export function HyperArray(type,length,settings) {
 	this.type = type;
 	if (isFunction(type)) this.type = new type(settings);
 	this.length = length;
-	this.debug = "HyperScale";
 }
 HyperArray.prototype = {
 	constructor: HyperArray,
@@ -75,6 +82,12 @@ HyperArray.prototype = {
 			array.push(this.type.interpolate(a[i],b[i],progress));
 		}
 		return array;
+	},
+	toString: function() {
+		return "HyperArray";
+	},
+	toJSON: function() {
+		return this.toString();
 	}
 };
 
@@ -173,113 +186,137 @@ HyperSet.prototype = {
 	interpolate: function(a,b,progress) {
 		if (progress >= 1) return b;
 		return a;
+	},
+	toString: function() {
+		return "HyperSet";
+	},
+	toJSON: function() {
+		return this.toString();
 	}
 };
 
-export function HyperPoint(settings) {
-}
-HyperPoint.prototype = {
-	constructor: HyperPoint,
-	zero: function() {
+/*#__PURE__*/export class HyperPoint {
+	constructor() {
+		/*#__PURE__*/
+	}
+	zero() {
 		return hyperZeroPoint();
-	},
-	add: function(a,b) {
+	}
+	add(a,b) {
 		return hyperMakePoint(a.x + b.x, a.y + b.y);
-	},
-	subtract: function(a,b) { // subtract b from a
+	}
+	subtract(a,b) { // subtract b from a
 		return hyperMakePoint(a.x - b.x, a.y - b.y);
-	},
-	interpolate: function(a,b,progress) {
+	}
+	interpolate(a,b,progress) {
 		return hyperMakePoint(a.x + (b.x-a.x) * progress, a.y + (b.y-a.y) * progress);
 	}
-};
-
-export function HyperSize(settings) {
+	toString() {
+		return "HyperPoint";
+	}
+	toJSON() {
+		return this.toString();
+	}
 }
-HyperSize.prototype = {
-	constructor: HyperSize,
-	zero: function() {
+
+/*#__PURE__*/export class HyperSize {
+	constructor() {
+		/*#__PURE__*/
+	}
+	zero() {
 		return hyperZeroSize();
-	},
-	add: function(a,b) {
+	}
+	add(a,b) {
 		return hyperMakeSize(a.width + b.width, a.height + b.height);
-	},
-	subtract: function(a,b) { // subtract b from a
+	}
+	subtract(a,b) { // subtract b from a
 		return hyperMakeSize(a.width - b.width, a.height - b.height);
-	},
-	interpolate: function(a,b,progress) {
+	}
+	interpolate(a,b,progress) {
 		return hyperMakeSize(a.width + (b.width-a.width) * progress, a.height + (b.height-a.height) * progress);
 	}
-};
-
-export function HyperRect(settings) {
+	toString() {
+		return "HyperSize";
+	}
+	toJSON() {
+		return this.toString();
+	}
 }
-HyperRect.prototype = {
-	constructor: HyperRect,
-	zero: function() {
+
+/*#__PURE__*/export class HyperRect {
+	constructor() {
+		/*#__PURE__*/
+	}
+	zero() {
 		return hyperZeroRect();
-	},
-	add: function(a,b) {
+	}
+	add(a,b) {
 		return {
 			origin: HyperPoint.prototype.add(a.origin, b.origin),
 			size: HyperSize.prototype.add(a.size, b.size)
 		};
-	},
-	subtract: function(a,b) { // subtract b from a
+	}
+	subtract(a,b) { // subtract b from a
 		return {
 			origin: HyperPoint.prototype.subtract(a.origin, b.origin),
 			size: HyperSize.prototype.subtract(a.size, b.size)
 		};
-	},
-	interpolate: function(a,b,progress) {
+	}
+	interpolate(a,b,progress) {
 		return {
 			origin: HyperPoint.prototype.interpolate(a.origin, b.origin, progress),
 			size: HyperSize.prototype.interpolate(a.size, b.size, progress)
 		};
 	}
-};
-
-export function HyperRange(settings) { // TODO: negative values? // This should union the whole range, not add the individual values. NSUnionRange, not NSIntersectionRange, which is a range containing the indices that exist in both ranges.
-	throw new Error("HyperRange not supported");
-}
-HyperRange.prototype = {
-	constructor: HyperRange,
-	zero: function() {
-		return hyperNullRange();
-	},
-	add: function(a,b) { // union?
-		if (a.location === hyperNotFound && b.location === hyperNotFound) return hyperNullRange();
-		if (a.length === 0 && b.length === 0) return hyperNullRange();
-		if (a.location === hyperNotFound || a.length === 0) return b;
-		if (b.location === hyperNotFound || b.length === 0) return a;
-		const finalLocation = Math.min( a.location, b.location );
-		const finalEnd = Math.max( a.location + a.length, b.location + b.length );
-		const result = hyperMakeRange(finalLocation, finalEnd - finalLocation );
-		return result;
-	},
-	subtract: function(a,b) { // Subtraction is completely different.
-		let result = a;
-		if (a.location === hyperNotFound && b.location === hyperNotFound) result = hyperNullRange();
-		else if (a.length === 0 && b.length === 0) result = hyperNullRange();
-		else if (a.location === hyperNotFound || a.length === 0) result = hyperNullRange();
-		else if (b.location === hyperNotFound || b.length === 0) result = a;
-		else if (b.location <= a.location && b.location + b.length >= a.location + a.length) result = hyperNullRange();
-		else if (b.location <= a.location && b.location + b.length > a.location && b.location + b.length < a.location + a.length) result = hyperMakeRange(b.location + b.length, (a.location + a.length) - (b.location + b.length));
-		else if (b.location > a.location && b.location < a.location + a.length && b.location + b.length >= a.location + a.length) result = hyperMakeRange(a.location, (b.location + b.length) - a.location);
-		return result;
-	},
-	interpolate: function(a,b,progress) {
-		if (progress >= 1) return b;
-		return a;
-	},
-	intersection: function(a,b) { // 0,1 and 1,1 do not intersect
-		if (a.location === hyperNotFound || b.location === hyperNotFound || a.length === 0 || b.length === 0) return hyperNullRange();
-		if (a.location + a.length <= b.location || b.location + b.length <= a.location) return hyperNullRange(); // TODO: Consider location should be NSNotFound (INT_MAX) not zero.
-		const finalLocation = Math.max( a.location, b.location );
-		const finalEnd = Math.min( a.location + a.length, b.location + b.length );
-		return hyperMakeRange(finalLocation, finalEnd - finalLocation);
+	toString() {
+		return "HyperRect";
 	}
-};
+	toJSON() {
+		return this.toString();
+	}
+}
+
+// export function HyperRange() { // TODO: negative values? // This should union the whole range, not add the individual values. NSUnionRange, not NSIntersectionRange, which is a range containing the indices that exist in both ranges.
+// 	throw new Error("HyperRange not supported");
+// }
+// HyperRange.prototype = {
+// 	constructor: HyperRange,
+// 	zero: function() {
+// 		return hyperNullRange();
+// 	},
+// 	add: function(a,b) { // union?
+// 		if (a.location === hyperNotFound && b.location === hyperNotFound) return hyperNullRange();
+// 		if (a.length === 0 && b.length === 0) return hyperNullRange();
+// 		if (a.location === hyperNotFound || a.length === 0) return b;
+// 		if (b.location === hyperNotFound || b.length === 0) return a;
+// 		const finalLocation = Math.min( a.location, b.location );
+// 		const finalEnd = Math.max( a.location + a.length, b.location + b.length );
+// 		const result = hyperMakeRange(finalLocation, finalEnd - finalLocation );
+// 		return result;
+// 	},
+// 	subtract: function(a,b) { // Subtraction is completely different.
+// 		let result = a;
+// 		if (a.location === hyperNotFound && b.location === hyperNotFound) result = hyperNullRange();
+// 		else if (a.length === 0 && b.length === 0) result = hyperNullRange();
+// 		else if (a.location === hyperNotFound || a.length === 0) result = hyperNullRange();
+// 		else if (b.location === hyperNotFound || b.length === 0) result = a;
+// 		else if (b.location <= a.location && b.location + b.length >= a.location + a.length) result = hyperNullRange();
+// 		else if (b.location <= a.location && b.location + b.length > a.location && b.location + b.length < a.location + a.length) result = hyperMakeRange(b.location + b.length, (a.location + a.length) - (b.location + b.length));
+// 		else if (b.location > a.location && b.location < a.location + a.length && b.location + b.length >= a.location + a.length) result = hyperMakeRange(a.location, (b.location + b.length) - a.location);
+// 		return result;
+// 	},
+// 	interpolate: function(a,b,progress) {
+// 		if (progress >= 1) return b;
+// 		return a;
+// 	},
+// 	intersection: function(a,b) { // 0,1 and 1,1 do not intersect
+// 		if (a.location === hyperNotFound || b.location === hyperNotFound || a.length === 0 || b.length === 0) return hyperNullRange();
+// 		if (a.location + a.length <= b.location || b.location + b.length <= a.location) return hyperNullRange(); // TODO: Consider location should be NSNotFound (INT_MAX) not zero.
+// 		const finalLocation = Math.max( a.location, b.location );
+// 		const finalEnd = Math.min( a.location + a.length, b.location + b.length );
+// 		return hyperMakeRange(finalLocation, finalEnd - finalLocation);
+// 	}
+// };
 
 export const hyperNotFound = Number.MAX_VALUE;
 // struct convenience constructors:

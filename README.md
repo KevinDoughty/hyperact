@@ -5,14 +5,14 @@ Documentation does not mean implementation.
 Beware changes like renaming, with semver violations, for just a little while longer.
 
 ```javascript
-import { decorate } from "Hyperact";
+import { activate } from "Hyperact";
 
 const view = {
 	animationForKey: (key, value, previous, presentation) => 1.0,
 	display: () => console.log("x:%s;",this.x),
 	x: 0
 }
-decorate(view);
+activate(view);
 console.log("x:zero;");
 view.x = 1;
 ```
@@ -21,7 +21,7 @@ view.x = 1;
 ## Core
 
 
-####`decorate(receiver, delegate, layer)`
+####`activate(receiver, delegate, layer)`
   Provides `receiver` with methods and property accessors for animation management.
 
 *Parameters*  

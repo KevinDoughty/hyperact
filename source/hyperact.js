@@ -7,7 +7,7 @@ export { typeForStyle, registerAnimatableStyles, activateElement } from "./style
 export { transformType } from "./style/transform.js";
 export { colorType } from "./style/color.js";
 export { nonNumericType } from "./style/nonNumeric.js";
-export { cssNumberType, cssIntegerType, cssOpacityType } from "./style/number.js";
+export { integerType, opacityType } from "./style/number.js";
 export { lengthType, lengthAutoType } from "./style/length.js";
 export { positionType } from "./style/position.js";
 export { positionListType } from "./style/positionList.js";

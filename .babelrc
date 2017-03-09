@@ -1,5 +1,14 @@
 {
-	"presets": [
-		[ "es2015", { "modules": false } ]
-	]
+	"env": {
+		"webpack": {
+			"presets": [
+				[ "es2015", { "modules" : false } ]
+			]
+		},
+		"mocha" : {
+			"presets": [
+				[ "es2015" ]
+			]
+		}
+	}
 }
