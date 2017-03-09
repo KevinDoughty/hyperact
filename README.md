@@ -33,8 +33,8 @@ view.x = 1;
   `{object}` The same `receiver` with animation management methods and property accessors.
 
 *Discussion*  
-  Currently, behavior is undefined if there are any naming collisions, 
-  including calling decorate with the same object more than once. 
+  Currently, behavior is undefined if there are any naming collisions. 
+  This includes calling activate on the same object more than once. 
   The provided receiver methods are 
   `registerAnimatableProperty`, 
   `needsDisplay`, 
@@ -56,7 +56,7 @@ view.x = 1;
 
 
 ## Receiver Methods
-  The following methods are added to the `receiver`, the first argument to the `decorate` function.
+  The following methods are added to the `receiver`, the first argument to the `activate` function.
 
 
 #### `registerAnimatableProperty(property, default)`
@@ -126,7 +126,7 @@ view.x = 1;
 
 
 ## Receiver Property Accessors
-  The following property accessors are added to the `receiver`, the first argument to the `decorate` function.
+  The following property accessors are added to the `receiver`, the first argument to the `activate` function.
 
 
 #### `get layer`
@@ -168,7 +168,7 @@ view.x = 1;
 
 
 ## Delegate methods
-  The following methods, when implemented on the `delegate` object passed as the second argument to the `decorate` function,
+  The following methods, when implemented on the `delegate` object passed as the second argument to the `activate` function,
   allow additional configuration.
 
 
@@ -182,7 +182,7 @@ view.x = 1;
   `{undefined}` Expects nothing. A return value is ignored.
 
 *Discussion*  
-  Currently, neither `decorate` nor `registerAnimatableProperty` result in a call to `display` but this may change in the future.
+  Currently, neither `activate` nor `registerAnimatableProperty` result in a call to `display` but this may change in the future.
 
 
 #### `animationForKey(key, value, previous, presentation)`
@@ -224,12 +224,12 @@ view.x = 1;
 
 ## Animation Descriptions
   Currently there are no exposed animation classes but this might change.
-  A number, array, or object literal is returned by `animationForKey`, 
-  and passed to `addAnimation` and `registerAnimatableProperty`.
+  A number or object literal is returned by `animationForKey`, 
+  or passed to `addAnimation` and `registerAnimatableProperty`.
   
 
 ### Basic Animation
-
+  This is the primary animation class for interpolating between property values.
 
 *Parameters*
   - `property {string}`
@@ -248,17 +248,36 @@ view.x = 1;
   - `index {number}` For a custom compositing order.
   - `finished {number}` Not finished. Should be `finished {boolean}` or better yet private.
   - `startTime {number}` Set automatically when added.
-  - `progress {number}` Between zero and one.
   - `onend {function}` Currently fires regardless of fillMode. Should be renamed.
   - `naming {string}` Not finished. "default", "exact", "increment", "nil" but might just be replaced with a "key" property
   - `remove {boolean}` If the animation is removed on completion.
 
 
-## Group Animation
+### Keyframe Animation
+  Has the same properties of Basic Animation, without `from` or `to`.
+
+*Parameters*
+  - `keyframes {array{any}}` An array of property values.
+  - `offsets {array{number}}` An optional array of timing offsets between 0 and 1.
+
+
+### Group Animation
+  This provides a way to run in parallel multiple properties of the same object.
+
+*Parameters*
+  - `group {array{Animation}}` An array of animations to run at the same time.
+
+### Chain Animation
+  This provides a way to run in sequence multiple properties of the same object.
+
+*Parameters*
+  - `chain {array{Animation}}` An array of animations to run one after another.
 
 
 ## Transactions
-  Probably could use some work.
+  Currently the only use of transactions is to disable animation. 
+  All animations run on the main thread, 
+  so these are basically faked to provide a similar API to Core Animation.
 
 
 ## Examples

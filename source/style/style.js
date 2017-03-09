@@ -2,7 +2,7 @@
 
 // import { transformType } from "./transform.js";
 // import { colorType } from "./color.js";
-import { nonNumericType } from "./nonNumeric.js";
+//import { nonNumericType } from "./nonNumeric.js";
 // import { integerType, opacityType } from "./number.js";
 // import { lengthType, lengthAutoType } from "./length.js";
 // //import { positionType } from "./position.js";
@@ -17,7 +17,7 @@ import { animationFromDescription } from "../actions.js";
 import { activate } from "../core.js";
 
 export function typeForStyle(property) {
-	return usedPropertyTypes[property] || nonNumericType;
+	return usedPropertyTypes[property];// || nonNumericType;
 }
 
 let usedPropertyTypes = {};
@@ -221,11 +221,10 @@ HyperStyle.activate = function(element, receiver) {
 		//console.log("style.js display presentation:%s;",JSON.stringify(presentation));
 		previousLayer = presentation;
 	};
-	
+
 	var style = element.style;
 	const delegate = null;
 
-	
 	//if (receiver === null || typeof receiver === "undefined") receiver = this;
 	//if (layer === null || typeof layer === "undefined") layer = this;
 
