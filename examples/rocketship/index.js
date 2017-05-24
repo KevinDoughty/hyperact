@@ -1,11 +1,11 @@
 import { activateElement, transformType, registerAnimatableStyles } from "../../hyperact.mjs";
 
-var duration = 2.5;
-var counter = 0;
-var toggled = true;
-var rocket1 = document.getElementById("rocket1");
-var rocket2 = document.getElementById("rocket2");
-var planet = document.getElementById("planet");
+const duration = 2.5;
+let counter = 0;
+let toggled = true;
+const rocket1 = document.getElementById("rocket1");
+const rocket2 = document.getElementById("rocket2");
+const planet = document.getElementById("planet");
 
 registerAnimatableStyles({
 	transform: transformType
@@ -24,20 +24,20 @@ document.addEventListener('mousedown', function(e) {
 },false);
 
 function makeFrame(at,toggled) { // animations are additive but you specify values as you would normally
-	var radius = 200;
-	var theta;
+	const radius = 200;
+	let theta;
 	if (toggled) theta = (1 - at) * Math.PI * 1;
 	else theta = at * Math.PI * -1;
-	var x = Number( Math.cos(theta) * radius ).toFixed(4);
-	var y = Number( Math.sin(theta) * radius ).toFixed(4);
-	var r = theta * (180/Math.PI);
+	const x = Number( Math.cos(theta) * radius ).toFixed(4);
+	const y = Number( Math.sin(theta) * radius ).toFixed(4);
+	const r = theta * (180/Math.PI);
 	return "translate3d("+x+"px,"+y+"px,0) rotate("+r+"deg)";
 }
 
 function makeFrames(toggled) {
-	var length = 25;
-	var i = length;
-	var frames = [];
+	const length = 25;
+	let i = length;
+	const frames = [];
 	while (i--) {
 		var at = i/(length-1);
 		frames.unshift(makeFrame(at,toggled));
@@ -79,7 +79,7 @@ function layout(animate) {
 
 	if (planet) { // queued, total duration is longer (animations are not interrupted)
 		if (animate) {
-			var animation = planet.animationNamed("planetRotation"+(counter-1)); // get the previous animation
+			const animation = planet.animationNamed("planetRotation"+(counter-1)); // get the previous animation
 			if (animation) { // add a duplicate animation that starts when the previous one completes
 				animation.startTime = animation.startTime + duration;
 				planet.addAnimation(animation,"planetRotation"+(counter++));

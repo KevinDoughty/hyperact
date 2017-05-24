@@ -18,10 +18,23 @@ view.x = 1;
 ```
 
 
+## Examples
+
+
+- [rocketship](https://kevindoughty.github.io/hyperact/examples/rocketship/) Blending a keyframe path and more
+- [transaction](https://kevindoughty.github.io/hyperact/examples/transaction/) Implicit, like ReactNative LayoutAnimation
+- [rococo](https://kevindoughty.github.io/hyperact/examples/rococo/) Canvas drawing example
+- [bohr](https://kevindoughty.github.io/hyperact/examples/bohr/) The not quite Bohr model of the atom
+- tree-shaking (a failed attempt)
+- chunks (nothing to see here)
+- [tags](https://kevindoughty.github.io/hyperact/examples/tags/) Hello world using script tags
+- [basic](https://kevindoughty.github.io/hyperact/examples/basic/) Hello world using ES6 import
+
+
 ## Core
 
 
-####`activate(receiver, delegate, layer)`
+#### `activate(receiver, delegate, layer)`
   Provides `receiver` with methods and property accessors for animation management.
 
 *Parameters*  
@@ -278,17 +291,6 @@ view.x = 1;
   Currently the only use of transactions is to disable animation. 
   All animations run on the main thread, 
   so these are basically faked to provide a similar API to Core Animation.
-
-
-## Examples
-
-
-- [tags](https://kevindoughty.github.io/hyperact/examples/tags/) Hello world using script tags
-- [basic](https://kevindoughty.github.io/hyperact/examples/basic/) Hello world using ES6 import
-- [rococo](https://kevindoughty.github.io/hyperact/examples/rococo/) Canvas drawing example
-- [bohr](https://kevindoughty.github.io/hyperact/examples/bohr/) The not quite Bohr model of the atom
-- tree-shaking (a failed attempt)
-- chunks (nothing to see here)
 
 
 ## Credits

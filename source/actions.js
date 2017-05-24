@@ -1,3 +1,5 @@
+const TRANSACTION_DURATION_ALONE_IS_ENOUGH = true;
+
 let animationNumber = 0;
 
 const wetNumberType = { // WET
@@ -221,22 +223,11 @@ HyperAction.prototype = {
 				} else if (this.easing !== "linear") iterationProgress = rounded;
 			} else iterationProgress = rounded;
 		}
-		//const value = (this.blend === "absolute") ? this.type.interpolate(this.from,this.to,iterationProgress) : this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms
 		let value;
 		if (this instanceof HyperKeyframes) { // TODO: This is just wrong
 			const length = this.keyframes.length;
 			if (!length) throw new Error("HyperAction composite need to be able to handle zero keyframes");
 			if (length === 1) throw new Error("HyperAction composite need to be able to handle one keyframe");
-			//let i = length;
-			//while (i--) { // TODO: This is also just wrong
-			// let i;
-// 			for (i=0; i<length-1; i++) {
-// 				//const offset = this.offsets[i];
-// 				//console.log("actions composite1 %s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
-// 				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i+1]) {
-// 					break;
-// 				}
-// 			}
 			let i = length-1;
 			while (i--) { // TODO: test that this works in reverse
 				if (iterationProgress >= this.offsets[i]) break;
@@ -301,7 +292,6 @@ HyperKeyframes.prototype.copy = function() {
 	return new this.constructor(this);
 };
 HyperKeyframes.prototype.runAnimation = function(layer,key,transaction) {
-	//console.log("run frames:%s;",JSON.stringify(this.keyframes));
 	if (isFunction(this.type)) this.type = new this.type();
 	if (this.type && isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
 		if (this.blend !== "absolute" && this.keyframes.length) {
@@ -320,7 +310,6 @@ HyperKeyframes.prototype.runAnimation = function(layer,key,transaction) {
 		if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
-	//console.log("run delta:%s;",JSON.stringify(this.delta));
 };
 HyperKeyframes.prototype.convert = function(funky,self) { // mutates // animation from, to, and delta
 	if (isFunction(funky) && this.property) {
@@ -353,7 +342,6 @@ HyperAnimation.prototype = Object.create(HyperAction.prototype);
 HyperAnimation.prototype.constructor = HyperAnimation;
 HyperAnimation.prototype.runAnimation = function(layer,key,transaction) {
 	if (!this.type) {
-		///console.log("HyperAnimation runAnimation questionable type assignment");
 		this.type = wetNumberType; // questionable if I should do this here
 	}
 	if (isFunction(this.type)) this.type = new this.type();
@@ -361,8 +349,6 @@ HyperAnimation.prototype.runAnimation = function(layer,key,transaction) {
 		if (!this.from) this.from = this.type.zero(this.to);
 		if (!this.to) this.to = this.type.zero(this.from);
 		if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
-		///console.log("actions runAnimation type:%s;",this.type.toString());
-		///console.log("actions runAnimation from:%s; to:%s; delta:%s;",JSON.stringify(this.from),JSON.stringify(this.to),JSON.stringify(this.delta));
 		if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
@@ -386,18 +372,21 @@ HyperAnimation.prototype.convert = function(funky,self) { // mutates // animatio
 
 export function animationFromDescription(description) {
 	let animation;
-	if (!description) return description;
+	if (!description && (TRANSACTION_DURATION_ALONE_IS_ENOUGH || description !== 0)) return description; // TODO: if animationForKey returns null, stops. But defaultAnimation does not behave like CA animation dict and should
 	if (description instanceof HyperAction || description instanceof HyperKeyframes || description instanceof HyperGroup || description instanceof HyperChain) {
 		animation = description.copy.call(description);
 	} else if (Array.isArray(description)) {
 		animation = new HyperGroup(description);
 	} else if (isObject(description)) { // TODO: if has both keyframes and from/to, descriptions could return a group of both. But why?
-		if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && isFunction(description.add) && isFunction(description.subtract) && isFunction(description.zero) && isFunction(description.interpolate)) { // quack
+			animation = new HyperAnimation({ type:description });// for registerAnimatableProperty and implicit animation from transaction duration alone
+		} else if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);
 		else if (Array.isArray(description.group)) animation = new HyperGroup(description);
 		else if (Array.isArray(description.chain)) animation = new HyperChain(description);
 		else animation = new HyperAnimation(description);
 	} else if (isNumber(description)) animation = new HyperAnimation({duration:description});
 	else if (description === true) animation = new HyperAnimation({});
 	else throw new Error("is this an animation:"+JSON.stringify(description));
+	// TODO: What happened to instantiating if description is a function?
 	return animation;
 }

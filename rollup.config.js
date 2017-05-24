@@ -1,6 +1,8 @@
 import babel from "rollup-plugin-babel";
 import eslint from "rollup-plugin-eslint";
 
+// This does not update in dev mode because webpack is set to watch, not this.
+
 function debug(options) {
 	var plugin = {};
 	plugin.name = "debug";

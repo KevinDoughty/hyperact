@@ -1,6 +1,7 @@
 import { HyperContext } from "./context.js";
 import { HyperAnimation, HyperKeyframes, HyperGroup, HyperChain, animationFromDescription } from "./actions.js";
 
+const TRANSACTION_DURATION_ALONE_IS_ENOUGH = true; // original was false and required a default animation, but CA behavior is true
 const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
 
@@ -81,8 +82,15 @@ function presentationTransform(presentationLayer,sourceAnimations,time,shouldSor
 function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimation,transaction) { // TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
 	let description;
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
+	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null;
 	let animation = animationFromDescription(description);
-	if (!animation) animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
+	if (!animation) {
+		animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && animation && !animation.duration && animation.duration !== 0) {
+			if (transaction.duration) animation.duration = transaction.duration;
+		} // Implement transaction tests before refactoring!
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && animation && !animation.duration) return null; // setting value inside zero duration transaction must not animate, but allow zero duration animations otherwise.
+	}
 	if (animation && (animation instanceof HyperAnimation || animation instanceof HyperKeyframes)) {
 		if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
 		if (animation instanceof HyperAnimation) {
@@ -130,46 +138,15 @@ export function activate(controller, delegate, layerInstance) {
 		return prettyValue;
 	}
 
-// 	function setValueForKey(prettyValue,property) {
-// 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyInput);
-// 		const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,property,delegate.input);
-// 		if (uglyValue === modelBacking[property]) return; // No animation if no change. This filters out repeat setting of unchanging model values while animating. Function props are always not equal (if you're not careful)
-// 		const uglyPrevious = modelBacking[property];
-// 		const prettyPrevious = convertedValueOfPropertyWithFunction(uglyPrevious,property,delegate.output);
-// 		if (prettyValue === prettyPrevious) return; // No animation if no change, better version
-// 		previousBacking[property] = uglyPrevious;
-// 		const transaction = hyperContext.currentTransaction(); // Careful! This transaction might not get closed.
-// 		if (!transaction.disableAnimation) {
-// 			const presentationLayer = controller.presentation;
-// 			const prettyPresentation = presentationLayer[property];
-// 			const animation = implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[property],transaction);
-// 			if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-// 			else controller.needsDisplay();
-// 		}
-// 		modelBacking[property] = uglyValue;
-// 	}
-// 	function setValuesOfLayer(layer) {
-// 		Object.keys(layer).forEach( function(key) {
-// 			setValueForKey(layer[key],key);
-// 		});
-// 	}
-
 	function setValueForKey(prettyValue,property) {
 		const layer = {};
 		layer[property] = prettyValue;
-		///console.log("core setValueForKey:%s; pretty:%s;",property,JSON.stringify(prettyValue));
 		setValuesOfLayer(layer);
 	}
 	function setValuesOfLayer(layer) {
-		
 		const transaction = hyperContext.currentTransaction();
 		const presentationLayer = controller.presentation;
-		///console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
 		var result = {};
-// 		var prettyKeys = Object.keys(layer);
-// 		var index = prettyKeys.length;
-// 		while (index--) {
-// 			const prettyKey = prettyKeys[index];
 		Object.keys(layer).forEach( function(prettyKey) {
 			let uglyKey = prettyKey;
 			const prettyValue = layer[prettyKey];
@@ -177,7 +154,6 @@ export function activate(controller, delegate, layerInstance) {
 			controller.registerAnimatableProperty(uglyKey);
 			const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,prettyKey,delegate.input,delegate);
 			const uglyPrevious = modelBacking[uglyKey];
-			///console.log("core setValuesOfLayer1 key:%s; pretty:%s; ugly:%s;",uglyKey,JSON.stringify(prettyValue),JSON.stringify(uglyValue));
 			previousBacking[uglyKey] = uglyPrevious;
 			modelBacking[uglyKey] = uglyValue;
 			result[prettyKey] = prettyValue;
@@ -187,8 +163,6 @@ export function activate(controller, delegate, layerInstance) {
 				let uglyKey = prettyKey;
 				if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey,delegate.keyInput,delegate);
 				const prettyValue = result[prettyKey];
-				///console.log("core setValuesOfLayer2 key:%s; pretty:%s;",uglyKey,JSON.stringify(prettyValue));
-			
 				const prettyPresentation = presentationLayer[prettyKey];
 				const prettyPrevious = convertedValueOfPropertyWithFunction(previousBacking[uglyKey],prettyKey,delegate.output,delegate);
 				const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[prettyKey],transaction);
@@ -206,7 +180,6 @@ export function activate(controller, delegate, layerInstance) {
 		let display = function() {};
 		if (isFunction(delegate.display)) display = function() {
 			activeBacking = controller.presentation;
-			//console.log("..... display active:%s;",JSON.stringify(activeBacking));
 			delegate.display.call(delegate);
 			activeBacking = modelBacking;
 		};
@@ -281,13 +254,10 @@ export function activate(controller, delegate, layerInstance) {
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
 		if (firstTime) registeredProperties.push(property);
 		const descriptor = Object.getOwnPropertyDescriptor(layerInstance, property);
-		//defaultAnimation = animationFromDescription(defaultAnimation); // since I can't convert I don't need to do this either, it happens when added to the receiver
-		//convertPropertiesOfAnimationWithFunction(["from","to","delta"],defaultAnimation,delegate.input); // I wish I could
 		if (defaultAnimation) defaultAnimations[property] = defaultAnimation; // maybe set to defaultValue not defaultAnimation
 		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
 		if (!descriptor || descriptor.configurable === true) {
 			const uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input, delegate);
-			///console.log("core register property:%s; pretty:%s; ugly:%s;",property,layerInstance[property],JSON.stringify(uglyValue));
 			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
 			if (typeof uglyValue === "undefined") modelBacking[property] = null;
 			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
@@ -310,7 +280,6 @@ export function activate(controller, delegate, layerInstance) {
 		set: function(layer) {
 			if (layer) {
 				setValuesOfLayer(layer);
-				//flushTransaction();
 			}
 		},
 		enumerable: false,
@@ -358,12 +327,6 @@ export function activate(controller, delegate, layerInstance) {
 			const transactionTime = hyperContext.currentTransaction().time;
 			if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
 			const presentationLayer = Object.assign(baseLayer(), modelBacking);
-// 			//convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
-// 			if (!allAnimations.length) {
-// 				if (verbose) console.log("... presentation result:%s;",JSON.stringify(presentationLayer));
-// 				return presentationLayer;
-// 			}
-			///console.log("core presentationLayer pre:%s; model:%s;",JSON.stringify(presentationLayer),JSON.stringify(modelBacking));
 			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			if (allAnimations.length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
 			if (changed || presentationBacking === null) {
@@ -373,7 +336,6 @@ export function activate(controller, delegate, layerInstance) {
 			}
 			presentationTime = transactionTime;
 			shouldSortAnimations = false;
-			///console.log("core presentationLayer post:%s; model:%s;",JSON.stringify(presentationBacking),JSON.stringify(modelBacking));
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -382,7 +344,7 @@ export function activate(controller, delegate, layerInstance) {
 
 	Object.defineProperty(controller, "model", {
 		get: function() {
-			const layer = baseLayer();//Object.assign({},layerInstance);
+			const layer = baseLayer();
 			registeredProperties.forEach( function(key) {
 				const value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output,delegate);
 				Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
@@ -472,7 +434,8 @@ export function activate(controller, delegate, layerInstance) {
 	};
 
 	Object.keys(layerInstance).forEach( function(key) { // more initialization
-		controller.registerAnimatableProperty(key);
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) controller.registerAnimatableProperty(key,true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
+		else controller.registerAnimatableProperty(key);
 	});
 
 	return controller;

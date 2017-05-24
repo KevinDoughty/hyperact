@@ -39,7 +39,6 @@ HyperContext.prototype = {
 		var length = this.transactions.length;
 		var time = now() / 1000;
 		if (length) time = this.transactions[length - 1].representedObject.time; // Clock stops in the outermost transaction.
-		//console.log("]]] begin transaction");
 		Object.defineProperty(transaction, "time", { // Manually set time of transaction here to be not configurable
 			get: function get() {
 				return time;
@@ -62,13 +61,9 @@ HyperContext.prototype = {
 	},
 	commitTransaction: function commitTransaction() {
 		this.transactions.pop();
-		//console.log("[[[ commit transaction");
 	},
 	flushTransaction: function flushTransaction() {
 		// TODO: prevent unterminated when called within display
-		//if (this.animationFrame) cAF(this.animationFrame); // Unsure if cancelling animation frame is needed.
-		//this.ticker(); // This is completely wrong, or at least is nothing like CATransaction -(void)flush;
-		//this.displayLayers = this.displayLayers.map( function(item) { return null; });
 		this.invalidateFunctions.forEach(function (invalidate) {
 			invalidate();
 		});
@@ -110,7 +105,6 @@ HyperContext.prototype = {
 	},
 	ticker: function ticker() {
 		// Need to manually cancel animation frame if calling directly.
-		//console.log(">>> tick");
 		this.animationFrame = undefined;
 		var targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don't think I was traversing backwards.
 		var i = targets.length;
@@ -137,7 +131,6 @@ HyperContext.prototype = {
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
 			}
 		}
-		//console.log("<<< tick end");
 		var length = this.transactions.length;
 		if (length) {
 			var transactionWrapper = this.transactions[length - 1];
@@ -152,6 +145,42 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 } : function (obj) {
   return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
 };
+
+
+
+
+
+
+
+
+
+
+
+var classCallCheck = function (instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+};
+
+var createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }
+
+  return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) defineProperties(Constructor, staticProps);
+    return Constructor;
+  };
+}();
+
+var TRANSACTION_DURATION_ALONE_IS_ENOUGH$1 = true;
 
 var animationNumber = 0;
 
@@ -369,23 +398,12 @@ HyperAction.prototype = {
 				} else if (this.easing !== "linear") iterationProgress = rounded;
 			} else iterationProgress = rounded;
 		}
-		//const value = (this.blend === "absolute") ? this.type.interpolate(this.from,this.to,iterationProgress) : this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms
 		var value = void 0;
 		if (this instanceof HyperKeyframes) {
 			// TODO: This is just wrong
 			var length = this.keyframes.length;
 			if (!length) throw new Error("HyperAction composite need to be able to handle zero keyframes");
 			if (length === 1) throw new Error("HyperAction composite need to be able to handle one keyframe");
-			//let i = length;
-			//while (i--) { // TODO: This is also just wrong
-			// let i;
-			// 			for (i=0; i<length-1; i++) {
-			// 				//const offset = this.offsets[i];
-			// 				//console.log("actions composite1 %s iterationProgress:%s; >= offset:%s;",i,iterationProgress,offset);
-			// 				if (iterationProgress >= this.offsets[i] && iterationProgress < this.offsets[i+1]) {
-			// 					break;
-			// 				}
-			// 			}
 			var i = length - 1;
 			while (i--) {
 				// TODO: test that this works in reverse
@@ -450,7 +468,6 @@ HyperKeyframes.prototype.copy = function () {
 	return new this.constructor(this);
 };
 HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
-	//console.log("run frames:%s;",JSON.stringify(this.keyframes));
 	if (isFunction$2(this.type)) this.type = new this.type();
 	if (this.type && isFunction$2(this.type.zero) && isFunction$2(this.type.add) && isFunction$2(this.type.subtract) && isFunction$2(this.type.interpolate)) {
 		if (this.blend !== "absolute" && this.keyframes.length) {
@@ -469,7 +486,6 @@ HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
 		if (typeof this.startTime === "undefined" || this.startTime === null) this.startTime = transaction.time;
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
-	//console.log("run delta:%s;",JSON.stringify(this.delta));
 };
 HyperKeyframes.prototype.convert = function (funky, self) {
 	// mutates // animation from, to, and delta
@@ -505,7 +521,6 @@ HyperAnimation.prototype = Object.create(HyperAction.prototype);
 HyperAnimation.prototype.constructor = HyperAnimation;
 HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 	if (!this.type) {
-		///console.log("HyperAnimation runAnimation questionable type assignment");
 		this.type = wetNumberType; // questionable if I should do this here
 	}
 	if (isFunction$2(this.type)) this.type = new this.type();
@@ -513,8 +528,6 @@ HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 		if (!this.from) this.from = this.type.zero(this.to);
 		if (!this.to) this.to = this.type.zero(this.from);
 		if (this.blend !== "absolute") this.delta = this.type.subtract(this.from, this.to);
-		///console.log("actions runAnimation type:%s;",this.type.toString());
-		///console.log("actions runAnimation from:%s; to:%s; delta:%s;",JSON.stringify(this.from),JSON.stringify(this.to),JSON.stringify(this.delta));
 		if (this.duration === null || typeof this.duration === "undefined") this.duration = transaction.duration; // This is consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.easing === null || typeof this.easing === "undefined") this.easing = transaction.easing; // This is (probably) consistent with CA behavior // TODO: need better validation. Currently split across constructor, setter, and here
 		if (this.speed === null || typeof this.speed === "undefined") this.speed = 1.0; // need better validation
@@ -538,18 +551,23 @@ HyperAnimation.prototype.convert = function (funky, self) {
 
 function animationFromDescription(description) {
 	var animation = void 0;
-	if (!description) return description;
+	if (!description && (TRANSACTION_DURATION_ALONE_IS_ENOUGH$1 || description !== 0)) return description; // TODO: if animationForKey returns null, stops. But defaultAnimation does not behave like CA animation dict and should
 	if (description instanceof HyperAction || description instanceof HyperKeyframes || description instanceof HyperGroup || description instanceof HyperChain) {
 		animation = description.copy.call(description);
 	} else if (Array.isArray(description)) {
 		animation = new HyperGroup(description);
 	} else if (isObject(description)) {
 		// TODO: if has both keyframes and from/to, descriptions could return a group of both. But why?
-		if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);else if (Array.isArray(description.group)) animation = new HyperGroup(description);else if (Array.isArray(description.chain)) animation = new HyperChain(description);else animation = new HyperAnimation(description);
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH$1 && isFunction$2(description.add) && isFunction$2(description.subtract) && isFunction$2(description.zero) && isFunction$2(description.interpolate)) {
+			// quack
+			animation = new HyperAnimation({ type: description }); // for registerAnimatableProperty and implicit animation from transaction duration alone
+		} else if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);else if (Array.isArray(description.group)) animation = new HyperGroup(description);else if (Array.isArray(description.chain)) animation = new HyperChain(description);else animation = new HyperAnimation(description);
 	} else if (isNumber(description)) animation = new HyperAnimation({ duration: description });else if (description === true) animation = new HyperAnimation({});else throw new Error("is this an animation:" + JSON.stringify(description));
+	// TODO: What happened to instantiating if description is a function?
 	return animation;
 }
 
+var TRANSACTION_DURATION_ALONE_IS_ENOUGH = true; // original was false and required a default animation, but CA behavior is true
 var DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 var ENSURE_ONE_MORE_TICK = true; // true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
 
@@ -640,8 +658,15 @@ function implicitAnimation(property, prettyValue, prettyPrevious, prettyPresenta
 	// TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
 	var description = void 0;
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate, property, prettyValue, prettyPrevious, prettyPresentation); // TODO: rename action or implicit
+	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null;
 	var animation = animationFromDescription(description);
-	if (!animation) animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
+	if (!animation) {
+		animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && animation && !animation.duration && animation.duration !== 0) {
+			if (transaction.duration) animation.duration = transaction.duration;
+		} // Implement transaction tests before refactoring!
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && animation && !animation.duration) return null; // setting value inside zero duration transaction must not animate, but allow zero duration animations otherwise.
+	}
 	if (animation && (animation instanceof HyperAnimation || animation instanceof HyperKeyframes)) {
 		if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
 		if (animation instanceof HyperAnimation) {
@@ -681,46 +706,15 @@ function activate(controller, delegate, layerInstance) {
 		return prettyValue;
 	}
 
-	// 	function setValueForKey(prettyValue,property) {
-	// 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyInput);
-	// 		const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,property,delegate.input);
-	// 		if (uglyValue === modelBacking[property]) return; // No animation if no change. This filters out repeat setting of unchanging model values while animating. Function props are always not equal (if you're not careful)
-	// 		const uglyPrevious = modelBacking[property];
-	// 		const prettyPrevious = convertedValueOfPropertyWithFunction(uglyPrevious,property,delegate.output);
-	// 		if (prettyValue === prettyPrevious) return; // No animation if no change, better version
-	// 		previousBacking[property] = uglyPrevious;
-	// 		const transaction = hyperContext.currentTransaction(); // Careful! This transaction might not get closed.
-	// 		if (!transaction.disableAnimation) {
-	// 			const presentationLayer = controller.presentation;
-	// 			const prettyPresentation = presentationLayer[property];
-	// 			const animation = implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[property],transaction);
-	// 			if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-	// 			else controller.needsDisplay();
-	// 		}
-	// 		modelBacking[property] = uglyValue;
-	// 	}
-	// 	function setValuesOfLayer(layer) {
-	// 		Object.keys(layer).forEach( function(key) {
-	// 			setValueForKey(layer[key],key);
-	// 		});
-	// 	}
-
 	function setValueForKey(prettyValue, property) {
 		var layer = {};
 		layer[property] = prettyValue;
-		///console.log("core setValueForKey:%s; pretty:%s;",property,JSON.stringify(prettyValue));
 		setValuesOfLayer(layer);
 	}
 	function setValuesOfLayer(layer) {
-
 		var transaction = hyperContext.currentTransaction();
 		var presentationLayer = controller.presentation;
-		///console.log("setValues presentationLayer:%s;",JSON.stringify(presentationLayer));
 		var result = {};
-		// 		var prettyKeys = Object.keys(layer);
-		// 		var index = prettyKeys.length;
-		// 		while (index--) {
-		// 			const prettyKey = prettyKeys[index];
 		Object.keys(layer).forEach(function (prettyKey) {
 			var uglyKey = prettyKey;
 			var prettyValue = layer[prettyKey];
@@ -728,7 +722,6 @@ function activate(controller, delegate, layerInstance) {
 			controller.registerAnimatableProperty(uglyKey);
 			var uglyValue = convertedValueOfPropertyWithFunction(prettyValue, prettyKey, delegate.input, delegate);
 			var uglyPrevious = modelBacking[uglyKey];
-			///console.log("core setValuesOfLayer1 key:%s; pretty:%s; ugly:%s;",uglyKey,JSON.stringify(prettyValue),JSON.stringify(uglyValue));
 			previousBacking[uglyKey] = uglyPrevious;
 			modelBacking[uglyKey] = uglyValue;
 			result[prettyKey] = prettyValue;
@@ -739,8 +732,6 @@ function activate(controller, delegate, layerInstance) {
 				var uglyKey = prettyKey;
 				if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey, delegate.keyInput, delegate);
 				var prettyValue = result[prettyKey];
-				///console.log("core setValuesOfLayer2 key:%s; pretty:%s;",uglyKey,JSON.stringify(prettyValue));
-
 				var prettyPresentation = presentationLayer[prettyKey];
 				var prettyPrevious = convertedValueOfPropertyWithFunction(previousBacking[uglyKey], prettyKey, delegate.output, delegate);
 				var animation = implicitAnimation(prettyKey, prettyValue, prettyPrevious, prettyPresentation, delegate, defaultAnimations[prettyKey], transaction);
@@ -758,7 +749,6 @@ function activate(controller, delegate, layerInstance) {
 		var display = function display() {};
 		if (isFunction(delegate.display)) display = function display() {
 			activeBacking = controller.presentation;
-			//console.log("..... display active:%s;",JSON.stringify(activeBacking));
 			delegate.display.call(delegate);
 			activeBacking = modelBacking;
 		};
@@ -837,13 +827,10 @@ function activate(controller, delegate, layerInstance) {
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
 		if (firstTime) registeredProperties.push(property);
 		var descriptor = Object.getOwnPropertyDescriptor(layerInstance, property);
-		//defaultAnimation = animationFromDescription(defaultAnimation); // since I can't convert I don't need to do this either, it happens when added to the receiver
-		//convertPropertiesOfAnimationWithFunction(["from","to","delta"],defaultAnimation,delegate.input); // I wish I could
 		if (defaultAnimation) defaultAnimations[property] = defaultAnimation; // maybe set to defaultValue not defaultAnimation
 		else if (defaultAnimations[property] === null) delete defaultAnimations[property]; // property is still animatable
 		if (!descriptor || descriptor.configurable === true) {
 			var uglyValue = convertedValueOfPropertyWithFunction(layerInstance[property], property, delegate.input, delegate);
-			///console.log("core register property:%s; pretty:%s; ugly:%s;",property,layerInstance[property],JSON.stringify(uglyValue));
 			modelBacking[property] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
 			if (typeof uglyValue === "undefined") modelBacking[property] = null;
 			if (firstTime) Object.defineProperty(layerInstance, property, { // ACCESSORS
@@ -866,7 +853,6 @@ function activate(controller, delegate, layerInstance) {
 		set: function set(layer) {
 			if (layer) {
 				setValuesOfLayer(layer);
-				//flushTransaction();
 			}
 		},
 		enumerable: false,
@@ -914,12 +900,6 @@ function activate(controller, delegate, layerInstance) {
 			var transactionTime = hyperContext.currentTransaction().time;
 			if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
 			var presentationLayer = Object.assign(baseLayer(), modelBacking);
-			// 			//convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
-			// 			if (!allAnimations.length) {
-			// 				if (verbose) console.log("... presentation result:%s;",JSON.stringify(presentationLayer));
-			// 				return presentationLayer;
-			// 			}
-			///console.log("core presentationLayer pre:%s; model:%s;",JSON.stringify(presentationLayer),JSON.stringify(modelBacking));
 			var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			if (allAnimations.length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
 			if (changed || presentationBacking === null) {
@@ -929,7 +909,6 @@ function activate(controller, delegate, layerInstance) {
 			}
 			presentationTime = transactionTime;
 			shouldSortAnimations = false;
-			///console.log("core presentationLayer post:%s; model:%s;",JSON.stringify(presentationBacking),JSON.stringify(modelBacking));
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -938,7 +917,7 @@ function activate(controller, delegate, layerInstance) {
 
 	Object.defineProperty(controller, "model", {
 		get: function get() {
-			var layer = baseLayer(); //Object.assign({},layerInstance);
+			var layer = baseLayer();
 			registeredProperties.forEach(function (key) {
 				var value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output, delegate);
 				Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
@@ -1030,7 +1009,8 @@ function activate(controller, delegate, layerInstance) {
 
 	Object.keys(layerInstance).forEach(function (key) {
 		// more initialization
-		controller.registerAnimatableProperty(key);
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) controller.registerAnimatableProperty(key, true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
+		else controller.registerAnimatableProperty(key);
 	});
 
 	return controller;
@@ -1041,7 +1021,7 @@ function isFunction$3(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-function HyperScale(settings) {}
+function HyperScale() {/*#__PURE__*/}
 HyperScale.prototype = {
 	constructor: HyperScale,
 	zero: function zero() {
@@ -1057,6 +1037,250 @@ HyperScale.prototype = {
 	},
 	interpolate: function interpolate(a, b, progress) {
 		return a + (b - a) * progress;
+	},
+	toString: function toString() {
+		return "HyperScale";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	}
+};
+
+/*#__PURE__*/var HyperPoint = function () {
+	function HyperPoint() {
+		/*#__PURE__*/
+
+		classCallCheck(this, HyperPoint);
+	}
+
+	createClass(HyperPoint, [{
+		key: "zero",
+		value: function zero() {
+			return hyperZeroPoint();
+		}
+	}, {
+		key: "add",
+		value: function add(a, b) {
+			return hyperMakePoint(a.x + b.x, a.y + b.y);
+		}
+	}, {
+		key: "subtract",
+		value: function subtract(a, b) {
+			// subtract b from a
+			return hyperMakePoint(a.x - b.x, a.y - b.y);
+		}
+	}, {
+		key: "interpolate",
+		value: function interpolate(a, b, progress) {
+			return hyperMakePoint(a.x + (b.x - a.x) * progress, a.y + (b.y - a.y) * progress);
+		}
+	}, {
+		key: "toString",
+		value: function toString() {
+			return "HyperPoint";
+		}
+	}, {
+		key: "toJSON",
+		value: function toJSON() {
+			return this.toString();
+		}
+	}]);
+	return HyperPoint;
+}();
+
+/*#__PURE__*/var HyperSize = function () {
+	function HyperSize() {
+		/*#__PURE__*/
+
+		classCallCheck(this, HyperSize);
+	}
+
+	createClass(HyperSize, [{
+		key: "zero",
+		value: function zero() {
+			return hyperZeroSize();
+		}
+	}, {
+		key: "add",
+		value: function add(a, b) {
+			return hyperMakeSize(a.width + b.width, a.height + b.height);
+		}
+	}, {
+		key: "subtract",
+		value: function subtract(a, b) {
+			// subtract b from a
+			return hyperMakeSize(a.width - b.width, a.height - b.height);
+		}
+	}, {
+		key: "interpolate",
+		value: function interpolate(a, b, progress) {
+			return hyperMakeSize(a.width + (b.width - a.width) * progress, a.height + (b.height - a.height) * progress);
+		}
+	}, {
+		key: "toString",
+		value: function toString() {
+			return "HyperSize";
+		}
+	}, {
+		key: "toJSON",
+		value: function toJSON() {
+			return this.toString();
+		}
+	}]);
+	return HyperSize;
+}();
+
+/*#__PURE__*/var HyperRect = function () {
+	function HyperRect() {
+		/*#__PURE__*/
+
+		classCallCheck(this, HyperRect);
+	}
+
+	createClass(HyperRect, [{
+		key: "zero",
+		value: function zero() {
+			return hyperZeroRect();
+		}
+	}, {
+		key: "add",
+		value: function add(a, b) {
+			return {
+				origin: HyperPoint.prototype.add(a.origin, b.origin),
+				size: HyperSize.prototype.add(a.size, b.size)
+			};
+		}
+	}, {
+		key: "subtract",
+		value: function subtract(a, b) {
+			// subtract b from a
+			return {
+				origin: HyperPoint.prototype.subtract(a.origin, b.origin),
+				size: HyperSize.prototype.subtract(a.size, b.size)
+			};
+		}
+	}, {
+		key: "interpolate",
+		value: function interpolate(a, b, progress) {
+			return {
+				origin: HyperPoint.prototype.interpolate(a.origin, b.origin, progress),
+				size: HyperSize.prototype.interpolate(a.size, b.size, progress)
+			};
+		}
+	}, {
+		key: "toString",
+		value: function toString() {
+			return "HyperRect";
+		}
+	}, {
+		key: "toJSON",
+		value: function toJSON() {
+			return this.toString();
+		}
+	}]);
+	return HyperRect;
+}();
+
+// struct convenience constructors:
+function hyperMakeRect(x, y, width, height) {
+	return {
+		origin: hyperMakePoint(x, y),
+		size: hyperMakeSize(width, height)
+	};
+}
+function hyperZeroRect() {
+	return hyperMakeRect(0, 0, 0, 0);
+}
+function hyperMakePoint(x, y) {
+	return {
+		x: x,
+		y: y
+	};
+}
+function hyperZeroPoint() {
+	return hyperMakePoint(0, 0);
+}
+function hyperMakeSize(width, height) {
+	return {
+		width: width,
+		height: height
+	};
+}
+function hyperZeroSize() {
+	return hyperMakeSize(0, 0);
+}
+//	var HyperStyleDeclaration = function(element, layer, controller) {
+var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
+
+	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
+		get: function get() {
+			return layer;
+		},
+		//			 set: function(value) {
+		//				 _layer = value;
+		//			 },
+		enumerable: false,
+		configurable: false
+	});
+
+	Object.defineProperty(this, "hyperStyleController", { // these will collide with css
+		get: function get() {
+			return controller;
+		},
+		//			 set: function(value) {
+		//				 _controller = value;
+		//			 },
+		enumerable: false,
+		configurable: false
+	});
+};
+
+HyperStyleDeclaration.prototype = {
+	constructor: HyperStyleDeclaration
+};
+
+////export HyperStyleDeclaration; // (layer, controller)
+// export const typeOfProperty = function(property,value) {
+// 	return getCssOnlyType(property,value);
+// }
+// export const activateStyleAnimation = HyperStyle.activate; // (element, receiver, layer, delegate)
+// export const addAnimation = HyperStyle.addAnimation; // (element, animation, named)
+// export const setDelegateOfElement = HyperStyle.setDelegateOfElement; // (delegate,element,oldStyle)
+// export const setDelegate = HyperStyle.setDelegate; // (element, delegate, oldStyle)
+// export const compositeStyleAnimation = HyperStyle.composite; // (sourceLayer, sourceAnimations, time)
+
+// This file is a heavily modified derivative work of:
+// https://github.com/web-animations/web-animations-js-legacy
+
+var nonNumericType = {
+	toString: function toString() {
+		return "nonNumericType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
+	zero: function zero() {
+		return "";
+	},
+	inverse: function inverse(value) {
+		return value;
+	},
+	add: function add(base, delta) {
+		return isDefined(delta) ? delta : base;
+	},
+	subtract: function subtract(base, delta) {
+		// same as add? or return base?
+		return base; // Sure why not
+		//return this.add(base,this.inverse(delta));
+	},
+	interpolate: function interpolate(from, to, f) {
+		return f < 0.5 ? from : to;
+	},
+	output: function output(value) {
+		return value;
+	},
+	input: function input(value) {
+		return value;
 	}
 };
 
@@ -1064,6 +1288,16 @@ HyperScale.prototype = {
 // https://github.com/web-animations/web-animations-js-legacy
 
 var SVG_NS = "http://www.w3.org/2000/svg";
+
+// Tree shaking is only possible in cases where the constructor args and shape of the object match,
+// (ie no work other than assignment is done in the constructor.)
+function createObject(proto, obj) {
+	var newObject = Object.create(proto);
+	Object.getOwnPropertyNames(obj).forEach(function (name) {
+		Object.defineProperty(newObject, name, Object.getOwnPropertyDescriptor(obj, name));
+	});
+	return newObject;
+}
 
 function typeWithKeywords(keywords, type) {
 	//console.log("HyperStyle typeWithKeywords:%s; type:%s;",keywords,type);
@@ -1107,16 +1341,6 @@ function typeWithKeywords(keywords, type) {
 			return isKeyword(value) ? value : type.input(value);
 		}
 	});
-}
-
-function createObject(proto, obj) {
-	if (proto === null || typeof proto === "undefined") throw new Error("HyperStyle createObject no proto damn it");
-	//console.log("createObject proto:%s; object:%s;",proto,obj);
-	var newObject = Object.create(proto);
-	Object.getOwnPropertyNames(obj).forEach(function (name) {
-		Object.defineProperty(newObject, name, Object.getOwnPropertyDescriptor(obj, name));
-	});
-	return newObject;
 }
 
 function clamp(x, min, max) {
@@ -1174,81 +1398,6 @@ function detectFeatures() {
 function createDummyElement() {
 	return document.documentElement.namespaceURI === SVG_NS ? document.createElementNS(SVG_NS, "g") : document.createElement("div");
 }
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
-var nonNumericType = {
-	toString: function toString() {
-		return "nonNumericType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	zero: function zero() {
-		return "";
-	},
-	inverse: function inverse(value) {
-		return value;
-	},
-	add: function add(base, delta) {
-		return isDefined(delta) ? delta : base;
-	},
-	subtract: function subtract(base, delta) {
-		// same as add? or return base?
-		return base; // Sure why not
-		//return this.add(base,this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		return f < 0.5 ? from : to;
-	},
-	output: function output(value) {
-		return value;
-	},
-	input: function input(value) {
-		return value;
-	}
-};
-
-//	var HyperStyleDeclaration = function(element, layer, controller) {
-var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
-
-	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
-		get: function get() {
-			return layer;
-		},
-		//			 set: function(value) {
-		//				 _layer = value;
-		//			 },
-		enumerable: false,
-		configurable: false
-	});
-
-	Object.defineProperty(this, "hyperStyleController", { // these will collide with css
-		get: function get() {
-			return controller;
-		},
-		//			 set: function(value) {
-		//				 _controller = value;
-		//			 },
-		enumerable: false,
-		configurable: false
-	});
-};
-
-HyperStyleDeclaration.prototype = {
-	constructor: HyperStyleDeclaration
-};
-
-////export HyperStyleDeclaration; // (layer, controller)
-// export const typeOfProperty = function(property,value) {
-// 	return getCssOnlyType(property,value);
-// }
-// export const activateStyleAnimation = HyperStyle.activate; // (element, receiver, layer, delegate)
-// export const addAnimation = HyperStyle.addAnimation; // (element, animation, named)
-// export const setDelegateOfElement = HyperStyle.setDelegateOfElement; // (delegate,element,oldStyle)
-// export const setDelegate = HyperStyle.setDelegate; // (element, delegate, oldStyle)
-// export const compositeStyleAnimation = HyperStyle.composite; // (sourceLayer, sourceAnimations, time)
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
@@ -1411,94 +1560,6 @@ var lengthType = {
 };
 
 var lengthAutoType = typeWithKeywords(["auto"], lengthType);
-
-// This file is a heavily modified derivative work of:
-// https://github.com/web-animations/web-animations-js-legacy
-
-var cssNumberType = {
-	toString: function toString() {
-		return "cssNumberType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	inverse: function inverse(base) {
-		if (base === "auto") {
-			return nonNumericType.inverse(base);
-		}
-		var negative = base * -1;
-		return negative;
-	},
-	zero: function zero() {
-		return 0;
-	},
-	add: function add(base, delta) {
-		if (Number(base) !== base && Number(delta) !== delta) return 0;else if (Number(base) !== base) base = 0;else if (Number(delta) !== delta) delta = 0;
-		// If base or delta are "auto", we fall back to replacement.
-		if (base === "auto" || delta === "auto") {
-			return nonNumericType.add(base, delta);
-		}
-		var result = base + delta;
-		return result;
-	},
-	subtract: function subtract(base, delta) {
-		// KxDx
-		//var inverse = this.inverse(delta);
-		if (Number(base) !== base && Number(delta) !== delta) return 0;else if (Number(base) !== base) base = 0;else if (Number(delta) !== delta) delta = 0;
-		return this.add(base, this.inverse(delta));
-	},
-	interpolate: function interpolate(from, to, f) {
-		// If from or to are "auto", we fall back to step interpolation.
-		if (from === "auto" || to === "auto") {
-			return nonNumericType.interpolate(from, to);
-		}
-		return interp(from, to, f);
-	},
-	//output: function(value) { return value + ""; }, // original
-	output: function output(value) {
-		return value;
-	}, // no strings damn it. Unknown side effects. Because used by transformType ?
-	input: function input(value) {
-		if (value === "auto") {
-			return "auto";
-		}
-		var result = Number(value);
-		return isNaN(result) ? undefined : result;
-	}
-};
-
-var cssIntegerType = createObject(cssNumberType, {
-	toString: function toString() {
-		return "cssIntergerType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	interpolate: function interpolate(from, to, f) {
-		// If from or to are "auto", we fall back to step interpolation.
-		if (from === "auto" || to === "auto") {
-			return nonNumericType.interpolate(from, to);
-		}
-		return Math.floor(interp(from, to, f));
-	}
-});
-
-var cssOpacityType = createObject(cssNumberType, {
-	toString: function toString() {
-		return "cssOpacityType";
-	},
-	toJSON: function toJSON() {
-		return this.toString();
-	},
-	zero: function zero() {
-		return 0.0; // zero is definitely zero, I need to expose initialValue from propertyValueAliases
-	},
-	unspecified: function unspecified(value) {
-		// This fixed fading in opacity but broke fading out, and I did not investigate further
-		return 1.0;
-		//return propertyValueAliases["opacity"].initial;
-	}
-});
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
@@ -1836,6 +1897,12 @@ var namedColors = {
 };
 
 var colorType = typeWithKeywords(["currentColor"], {
+	toString: function toString() {
+		return "ColorType";
+	},
+	toJSON: function toJSON() {
+		return this.toString();
+	},
 	inverse: function inverse(value) {
 		// KxDx
 		return this.subtract(value, [255, 255, 255, 1]);

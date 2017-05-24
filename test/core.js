@@ -1,8 +1,8 @@
 import * as core from "../source/core.js";
-var assert = require("assert");
+const assert = require("assert");
 import { HyperChain, HyperKeyframes } from "../source/actions.js";
 
-var duration = 0.05; // mocha timeout is 2 seconds
+const duration = 0.05; // mocha timeout is 2 seconds
 
 const delegateMethods = ["display","animationForKey","input","output"];
 const controllerMethods = ["addAnimation","animationNamed","needsDisplay","registerAnimatableProperty","removeAllAnimations", "removeAnimation"];
@@ -12,6 +12,10 @@ const controllerProperties = ["layer","presentation","model","previous","animati
 function isFunction(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
+
+const done = function() {
+	// This is a bug fix, the first completion handler produces both an error for being undefined, and a pass for the exact same test ?!
+};
 
 describe("core", function() {
 
@@ -27,14 +31,85 @@ describe("core", function() {
 		it("disableAnimation", function() {
 			assert(isFunction(core.disableAnimation));
 		});
+
+	});
+
+	describe("transactions", function() {
+	
+		it("multiple properties", function() { // The problem that prompted this test was failing to have a document.body.offsetHeight
+			const one = {
+				x:0,
+				y:0,
+				z:0
+			};
+			core.activate(one);
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.x = 1.0;
+			one.y = 1.0;
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const presentation = one.presentation;
+					const error = (presentation.x > 0.25 && presentation.x < 0.75 && presentation.y > 0.25 && presentation.y < 0.75) ? null : new Error("multiple properties failing");
+					done(error);
+				}
+			});
+		});
+
+		it("multiple properties class", function() { // The problem that prompted this test was failing to have a document.body.offsetHeight
+			
+			const One = class {
+				constructor() {
+					this.x = 0;
+					this.y = 0;
+					this.z = 0;
+					core.activate(this);
+				}
+			};
+			const one = new One();
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.x = 1.0;
+			one.y = 1.0;
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const presentation = one.presentation;
+					const error = (presentation.x > 0.25 && presentation.x < 0.75 && presentation.y > 0.25 && presentation.y < 0.75) ? null : new Error("multiple properties failing");
+					done(error);
+				}
+			});
+		});
+
+		// Implement these tests before refactoring core.js function implicitAnimation for TRANSACTION_DURATION_ALONE_IS_ENOUGH
+
+		it("IMPLEMENT TEST: zero duration animations allowed from animationForKey", function() { // TODO: implement me, TRANSACTION_DURATION_ALONE_IS_ENOUGH
+			assert.equal(1,0);
+		});
+
+		it("IMPLEMENT TEST: zero duration animations not allowed from setting values inside zero duration transaction", function() { // TODO: implement me, TRANSACTION_DURATION_ALONE_IS_ENOUGH
+			assert.equal(1,0);
+		});
+
+		it("IMPLEMENT TEST: implicit animation duration is transaction duration when not specified", function() { // TODO: implement me, TRANSACTION_DURATION_ALONE_IS_ENOUGH
+			assert.equal(1,0);
+		});
+
 	});
 
 	describe("one", function() {
 
-		var one;
+		let one;
 
 		beforeEach( function() {
-	// 		var One = function() {
+	// 		const One = function() {
 	// 			core.activate(this); // controller, delegate, and layer are the same
 	// 		}
 	// 		one = new One();
@@ -65,7 +140,7 @@ describe("core", function() {
 			assert.equal(one.presentation.zxcv,1);
 		});
 
-		it("callback", function(done) {
+		it("callback one", function(done) {
 			one.addAnimation({
 				duration:duration,
 				onend: function(finished) {
@@ -82,7 +157,7 @@ describe("core", function() {
 				from: 1,
 				to: 1,
 				onend: function(finished) {
-					var error = (one.uiop === 2) ? null : new Error("should have reverted to non animated value");
+					const error = (one.uiop === 2) ? null : new Error("should have reverted to non animated value");
 					done(error);
 				}
 			});
@@ -197,10 +272,10 @@ describe("core", function() {
 
 	describe("two", function() {
 
-		var two;
+		let two;
 
 		beforeEach( function() {
-	// 		var Two = function() {
+	// 		const Two = function() {
 	// 			core.activate(this,this,{}); // controller and delegate same, with separate layer
 	// 		}
 	// 		two = new Two();
@@ -225,7 +300,7 @@ describe("core", function() {
 			assert.equal(two.presentation.zxcv,1);
 		});
 
-		it("callback", function(done) {
+		it("callback two", function(done) {
 			two.addAnimation({
 				duration:duration,
 				onend: function(finished) {
@@ -309,7 +384,7 @@ describe("core", function() {
 			assert.deepEqual(view.presentation, expected);
 		});
 		it("set layer with no animation, presentation, unflushed", function() {
-			var view = {
+			const view = {
 				a:1,
 				b:2,
 				c:3
@@ -332,12 +407,12 @@ describe("core", function() {
 					blend:"absolute"
 				};
 			};
-			var layer = {
+			const layer = {
 				a:1,
 				b:2,
 				c:3
 			};
-			var view = {
+			const view = {
 				animationForKey: animationForKey
 			};
 			core.activate(view,view,layer);
@@ -349,7 +424,7 @@ describe("core", function() {
 			const animationForKey = function(key,value,previous) {
 				return duration;
 			};
-			var view = {
+			const view = {
 				a:1,
 				b:2,
 				c:3,
@@ -368,12 +443,12 @@ describe("core", function() {
 					blend:"absolute"
 				};
 			};
-			var layer = {
+			const layer = {
 				a:1,
 				b:2,
 				c:3
 			};
-			var view = {
+			const view = {
 				animationForKey: animationForKey
 			};
 			core.activate(view,view,layer);
@@ -382,7 +457,7 @@ describe("core", function() {
 		});
 
 		it("presentation in onend", function(done) {
-			var view = {
+			const view = {
 				a:1,
 				b:2,
 				c:3
@@ -396,14 +471,14 @@ describe("core", function() {
 				to:1,
 				blend:"absolute",
 				onend: function(finished) {
-					var error = (view.presentation.a === view.a) ? null : new Error("should have reverted to non animated value");
+					const error = (view.presentation.a === view.a) ? null : new Error("should have reverted to non animated value");
 					done(error);
 				}
 			});
 		});
 
 		it("presentation in onend two", function(done) {
-			var view = {
+			const view = {
 				a:1,
 				b:2,
 				c:3
@@ -417,14 +492,14 @@ describe("core", function() {
 				to:1,
 				blend:"absolute",
 				onend: function(finished) {
-					var error = (view.presentation.a === view.a) ? null : new Error("should have reverted to non animated value");
+					const error = (view.presentation.a === view.a) ? null : new Error("should have reverted to non animated value");
 					done(error);
 				}
 			});
 		});
 
 		it("single presentation flushed", function() {
-			var view = {a:1, b:2, c:3};
+			const view = {a:1, b:2, c:3};
 			core.activate(view);
 			//view.layer = {a:1, b:2, c:3};
 			view.addAnimation({
@@ -456,8 +531,8 @@ describe("core", function() {
 
 	describe("four", function() {
 		it("ensure one more tick", function(done) {
-			var completed = false;
-			var view = {
+			let completed = false;
+			const view = {
 				a:1,
 				b:2,
 				c:3,
@@ -584,7 +659,7 @@ describe("core", function() {
 			view.addAnimation({
 				duration: duration,
 				onend: function() {
-					var error = null;
+					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
 					done(error);
 				}
@@ -606,7 +681,7 @@ describe("core", function() {
 			view.addAnimation({
 				duration: duration,
 				onend: function() {
-					var error = null;
+					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
 					done(error);
 				}
@@ -620,7 +695,7 @@ describe("core", function() {
 			view.addAnimation({
 				duration: duration,
 				onend: function() {
-					var error = null;
+					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
 					done(error);
 				}
@@ -642,7 +717,7 @@ describe("core", function() {
 			view.addAnimation({
 				duration: duration,
 				onend: function() {
-					var error = null;
+					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
 					done(error);
 				}
@@ -685,9 +760,9 @@ describe("core", function() {
 	});
 
 
-	describe("six", function() {
+	describe("group animations", function() {
 		it("group presentation flushed", function() {
-			var view = {a:1, b:2, c:3};
+			const view = {a:1, b:2, c:3};
 			core.activate(view);
 			view.addAnimation([
 				{
@@ -753,9 +828,9 @@ describe("core", function() {
 
 
 
-	describe("seven", function() {
+	describe("chain animations", function() {
 		it("chain presentation unflushed", function() {
-			var view = {a:0};
+			const view = {a:0};
 			core.activate(view);
 			view.addAnimation( new HyperChain([
 				{
@@ -784,7 +859,7 @@ describe("core", function() {
 			assert.deepEqual(view.presentation, { a:0 });
 		});
 		it("chain presentation flushed", function() {
-			var view = {a:0};
+			const view = {a:0};
 			core.activate(view);
 			view.addAnimation( new HyperChain([
 				{
@@ -815,12 +890,12 @@ describe("core", function() {
 		});
 
 		it("chain presentation step one", function(done) {
-			var view = {a:0};
+			const view = {a:0};
 			core.activate(view);
 			view.addAnimation({
 				duration: duration/2,
 				onend: function() {
-					var error = (view.presentation.a === 1) ? null : new Error("chain presentation value incorrect");
+					const error = (view.presentation.a === 1) ? null : new Error("chain presentation value incorrect");
 					done(error);
 				}
 			});
@@ -851,12 +926,12 @@ describe("core", function() {
 		});
 
 		it("chain presentation step two", function(done) {
-			var view = {a:0};
+			const view = {a:0};
 			core.activate(view);
 			view.addAnimation({
 				duration: duration + duration/2,
 				onend: function() {
-					var error = (view.presentation.a === 2) ? null : new Error("chain presentation value incorrect");
+					const error = (view.presentation.a === 2) ? null : new Error("chain presentation value incorrect");
 					done(error);
 				}
 			});
@@ -887,12 +962,12 @@ describe("core", function() {
 		});
 
 		it("chain presentation step three", function(done) {
-			var view = {a:0};
+			const view = {a:0};
 			core.activate(view);
 			view.addAnimation({
 				duration: duration*2 + duration/2,
 				onend: function() {
-					var error = (view.presentation.a === 3) ? null : new Error("chain presentation value incorrect");
+					const error = (view.presentation.a === 3) ? null : new Error("chain presentation value incorrect");
 					done(error);
 				}
 			});
@@ -963,10 +1038,10 @@ describe("core", function() {
 
 
 
-	describe("eight", function() {
+	describe("keyframe animations", function() {
 
 		it("keyframe presentation unflushed", function() {
-			var view = {a:0};
+			const view = {a:0};
 			core.activate(view);
 			view.addAnimation( new HyperKeyframes({
 				property:"a",
@@ -977,7 +1052,7 @@ describe("core", function() {
 			assert.deepEqual(view.presentation, { a:0 });
 		});
 		it("keyframe presentation flushed", function() {
-			var view = {a:0};
+			const view = {a:0};
 			core.activate(view);
 			view.addAnimation( new HyperKeyframes({
 				property:"a",
@@ -990,12 +1065,12 @@ describe("core", function() {
 		});
 
 		it("keyframe presentation step one", function(done) {
-			var view = {one:0};
+			const view = {one:0};
 			core.activate(view);
 			view.addAnimation({
 				duration: duration/4,
 				onend: function() {
-					var error = (view.presentation.one === 1) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.one);
+					const error = (view.presentation.one === 1) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.one);
 					done(error);
 				}
 			});
@@ -1010,12 +1085,12 @@ describe("core", function() {
 		});
 
 		it("keyframe presentation step two", function(done) {
-			var view = {two:0};
+			const view = {two:0};
 			core.activate(view);
 			view.addAnimation({
 				duration: duration/2 + duration/4,
 				onend: function() {
-					var error = (view.presentation.two > 1 && view.presentation.two < 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.two);
+					const error = (view.presentation.two > 1 && view.presentation.two < 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.two);
 					done(error);
 				}
 			});
@@ -1030,12 +1105,12 @@ describe("core", function() {
 		});
 
 		it("keyframe presentation step three", function(done) {
-			var view = {three:0};
+			const view = {three:0};
 			core.activate(view);
 			view.addAnimation({
 				duration: duration + duration/4,
 				onend: function() {
-					var error = (view.presentation.three === 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.three);
+					const error = (view.presentation.three === 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.three);
 					done(error);
 				}
 			});
@@ -1065,9 +1140,38 @@ describe("core", function() {
 
 	});
 
+	describe("other", function() {
+		it("sequential changes", function() {
+			const view = {
+				a:0,
+				animationForKey: function(key) {
+					return {
+						duration: 1.0,
+						from: 1.0,
+						to: 1.0,
+						blend: "absolute"
+						// a naming or key property would allow this to match similar case in gcc test
+					};
+				}
+			};
+			core.activate(view);
+			view.a = 0.25;
+			core.flushTransaction();
+			assert.equal(view.presentation.a,1.25);
+			view.a = 0.5;
+			core.flushTransaction();
+			assert.equal(view.presentation.a,2.5);
+			view.a = 0.75;
+			core.flushTransaction();
+			assert.equal(view.presentation.a,3.75);
+		});
+		
+		it("animation has either naming or key property (needed to replace animations from animationForKey)", function() {
+			assert(false);
+		});
+	});
 
-
-	describe("nine", function() {
+	describe("added animations", function() {
 
 		it("added animations not apparent in presentation until transaction flush, not flushed, explicit transaction", function() {
 			core.beginTransaction();
@@ -1178,8 +1282,8 @@ describe("core", function() {
 	});
 
 	describe("ten", function() {
-		var one;
-		var view;
+		let one;
+		let view;
 		beforeEach( function() {
 			one = {};
 			core.activate(one);
@@ -1243,7 +1347,7 @@ describe("core", function() {
 			assert.equal(one.presentation.uiop,2);
 		});
 		it("group presentation unflushed", function() {
-			var view = {};
+			const view = {};
 			core.activate(view);
 			view.layer = {a:1, b:2, c:3};
 			view.addAnimation([
@@ -1288,7 +1392,7 @@ describe("core", function() {
 			assert(typeof view.modelLayer !== "undefined");
 		});
 		it("input output !!!", function() {
-			var view = {
+			const view = {
 				a:1,
 				b:2,
 				c:3,

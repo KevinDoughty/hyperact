@@ -566,6 +566,7 @@ export const transformType = {
 			value = this.zero();
 		}
 		var delta = this.zero(value);
+		//console.log("inverse delta:%s;",JSON.stringify(delta));
 		var out = [];
 		for (let i = 0; i < value.length; i++) {
 			switch (value[i].t) {
@@ -612,9 +613,8 @@ export const transformType = {
 	},
 
 	add: function(base, delta) {
-// 		console.log("ADD base:%s;",JSON.stringify(base));
-// 		console.log("ADD delta:%s;",JSON.stringify(delta));
-		
+		//console.log("ADD base:%s;",JSON.stringify(base));
+		//console.log("ADD delta:%s;",JSON.stringify(delta));
 		if (!base || !base.length) return delta;
 		if (!delta || !delta.length) return base;
 		var baseLength = base.length;
@@ -632,7 +632,6 @@ export const transformType = {
 			}
 			if (match) return this.sum(base,delta);
 		}
-		
 		return base.concat(delta);
 	},
 
@@ -702,6 +701,7 @@ export const transformType = {
 
 	zero: function(value) { // KxDx // requires an old value for type // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
 		// TODO: fix this :) matrix is way off // need SVG mode! see output // Using numberType not lengthType for transforms and perspective, probably should revert back
+		//console.log("zero value:%s;",JSON.stringify(value));
 		var identity2dMatrix = [1, 0, 0, 1, 0 ,0];
 		if (!value) return [{ t : "matrix", d : identity2dMatrix }];
 		var out = [];

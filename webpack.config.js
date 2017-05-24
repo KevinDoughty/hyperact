@@ -1,6 +1,8 @@
 var webpack = require("webpack");
 var path = require("path");
 
+// Dev mode only watches webpack, not rollup (which produces the .mjs)
+
 var modulesPlugins = [
 	new webpack.optimize.UglifyJsPlugin({
 		compress: false,

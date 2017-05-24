@@ -18,11 +18,11 @@ One.prototype = {
 		if (key === "transform") return {
 			property: "transform",
 			type: transformType,
-			duration:5.0,
+			duration:1.0,
 			from:previous,
 			to:value
 		}
-		return 1.0;
+		return 10.0;
 	},
 	input:function(key,value) {
 		if (key === "transform") return transformType.input(value);
@@ -41,7 +41,7 @@ one.layer["b"] = 2;
 one.transform = "translate3d(0px, 0px, 0px)";
 one.registerAnimatableProperty("transform");
 one.layer = {
-	c: 3,
+	c: 30,
 	//transform :"translate3d(0px, 0px, 0px)"
 }
 //one.transform = "translate3d(100px, 100px, 0px)";
