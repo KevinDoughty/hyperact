@@ -16,6 +16,18 @@ function easing(progress) {
 }
 
 
+const zero = {
+	element: document.getElementById("zero"),
+	x: 0,
+	y: 0,
+	display: function() {
+		this.element.style.transform = "translate3d("+this.x+"px,"+this.y+"px,0px)";
+	}
+}
+zero.element.innerHTML = "zero";
+activate(zero);
+
+
 class One {
 	constructor(name) {
 		this.element = document.getElementById(name);
@@ -63,7 +75,6 @@ class Three {
 		return Math.round(value);
 	}
 	animationForKey(key,value,previous) {
-		//console.log("animationForKey:%s; value:%s; previous:%s;",key,JSON.stringify(value),JSON.stringify(previous));
 		if (key === "x") return {
 			property:"transform",
 			type:transformType,
@@ -153,6 +164,8 @@ document.addEventListener("keydown", e => {
 		transaction.duration = duration;
 		transaction.easing = easing;
 
+		zero.x = Math.random() * width;
+		zero.y = Math.random() * height;
 		one.x = Math.random() * width;
 		one.y = Math.random() * height;
 		two.x = Math.random() * width;
