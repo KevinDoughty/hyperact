@@ -25,6 +25,7 @@ int main () {
 		NSView *contentView = [window contentView];
 		[contentView setWantsLayer:YES];
 		CALayer *layer = [CALayer layer];
+		layer.opacity = 1.0;
 		[contentView.layer addSublayer:layer];
 		CALayer *secondLayer = [CALayer layer]; // for transaction test, cannot have layer delegate return no animation
 		[contentView.layer addSublayer:secondLayer];
@@ -110,6 +111,18 @@ int main () {
 		layer.borderWidth = 0.75;
 		[CATransaction flush];
 		NSLog(@"layer.borderWidth two:%f;",layer.presentationLayer.borderWidth); // 1.75
+
+		layer.opacity = 1.0; // animationKeys should remain @[position, borderWidth]
+		[CATransaction flush];
+		//NSLog(@"animationKeys:%@;",layer.animationKeys);
+		if (layer.animationKeys.count == 2) NSLog(@"Animations are not asked for if value does not change"); // true
+		else NSLog(@"Animations are asked for if value does not change"); // false
+
+		layer.opacity = 0.5; // animationKeys should become @[opacity, borderWidth, position]
+		[CATransaction flush];
+		if (layer.animationKeys.count == 3) NSLog(@"Animations are asked for if value does change"); // true
+		else NSLog(@"Animations are not asked for if value does change"); // false
+
 		layer.delegate = nil; // animationForKey:delegate;
 		[delegate release];
 

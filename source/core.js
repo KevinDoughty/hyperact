@@ -86,10 +86,12 @@ function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentatio
 	let animation = animationFromDescription(description);
 	if (!animation) {
 		animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
-		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && animation && !animation.duration && animation.duration !== 0) {
-			if (transaction.duration) animation.duration = transaction.duration;
-		} // Implement transaction tests before refactoring!
-		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && animation && !animation.duration) return null; // setting value inside zero duration transaction must not animate, but allow zero duration animations otherwise.
+		if (animation && TRANSACTION_DURATION_ALONE_IS_ENOUGH) {
+			if (!animation.duration && animation.duration !== 0) {
+				if (transaction.duration) animation.duration = transaction.duration;
+			} // Implement transaction tests before refactoring!
+			if (!animation.duration) return null; // setting value inside zero duration transaction must not animate, but allow zero duration animations otherwise.
+		}
 	}
 	if (animation && (animation instanceof HyperAnimation || animation instanceof HyperKeyframes)) {
 		if (animation.property === null || typeof animation.property === "undefined") animation.property = property;
@@ -145,7 +147,7 @@ export function activate(controller, delegate, layerInstance) {
 	}
 	function setValuesOfLayer(layer) {
 		const transaction = hyperContext.currentTransaction();
-		const presentationLayer = controller.presentation;
+		const presentationLayer = controller.presentation; // Generate presentation even if not accessed for implicit animation. Required for test "registered implicit presentation"
 		var result = {};
 		Object.keys(layer).forEach( function(prettyKey) {
 			let uglyKey = prettyKey;
@@ -163,11 +165,13 @@ export function activate(controller, delegate, layerInstance) {
 				let uglyKey = prettyKey;
 				if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey,delegate.keyInput,delegate);
 				const prettyValue = result[prettyKey];
-				const prettyPresentation = presentationLayer[prettyKey];
 				const prettyPrevious = convertedValueOfPropertyWithFunction(previousBacking[uglyKey],prettyKey,delegate.output,delegate);
-				const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[prettyKey],transaction);
-				if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-				else controller.needsDisplay();
+				if (prettyValue !== prettyPrevious) {
+					const prettyPresentation = presentationLayer[prettyKey];
+					const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[prettyKey],transaction);
+					if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
+					else controller.needsDisplay();
+				}
 			});
 		}// else controller.needsDisplay();
 	}

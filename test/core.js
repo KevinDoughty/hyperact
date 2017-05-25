@@ -36,7 +36,7 @@ describe("core", function() {
 
 	describe("transactions", function() {
 	
-		it("multiple properties", function() { // The problem that prompted this test was failing to have a document.body.offsetHeight
+		it("multiple properties", function() { // The problem that prompted this test was failing to have a document.body.offsetHeight, preventing y value
 			const one = {
 				x:0,
 				y:0,
@@ -60,7 +60,7 @@ describe("core", function() {
 			});
 		});
 
-		it("multiple properties class", function() { // The problem that prompted this test was failing to have a document.body.offsetHeight
+		it("multiple properties class", function() { // The problem that prompted this test was failing to have a document.body.offsetHeight, preventing y value
 			
 			const One = class {
 				constructor() {
@@ -94,14 +94,181 @@ describe("core", function() {
 			assert.equal(1,0);
 		});
 
-		it("IMPLEMENT TEST: zero duration animations not allowed from setting values inside zero duration transaction", function() { // TODO: implement me, TRANSACTION_DURATION_ALONE_IS_ENOUGH
+		it("IMPLEMENT TEST: zero duration animations not allowed from setting values inside zero duration transaction and no animationForKey implementation", function() { // TODO: implement me, TRANSACTION_DURATION_ALONE_IS_ENOUGH
 			assert.equal(1,0);
 		});
 
-		it("IMPLEMENT TEST: implicit animation duration is transaction duration when not specified", function() { // TODO: implement me, TRANSACTION_DURATION_ALONE_IS_ENOUGH
-			assert.equal(1,0);
+		it("implicit animation duration is transaction duration when not specified", function(done) { // TODO: implement me, TRANSACTION_DURATION_ALONE_IS_ENOUGH
+			const view = {
+				x:0,
+				y:0,
+				animationForKey: function(key) {
+					return {
+						property:key,
+						from:2,
+						to:2,
+						blend:"absolute",
+						additive:true
+					};
+				}
+			};
+			core.activate(view);
+			const transaction = core.currentTransaction();
+			const transactionDuration = duration*2;
+			transaction.duration = transactionDuration;
+			view.x = 1;
+			view.addAnimation({
+				property:"y",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const presentation = view.presentation;
+					const value = presentation.x;
+					const animations = view.animations;
+					const length = animations.length;
+					const error = (value === 3 && length === 1 && animations[0].duration === transactionDuration) ? null : new Error("implicit animation duration is supposed to be transaction duration when not specified, but failed. value:"+value+"; length:"+length+"; duration should be:"+transactionDuration+"; actual:"+( length ? animations[0].duration : "fuct")+";");
+					done(error);
+				}
+			});
+			
 		});
 
+		it("no change in value produces no animation", function(done) {
+			const one = {
+				x:1.0,
+				y:0.0,
+				z:0.0
+			};
+			core.activate(one);
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.x = 1.0;
+			one.y = 1.0;
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const error = (one.animations.length === 1) ? null : new Error("adding animations in a transaction when value does not change");
+					done(error);
+				}
+			});
+		});
+
+		it("no change in value produces no animation, using setLayer", function(done) {
+			const one = {
+				x:1.0,
+				y:0.0,
+				z:0.0
+			};
+			core.activate(one);
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.layer = {
+				x:1.0,
+				y:1.0
+			};
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const error = (one.animations.length === 1) ? null : new Error("adding animations in a transaction when value does not change, using setLayer ");
+					done(error);
+				}
+			});
+		});
+
+		it("no change in array identity produces no animation (maybe change to check equality?)", function(done) {
+			const one = {
+				x:[1],
+				z:0
+			};
+			core.activate(one);
+			one.registerAnimatableProperty("x",core.ArrayType);
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.x = one.x;
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const error = (one.animations.length === 0) ? null : new Error("adding animations in a transaction when value does not change");
+					done(error);
+				}
+			});
+		});
+
+		it("change in array identity produces animation (maybe change to check equality?)", function(done) {
+			const one = {
+				x:[1],
+				z:0
+			};
+			core.activate(one);
+			one.registerAnimatableProperty("x",core.ArrayType);
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.x = [1];
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const error = (one.animations.length === 1) ? null : new Error("adding animations in a transaction when value does not change");
+					done(error);
+				}
+			});
+		});
+
+		it("no change in fake set identity produces no animation (maybe change to check equality?)", function(done) {
+			const one = {
+				x:[1],
+				z:0
+			};
+			core.activate(one);
+			one.registerAnimatableProperty("x",core.SetType);
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.x = one.x;
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const error = (one.animations.length === 0) ? null : new Error("adding animations in a transaction when value does not change");
+					done(error);
+				}
+			});
+		});
+
+		it("change in fake set identity produces animation (maybe change to check equality?)", function(done) {
+			const one = {
+				x:[1],
+				z:0
+			};
+			core.activate(one);
+			one.registerAnimatableProperty("x",core.SetType);
+			const transaction = core.currentTransaction();
+			transaction.duration = duration*2;
+			one.x = [1];
+			one.addAnimation({
+				property:"z",
+				duration:duration,
+				from: 1,
+				to: 1,
+				onend: function(finished) {
+					const error = (one.animations.length === 1) ? null : new Error("adding animations in a transaction when value does not change");
+					done(error);
+				}
+			});
+		});
 	});
 
 	describe("one", function() {
@@ -117,7 +284,7 @@ describe("core", function() {
 			core.activate(one);
 		});
 
-		it("controller and layer are the same object", function() {
+		it("controller and layer are the same object (depending on activation)", function() {
 			assert.equal(one,one.layer);
 		});
 
@@ -259,7 +426,7 @@ describe("core", function() {
 			assert.equal(one.presentation.uiop,3);
 		});
 
-		it("registered implicit presentation", function() {
+		it("registered implicit presentation", function() { // This test is important, do not change it. presentationLayer must be generated at beginning of transaction before setting new values.
 			one.animationForKey = function(key,value,previous) {
 				return duration;
 			};
@@ -283,7 +450,7 @@ describe("core", function() {
 			core.activate(two,two,{}); // controller and delegate same, with separate layer
 		});
 
-		it("controller and layer are not the same instance", function() {
+		it("controller and layer are not the same object (depending on activation)", function() {
 			assert(two !== two.layer);
 		});
 
@@ -454,6 +621,53 @@ describe("core", function() {
 			core.activate(view,view,layer);
 			view.layer = {a:4, b:5, c:6};
 			assert.deepEqual(view.model, { a:4, b:5, c:6 });
+		});
+
+		it("animation removed from animations before call to onend", function(done) {
+			const view = {
+				a:1,
+				b:2,
+				c:3
+			};
+			core.activate(view);
+			view.addAnimation({
+				property:"a",
+				duration:duration,
+				from:1,
+				to:1,
+				blend:"absolute",
+				onend: function(finished) {
+					const error = (view.animations.length === 0) ? null : new Error("animation was not removed before call to onend");
+					done(error);
+				}
+			});
+		});
+
+		it("animation removed from animations before call to onend, two", function(done) {
+			const view = {
+				a:1,
+				b:2,
+				c:3
+			};
+			core.activate(view);
+			view.addAnimation({
+				property:"b",
+				duration:duration*2,
+				from:1,
+				to:1,
+				blend:"absolute"
+			});
+			view.addAnimation({
+				property:"c",
+				duration:duration,
+				from:1,
+				to:1,
+				blend:"absolute",
+				onend: function(finished) {
+					const error = (view.animations.length === 1) ? null : new Error("animation was not removed before call to onend");
+					done(error);
+				}
+			});
 		});
 
 		it("presentation in onend", function(done) {
@@ -1381,7 +1595,7 @@ describe("core", function() {
 
 
 	describe("eleven", function() {
-		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous ", function() {
+		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous (or maybe not)", function() {
 			const view = {};
 			core.activate(view);
 			assert(typeof view.presentation === "undefined");
@@ -1438,12 +1652,16 @@ describe("core", function() {
 		it("no controller mode", function() {
 			assert(false);
 		});
-		it("display function only instead of delegate", function() {
+		it("allow passing display function only instead of delegate object !!! (might want delegate to be last argument to activate)", function() {
 			assert(false);
 		});
 		it("style transform 3d matrix and slerpalerp", function() {
 			assert(false);
 		});
+		it("input and output from animations, not delegate !!! (would make CSS animation so much easier)", function() {
+			assert(false);
+		});
+		
 	});
 
 
