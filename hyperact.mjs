@@ -1872,52 +1872,34 @@ HyperStyle.activate = function (element, receiver) {
 		return typeForStyle(property);
 	};
 	hyperStyleDelegate.input = function (property, prettyValue) {
+		//console.log("_____ hyperStyleDelegate.input:%s; type:%s; pretty:%s;",property,type,JSON.stringify(prettyValue));
 		if (delegate && isFunction$4(delegate.input)) return delegate.input.call(delegate, property, prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
 		var type = typeForStyle(property);
 		var uglyValue = type.input(prettyValue);
 		//console.log("___ hyperStyleDelegate.input:%s; type:%s; pretty:%s; ugly:%s;",property,type.toString(),JSON.stringify(prettyValue),JSON.stringify(uglyValue));
-		//throw new Error("I have no idea why this is backwards");
 		return uglyValue;
 	};
 	hyperStyleDelegate.output = function (property, uglyValue) {
 		// value is the ugly value // BUG FIXME: sometimes a string
+		//console.log("_____ hyperStyleDelegate.output:%s; type:%s; ugly:%s;",property,type,JSON.stringify(uglyValue));
 		if (delegate && isFunction$4(delegate.output)) {
-			//var result = delegate.output.call(delegate,property,uglyValue); // Not as useful because it includes unit suffix. Also unsure about native
-			//console.log("_one_hyperStyleDelegate.output:%s; VALUE:%s; result:%s;",property,JSON.stringify(uglyValue),result);
 			return delegate.output.call(delegate, property, uglyValue);
 		}
 		var type = typeForStyle(property);
 		var result = void 0;
 		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type.output(uglyValue);
-		if (typeof uglyValue === "string") {}
-		//if (uglyValue === null || typeof uglyValue === "undefined" || result.substring(0,4) === "calc") {
-		//console.log("? STRING ? toCss result:%s; uglyValue:%s;",JSON.stringify(result),JSON.stringify(uglyValue));
-
-		//console.log("___ hyperStyleDelegate.output:%s; type:%s; ugly:%s; pretty:%s;",property,type.toString(),JSON.stringify(uglyValue),result);
-		//throw new Error("I have no idea why this is backwards");
+		//console.log("___ hyperStyleDelegate.output:%s; type:%s; ugly:%s; pretty:%s;",property,type.toString(),JSON.stringify(uglyValue),JSON.stringify(result));
 		return result;
 	};
 	hyperStyleDelegate.animationForKey = function (key, uglyValue, uglyPrevious, target) {
 		// sometimesUglySometimesPrettyPrevious // prettyPrevious needs to be uglyPrevious. This is a Pyon problem
 		var propertyType = typeForStyle(key);
-		if (uglyValue === null || typeof uglyValue === "undefined") {
-			///console.log("~~~~~~ HyperStyle hyperStyleDelegate key:%s; value:%s; prev:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious));
-			//throw new Error("~~~~~~ HyperStyle hyperStyleDelegate animationForKey uglyValue null or undefined");
-		}
 		if (uglyPrevious === null || typeof uglyPrevious === "undefined") {
-			//console.log("####### HyperStyle hyperStyleDelegate uglyPrevious fuct");
 			uglyPrevious = uglyValue;
-		}
-		//if (!features) features = detectFeatures(); // Duplicate
-		if (typeof uglyPrevious === "string") {
-			///console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious));
-			//throw new Error("? ? ? ? ? ? ? ? ? string:"+JSON.stringify(uglyPrevious)+";"); // this is not an error
 		}
 		var prettyValue = propertyType.output(uglyValue);
 		var prettyPrevious = propertyType.output(uglyPrevious);
 		if (prettyPrevious === null || typeof prettyPrevious === "undefined") prettyPrevious = prettyValue;
-
-		//console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s; prettyV:%s; prettyP:%s; function:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious),prettyValue,prettyPrevious,isFunction(delegate.animationForKey));
 		var description; // initially undefined
 		if (delegate && isFunction$4(delegate.animationForKey)) description = delegate.animationForKey(key, prettyValue, prettyPrevious, element);
 		//console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s; prettyV:%s; prettyP:%s; result:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious),prettyValue,prettyPrevious,JSON.stringify(description));
@@ -1961,8 +1943,9 @@ HyperStyle.activate = function (element, receiver) {
 	var layer = {};
 	for (var property in usedPropertyTypes) {
 		var prettyValue = element.style[property];
-		//const uglyValue = hyperStyleDelegate.input(property, prettyValue);
-		layer[property] = prettyValue;
+		//layer[property] = prettyValue; // should be the ugly value !!!
+		var uglyValue = hyperStyleDelegate.input(property, prettyValue);
+		layer[property] = uglyValue;
 	}
 	var hyperStyleDeclaration = new HyperStyleDeclaration(layer, receiver);
 	var previousLayer = {};
@@ -2435,9 +2418,321 @@ OpacityType.prototype = Object.create(NumberType, {
 });
 var opacityType = new OpacityType();
 
+// This file has been modified from original source:
+// https://github.com/web-animations/web-animations-js/blob/dev/src/number-handler.js
+
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//	 You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+function numberToString(x) {
+	return x.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+
+
+function parseNumber(string) {
+	if (/^\s*[-+]?(\d*\.)?\d+\s*$/.test(string)) return Number(string);
+}
+
+
+
+
+
+
+
+// scope.addPropertiesHandler(parseNumberList, mergeNumberLists, ['stroke-dasharray']);
+// scope.addPropertiesHandler(parseNumber, clampedMergeNumbers(0, Infinity), ['border-image-width', 'line-height']);
+// scope.addPropertiesHandler(parseNumber, clampedMergeNumbers(0, 1), ['opacity', 'shape-image-threshold']);
+// scope.addPropertiesHandler(parseNumber, mergeFlex, ['flex-grow', 'flex-shrink']);
+// scope.addPropertiesHandler(parseNumber, mergePositiveIntegers, ['orphans', 'widows']);
+// scope.addPropertiesHandler(parseNumber, round, ['z-index']);
+
+// This file has been modified from original source:
+// https://github.com/web-animations/web-animations-js/blob/dev/src/handler-utils.js
+
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//	 You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+// consume* functions return a 2 value array of [parsed-data, '' or not-yet consumed input]
+
+// Regex should be anchored with /^
+function consumeToken(regex, string) {
+	var result = regex.exec(string);
+	if (result) {
+		result = regex.ignoreCase ? result[0].toLowerCase() : result[0];
+		return [result, string.substr(result.length)];
+	}
+}
+
+function consumeTrimmed(consumer, string) {
+	string = string.replace(/^\s*/, '');
+	var result = consumer(string);
+	if (result) {
+		return [result[0], result[1].replace(/^\s*/, '')];
+	}
+}
+
+function consumeRepeated(consumer, separator, string) {
+	consumer = consumeTrimmed.bind(null, consumer);
+	var list = [];
+	while (true) {
+		var result = consumer(string);
+		if (!result) {
+			return [list, string];
+		}
+		list.push(result[0]);
+		string = result[1];
+		result = consumeToken(separator, string);
+		if (!result || result[1] == '') {
+			return [list, string];
+		}
+		string = result[1];
+	}
+}
+
+// Consumes a token or expression with balanced parentheses
+function consumeParenthesised(parser, string) {
+	var nesting = 0;
+	for (var n = 0; n < string.length; n++) {
+		if (/\s|,/.test(string[n]) && nesting == 0) {
+			break;
+		} else if (string[n] == '(') {
+			nesting++;
+		} else if (string[n] == ')') {
+			nesting--;
+			if (nesting == 0) n++;
+			if (nesting <= 0) break;
+		}
+	}
+	var parsed = parser(string.substr(0, n));
+	return parsed == undefined ? undefined : [parsed, string.substr(n)];
+}
+
+function lcm(a, b) {
+	var c = a;
+	var d = b;
+	while (c && d) {
+		c > d ? c %= d : d %= c;
+	}c = a * b / (c + d);
+	return c;
+}
+
+
+
+
+
+
+
+function mergeWrappedNestedRepeated(wrap, nestedMerge, separator, left, right) {
+	var matchingLeft = [];
+	var matchingRight = [];
+	var reconsititution = [];
+	var length = lcm(left.length, right.length);
+	for (var i = 0; i < length; i++) {
+		var thing = nestedMerge(left[i % left.length], right[i % right.length]);
+		if (!thing) {
+			return;
+		}
+		matchingLeft.push(thing[0]);
+		matchingRight.push(thing[1]);
+		reconsititution.push(thing[2]);
+	}
+	return [matchingLeft, matchingRight, function (positions) {
+		var result = positions.map(function (position, i) {
+			return reconsititution[i](position);
+		}).join(separator);
+		return wrap ? wrap(result) : result;
+	}];
+}
+
+
+
+var mergeNestedRepeated = mergeWrappedNestedRepeated.bind(null, null);
+
+// This file has been modified from original source:
+// https://github.com/web-animations/web-animations-js/blob/dev/src/dimension-handler.js
+
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//	 You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+function parseDimension(unitRegExp, string) {
+	string = string.trim().toLowerCase();
+
+	if (string == '0' && 'px'.search(unitRegExp) >= 0) return { px: 0 };
+
+	// If we have parenthesis, we're a calc and need to start with 'calc'.
+	if (!/^[^(]*$|^calc/.test(string)) return;
+	string = string.replace(/calc\(/g, '(');
+
+	// We tag units by prefixing them with 'U' (note that we are already
+	// lowercase) to prevent problems with types which are substrings of
+	// each other (although prefixes may be problematic!)
+	var matchedUnits = {};
+	string = string.replace(unitRegExp, function (match) {
+		matchedUnits[match] = null;
+		return 'U' + match;
+	});
+	var taggedUnitRegExp = 'U(' + unitRegExp.source + ')';
+
+	// Validating input is simply applying as many reductions as we can.
+	var typeCheck = string.replace(/[-+]?(\d*\.)?\d+/g, 'N').replace(new RegExp('N' + taggedUnitRegExp, 'g'), 'D').replace(/\s[+-]\s/g, 'O').replace(/\s/g, '');
+	var reductions = [/N\*(D)/g, /(N|D)[*/]N/g, /(N|D)O\1/g, /\((N|D)\)/g];
+	var i = 0;
+	while (i < reductions.length) {
+		if (reductions[i].test(typeCheck)) {
+			typeCheck = typeCheck.replace(reductions[i], '$1');
+			i = 0;
+		} else {
+			i++;
+		}
+	}
+	if (typeCheck != 'D') return;
+
+	for (var unit in matchedUnits) {
+		var result = eval(string.replace(new RegExp('U' + unit, 'g'), '').replace(new RegExp(taggedUnitRegExp, 'g'), '*0'));
+		if (!isFinite(result)) return;
+		matchedUnits[unit] = result;
+	}
+	return matchedUnits;
+}
+
+function mergeDimensionsNonNegative(left, right) {
+	return mergeDimensions(left, right, true);
+}
+
+function mergeDimensions(left, right, nonNegative) {
+	var units = [],
+	    unit;
+	for (unit in left) {
+		units.push(unit);
+	}for (unit in right) {
+		if (units.indexOf(unit) < 0) units.push(unit);
+	}
+
+	left = units.map(function (unit) {
+		return left[unit] || 0;
+	});
+	right = units.map(function (unit) {
+		return right[unit] || 0;
+	});
+	return [left, right, function (values) {
+		var result = values.map(function (value, i) {
+			if (values.length == 1 && nonNegative) {
+				value = Math.max(value, 0);
+			}
+			// Scientific notation (e.g. 1e2) is not yet widely supported by browser vendors.
+			return numberToString(value) + units[i];
+		}).join(' + ');
+		return values.length > 1 ? 'calc(' + result + ')' : result;
+	}];
+}
+
+var lengthUnits = 'px|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc';
+var parseLength = parseDimension.bind(null, new RegExp(lengthUnits, 'g'));
+var parseLengthOrPercent = parseDimension.bind(null, new RegExp(lengthUnits + '|%', 'g'));
+var parseAngle = parseDimension.bind(null, /deg|rad|grad|turn/g);
+
+var consumeLength = consumeParenthesised.bind(null, parseLength);
+var consumeSizePair = consumeRepeated.bind(undefined, consumeLength, /^/);
+var consumeSizePairList = consumeRepeated.bind(undefined, consumeSizePair, /^,/);
+
+var mergeNonNegativeSizePair = mergeNestedRepeated.bind(undefined, mergeDimensionsNonNegative, ' ');
+var mergeNonNegativeSizePairList = mergeNestedRepeated.bind(undefined, mergeNonNegativeSizePair, ',');
+
+var consumeLengthOrPercent = consumeParenthesised.bind(null, parseLengthOrPercent);
+
+// scope.addPropertiesHandler(parseSizePairList, mergeNonNegativeSizePairList, [
+// 	'background-size'
+// ]);
+// 
+// scope.addPropertiesHandler(parseLengthOrPercent, mergeDimensionsNonNegative, [
+// 	'border-bottom-width',
+// 	'border-image-width',
+// 	'border-left-width',
+// 	'border-right-width',
+// 	'border-top-width',
+// 	'flex-basis',
+// 	'font-size',
+// 	'height',
+// 	'line-height',
+// 	'max-height',
+// 	'max-width',
+// 	'outline-width',
+// 	'width',
+// ]);
+// 
+// scope.addPropertiesHandler(parseLengthOrPercent, mergeDimensions, [
+// 	'border-bottom-left-radius',
+// 	'border-bottom-right-radius',
+// 	'border-top-left-radius',
+// 	'border-top-right-radius',
+// 	'bottom',
+// 	'left',
+// 	'letter-spacing',
+// 	'margin-bottom',
+// 	'margin-left',
+// 	'margin-right',
+// 	'margin-top',
+// 	'min-height',
+// 	'min-width',
+// 	'outline-offset',
+// 	'padding-bottom',
+// 	'padding-left',
+// 	'padding-right',
+// 	'padding-top',
+// 	'perspective',
+// 	'right',
+// 	'shape-margin',
+// 	'stroke-dashoffset',
+// 	'text-indent',
+// 	'top',
+// 	'vertical-align',
+// 	'word-spacing',
+// ]);
+
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
+// New experimental:
 var convertToDeg = function convertToDeg(num, type) {
 	switch (type) {
 		case "grad":
@@ -3136,7 +3431,8 @@ var transformType = {
 	},
 
 	interpolate: function interpolate(from, to, f) {
-		//console.log("!!! transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
+		// ugly values
+		// console.log("!!! transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
 		var out = [];
 		var i;
 		for (i = 0; i < Math.min(from.length, to.length); i++) {
@@ -3161,7 +3457,19 @@ var transformType = {
 
 	output: function output(value, svgMode) {
 		// TODO: fix this :)
-		//console.log("output:%s;",JSON.stringify(value));
+		console.log("transform output:%s;", JSON.stringify(value));
+
+		return value.map(function (args, i) {
+			console.log("%s args:%s;", i, JSON.stringify(args));
+			var stringifiedArgs = args.map(function (arg, j) {
+				console.log("%s arg:%s;", j, JSON.stringify(arg));
+				return types[i][1][j](arg);
+			}).join(',');
+			console.log("stringified:%s;", JSON.stringify(stringified));
+			if (types[i][0] == 'matrix' && stringifiedArgs.split(',').length == 16) types[i][0] = 'matrix3d';
+			return types[i][0] + '(' + stringifiedArgs + ')';
+		}).join(' ');
+
 		//if (typeof value === "string") throw new Error("this should not be a string");
 		if (value === null || typeof value === "undefined") return "";
 		if (typeof value === "string") return value;
@@ -3234,31 +3542,140 @@ var transformType = {
 			}
 		}
 		var result = out.substring(0, out.length - 1);
-		//console.log("output result:%s;",JSON.stringify(result));
+		//console.log("tranform output result:%s;",JSON.stringify(result));
 		return result;
 	},
 
 	input: function input(value) {
-		var result = [];
-		while (typeof value === "string" && value.length > 0) {
-			var r;
-			for (var i = 0; i < transformREs.length; i++) {
-				var reSpec = transformREs[i];
-				r = reSpec[0].exec(value);
-				if (r) {
-					result.push({ t: reSpec[2], d: reSpec[1](r) });
-					value = value.substring(r[0].length);
-					break;
-				}
-			}
-			if (!isDefinedAndNotNull(r)) {
-				return result;
-			}
-		}
-		//console.log("input result:%s;",JSON.stringify(result));
-		return result;
+
+		if (typeof value !== "string") return null;
+		return parseTransform(value) || [];
+
+		// 		var result = [];
+		// 		while (typeof value === "string" && value.length > 0) {
+		// 			var r;
+		// 			for (let i = 0; i < transformREs.length; i++) {
+		// 				var reSpec = transformREs[i];
+		// 				r = reSpec[0].exec(value);
+		// 				if (r) {
+		// 					result.push({t: reSpec[2], d: reSpec[1](r)});
+		// 					value = value.substring(r[0].length);
+		// 					break;
+		// 				}
+		// 			}
+		// 			if (!isDefinedAndNotNull(r)) {
+		// 				return result;
+		// 			}
+		// 		}
+		// 		//console.log("input result:%s;",JSON.stringify(result));
+		// 		return result;
 	}
 };
+
+// The following has been modified from original source:
+// https://github.com/web-animations/web-animations-js/blob/dev/src/transform-handler.js
+
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//	 You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+// This returns a function for converting transform functions to equivalent
+// primitive functions, which will take an array of values from the
+// derivative type and fill in the blanks (underscores) with them.
+var _ = null;
+function cast(pattern) {
+	return function (contents) {
+		var i = 0;
+		return pattern.map(function (x) {
+			return x === _ ? contents[i++] : x;
+		});
+	};
+}
+
+function id(x) {
+	return x;
+}
+
+var Opx = { px: 0 };
+var Odeg = { deg: 0 };
+
+// type: [argTypes, convertTo3D, convertTo2D]
+// In the argument types string, lowercase characters represent optional arguments
+var transformFunctions = {
+	matrix: ["NNNNNN", [_, _, 0, 0, _, _, 0, 0, 0, 0, 1, 0, _, _, 0, 1], id],
+	matrix3d: ["NNNNNNNNNNNNNNNN", id],
+	rotate: ["A"],
+	rotatex: ["A"],
+	rotatey: ["A"],
+	rotatez: ["A"],
+	rotate3d: ["NNNA"],
+	perspective: ["L"],
+	scale: ["Nn", cast([_, _, 1]), id],
+	scalex: ["N", cast([_, 1, 1]), cast([_, 1])],
+	scaley: ["N", cast([1, _, 1]), cast([1, _])],
+	scalez: ["N", cast([1, 1, _])],
+	scale3d: ["NNN", id],
+	skew: ["Aa", null, id],
+	skewx: ["A", null, cast([_, Odeg])],
+	skewy: ["A", null, cast([Odeg, _])],
+	translate: ["Tt", cast([_, _, Opx]), id],
+	translatex: ["T", cast([_, Opx, Opx]), cast([_, Opx])],
+	translatey: ["T", cast([Opx, _, Opx]), cast([Opx, _])],
+	translatez: ["L", cast([Opx, Opx, _])],
+	translate3d: ["TTL", id]
+};
+
+function parseTransform(string) {
+	string = string.toLowerCase().trim();
+	if (string == "none") return [];
+	// FIXME: Using a RegExp means calcs won"t work here
+	var transformRegExp = /\s*(\w+)\(([^)]*)\)/g;
+	var result = [];
+	var match;
+	var prevLastIndex = 0;
+	while (match = transformRegExp.exec(string)) {
+		if (match.index != prevLastIndex) return;
+		prevLastIndex = match.index + match[0].length;
+		var functionName = match[1];
+		var functionData = transformFunctions[functionName];
+		if (!functionData) return;
+		var args = match[2].split(",");
+		var argTypes = functionData[0];
+		if (argTypes.length < args.length) return;
+
+		var parsedArgs = [];
+		for (var i = 0; i < argTypes.length; i++) {
+			var arg = args[i];
+			var type = argTypes[i];
+			var parsedArg;
+			if (!arg) parsedArg = { a: Odeg,
+				n: parsedArgs[0],
+				t: Opx }[type];else parsedArg = { A: function A(s) {
+					return s.trim() == "0" ? Odeg : parseAngle(s);
+				},
+				N: parseNumber,
+				T: parseLengthOrPercent,
+				L: parseLength }[type.toUpperCase()](arg);
+			if (parsedArg === undefined) return;
+			parsedArgs.push(parsedArg);
+		}
+		result.push({ t: functionName, d: parsedArgs });
+		//if (transformRegExp.lastIndex == string.length) console.log("PARSE:%s; RESULT:%s;",string,JSON.stringify(result));
+		if (transformRegExp.lastIndex == string.length) return result;
+	}
+}
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy

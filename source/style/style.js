@@ -146,51 +146,33 @@ HyperStyle.activate = function(element, receiver) {
 		return typeForStyle(property);
 	};
 	hyperStyleDelegate.input = function(property,prettyValue) {
+		//console.log("_____ hyperStyleDelegate.input:%s; type:%s; pretty:%s;",property,type,JSON.stringify(prettyValue));
 		if (delegate && isFunction(delegate.input)) return delegate.input.call(delegate,property,prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
 		var type = typeForStyle(property);
 		const uglyValue = type.input(prettyValue);
 		//console.log("___ hyperStyleDelegate.input:%s; type:%s; pretty:%s; ugly:%s;",property,type.toString(),JSON.stringify(prettyValue),JSON.stringify(uglyValue));
-		//throw new Error("I have no idea why this is backwards");
 		return uglyValue;
 	};
 	hyperStyleDelegate.output = function(property,uglyValue) { // value is the ugly value // BUG FIXME: sometimes a string
+		//console.log("_____ hyperStyleDelegate.output:%s; type:%s; ugly:%s;",property,type,JSON.stringify(uglyValue));
 		if (delegate && isFunction(delegate.output)) {
-			//var result = delegate.output.call(delegate,property,uglyValue); // Not as useful because it includes unit suffix. Also unsure about native
-			//console.log("_one_hyperStyleDelegate.output:%s; VALUE:%s; result:%s;",property,JSON.stringify(uglyValue),result);
 			return delegate.output.call(delegate,property,uglyValue);
 		}
 		var type = typeForStyle(property);
 		let result;
 		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();
 		else result = type.output(uglyValue);
-		if (typeof uglyValue === "string") {
-		//if (uglyValue === null || typeof uglyValue === "undefined" || result.substring(0,4) === "calc") {
-			//console.log("? STRING ? toCss result:%s; uglyValue:%s;",JSON.stringify(result),JSON.stringify(uglyValue));
-		}
-		//console.log("___ hyperStyleDelegate.output:%s; type:%s; ugly:%s; pretty:%s;",property,type.toString(),JSON.stringify(uglyValue),result);
-		//throw new Error("I have no idea why this is backwards");
+		//console.log("___ hyperStyleDelegate.output:%s; type:%s; ugly:%s; pretty:%s;",property,type.toString(),JSON.stringify(uglyValue),JSON.stringify(result));
 		return result;
 	};
 	hyperStyleDelegate.animationForKey = function(key,uglyValue,uglyPrevious,target) { // sometimesUglySometimesPrettyPrevious // prettyPrevious needs to be uglyPrevious. This is a Pyon problem
 		var propertyType = typeForStyle(key);
-		if (uglyValue === null || typeof uglyValue === "undefined") {
-			///console.log("~~~~~~ HyperStyle hyperStyleDelegate key:%s; value:%s; prev:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious));
-			//throw new Error("~~~~~~ HyperStyle hyperStyleDelegate animationForKey uglyValue null or undefined");
-		}
 		if (uglyPrevious === null || typeof uglyPrevious === "undefined") {
-			//console.log("####### HyperStyle hyperStyleDelegate uglyPrevious fuct");
 			uglyPrevious = uglyValue;
-		}
-		//if (!features) features = detectFeatures(); // Duplicate
-		if (typeof uglyPrevious === "string") {
-			///console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious));
-			//throw new Error("? ? ? ? ? ? ? ? ? string:"+JSON.stringify(uglyPrevious)+";"); // this is not an error
 		}
 		var prettyValue = propertyType.output(uglyValue);
 		var prettyPrevious = propertyType.output(uglyPrevious);
 		if (prettyPrevious === null || typeof prettyPrevious === "undefined") prettyPrevious = prettyValue;
-		
-		//console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s; prettyV:%s; prettyP:%s; function:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious),prettyValue,prettyPrevious,isFunction(delegate.animationForKey));
 		var description; // initially undefined
 		if (delegate && isFunction(delegate.animationForKey)) description = delegate.animationForKey(key,prettyValue,prettyPrevious,element);
 		//console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s; prettyV:%s; prettyP:%s; result:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious),prettyValue,prettyPrevious,JSON.stringify(description));
@@ -231,8 +213,9 @@ HyperStyle.activate = function(element, receiver) {
 	let layer = {};
 	for (let property in usedPropertyTypes) {
 		const prettyValue = element.style[property];
-		//const uglyValue = hyperStyleDelegate.input(property, prettyValue);
-		layer[property] = prettyValue;
+		//layer[property] = prettyValue; // should be the ugly value !!!
+		const uglyValue = hyperStyleDelegate.input(property, prettyValue);
+		layer[property] = uglyValue;
 	}
 	var hyperStyleDeclaration = new HyperStyleDeclaration(layer, receiver);
 	var previousLayer = {};

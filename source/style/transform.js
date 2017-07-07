@@ -5,6 +5,11 @@ import { isDefinedAndNotNull, interp, clamp } from "./shared.js";
 import { lengthType } from "./length.js";
 import { numberType } from "./number.js";
 
+// New experimental:
+import { parseNumber } from "../matrix/number-handler.js";
+import { parseAngle, parseLengthOrPercent, parseLength } from "../matrix/dimension-handler.js";
+
+
 var convertToDeg = function(num, type) {
 	switch (type) {
 		case "grad":
@@ -135,7 +140,7 @@ function build3DRotationMatcher() {
 	return [m[0], f, m[2]];
 }
 
-var transformREs = [
+const transformREs = [
 	buildRotationMatcher("rotate", 1, false),
 	buildRotationMatcher("rotateX", 1, false),
 	buildRotationMatcher("rotateY", 1, false),
@@ -756,8 +761,8 @@ export const transformType = {
 		return result;
 	},
 
-	interpolate: function(from, to, f) {
-		//console.log("!!! transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
+	interpolate: function(from, to, f) { // ugly values
+		// console.log("!!! transform interpolate:%s; from:%s; to:%s;",f,JSON.stringify(from),JSON.stringify(to));
 		var out = [];
 		var i;
 		for (i = 0; i < Math.min(from.length, to.length); i++) {
@@ -782,7 +787,23 @@ export const transformType = {
 
 	output: function(value, svgMode) {
 		// TODO: fix this :)
-		//console.log("output:%s;",JSON.stringify(value));
+		console.log("transform output:%s;",JSON.stringify(value));
+
+
+		return value.map(function(args, i) {
+			console.log("%s args:%s;",i,JSON.stringify(args));
+			var stringifiedArgs = args.map(function(arg, j) {
+				console.log("%s arg:%s;",j,JSON.stringify(arg));
+				return types[i][1][j](arg);
+			}).join(',');
+			console.log("stringified:%s;",JSON.stringify(stringified));
+			if (types[i][0] == 'matrix' && stringifiedArgs.split(',').length == 16)
+				types[i][0] = 'matrix3d';
+			return types[i][0] + '(' + stringifiedArgs + ')';
+
+		}).join(' ');
+
+
 		//if (typeof value === "string") throw new Error("this should not be a string");
 		if (value === null || typeof value === "undefined") return "";
 		if (typeof value === "string") return value;
@@ -860,11 +881,17 @@ export const transformType = {
 			}
 		}
 		var result = out.substring(0, out.length - 1);
-		//console.log("output result:%s;",JSON.stringify(result));
+		//console.log("tranform output result:%s;",JSON.stringify(result));
 		return result;
+
+
 	},
 
 	input: function(value) {
+
+// 		if (typeof value !== "string") return null;
+// 		return parseTransform(value) || [];
+
 		var result = [];
 		while (typeof value === "string" && value.length > 0) {
 			var r;
@@ -885,3 +912,113 @@ export const transformType = {
 		return result;
 	}
 };
+
+
+
+
+
+// The following has been modified from original source:
+// https://github.com/web-animations/web-animations-js/blob/dev/src/transform-handler.js
+
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//	 You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+
+// var _ = null;
+// function cast(pattern) {
+// 	return function(contents) {
+// 		var i = 0;
+// 		return pattern.map(function(x) { return x === _ ? contents[i++] : x; });
+// 	};
+// }
+// 
+// function id(x) { return x; }
+// 
+// var Opx = {px: 0};
+// var Odeg = {deg: 0};
+// 
+// // type: [argTypes, convertTo3D, convertTo2D]
+// // In the argument types string, lowercase characters represent optional arguments
+// var transformFunctions = {
+// 	matrix: ["NNNNNN", [_, _, 0, 0, _, _, 0, 0, 0, 0, 1, 0, _, _, 0, 1], id],
+// 	matrix3d: ["NNNNNNNNNNNNNNNN", id],
+// 	rotate: ["A"],
+// 	rotatex: ["A"],
+// 	rotatey: ["A"],
+// 	rotatez: ["A"],
+// 	rotate3d: ["NNNA"],
+// 	perspective: ["L"],
+// 	scale: ["Nn", cast([_, _, 1]), id],
+// 	scalex: ["N", cast([_, 1, 1]), cast([_, 1])],
+// 	scaley: ["N", cast([1, _, 1]), cast([1, _])],
+// 	scalez: ["N", cast([1, 1, _])],
+// 	scale3d: ["NNN", id],
+// 	skew: ["Aa", null, id],
+// 	skewx: ["A", null, cast([_, Odeg])],
+// 	skewy: ["A", null, cast([Odeg, _])],
+// 	translate: ["Tt", cast([_, _, Opx]), id],
+// 	translatex: ["T", cast([_, Opx, Opx]), cast([_, Opx])],
+// 	translatey: ["T", cast([Opx, _, Opx]), cast([Opx, _])],
+// 	translatez: ["L", cast([Opx, Opx, _])],
+// 	translate3d: ["TTL", id]
+// };
+// 
+// function parseTransform(string) {
+// 	string = string.toLowerCase().trim();
+// 	if (string == "none")
+// 		return [];
+// 	// FIXME: Using a RegExp means calcs won"t work here
+// 	var transformRegExp = /\s*(\w+)\(([^)]*)\)/g;
+// 	var result = [];
+// 	var match;
+// 	var prevLastIndex = 0;
+// 	while ((match = transformRegExp.exec(string))) {
+// 		if (match.index != prevLastIndex)
+// 			return;
+// 		prevLastIndex = match.index + match[0].length;
+// 		var functionName = match[1];
+// 		var functionData = transformFunctions[functionName];
+// 		if (!functionData)
+// 			return;
+// 		var args = match[2].split(",");
+// 		var argTypes = functionData[0];
+// 		if (argTypes.length < args.length)
+// 			return;
+// 
+// 		var parsedArgs = [];
+// 		for (var i = 0; i < argTypes.length; i++) {
+// 			var arg = args[i];
+// 			var type = argTypes[i];
+// 			var parsedArg;
+// 			if (!arg)
+// 				parsedArg = ({a: Odeg,
+// 											n: parsedArgs[0],
+// 											t: Opx})[type];
+// 			else
+// 				parsedArg = ({A: function(s) { return s.trim() == "0" ? Odeg : parseAngle(s); },
+// 											N: parseNumber,
+// 											T: parseLengthOrPercent,
+// 											L: parseLength})[type.toUpperCase()](arg);
+// 			if (parsedArg === undefined)
+// 				return;
+// 			parsedArgs.push(parsedArg);
+// 		}
+// 		result.push({t: functionName, d: parsedArgs});
+// 		//if (transformRegExp.lastIndex == string.length) console.log("PARSE:%s; RESULT:%s;",string,JSON.stringify(result));
+// 		if (transformRegExp.lastIndex == string.length)
+// 			return result;
+// 	}
+// };

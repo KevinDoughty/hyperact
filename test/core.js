@@ -1495,7 +1495,7 @@ describe("core", function() {
 		});
 	});
 
-	describe("ten", function() {
+	describe("unflushed", function() {
 		let one;
 		let view;
 		beforeEach( function() {
@@ -1594,7 +1594,7 @@ describe("core", function() {
 
 
 
-	describe("eleven", function() {
+	describe("TODO", function() {
 		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous (or maybe not)", function() {
 			const view = {};
 			core.activate(view);
@@ -1658,7 +1658,10 @@ describe("core", function() {
 		it("style transform 3d matrix and slerpalerp", function() {
 			assert(false);
 		});
-		it("input and output from animations, not delegate !!! (would make CSS animation so much easier)", function() {
+		it("input and output implemented on type object, not delegate !!! (would make CSS animation so much easier)", function() {
+			assert(false);
+		});
+		it("flushing should invalidate presentation layer, for set type", function() {
 			assert(false);
 		});
 		
