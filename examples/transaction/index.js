@@ -164,24 +164,24 @@ document.addEventListener("keydown", e => {
 		transaction.duration = duration;
 		transaction.easing = easing;
 
-// 		zero.x = Math.random() * width;
-// 		zero.y = Math.random() * height;
-// 		one.x = Math.random() * width;
-// 		one.y = Math.random() * height;
-// 		two.x = Math.random() * width;
-// 		two.y = Math.random() * height;
-// 		three.x = Math.random() * width;
-// 		three.y = Math.random() * height;
-// 		four.transform = "translate3d("+ (Math.random()*width) +"px,"+ (Math.random()*height) + "px,0px)";
-// 		const previous = five.transform;
-// 		const next = "translate3d("+ (Math.random()*width) +"px,"+ (Math.random()*height) + "px,0px)";
-// 		five.addAnimation({
-// 			property:"transform",
-// 			type:transformType,
-// 			from:previous,
-// 			to:next
-// 		});
-// 		five.transform = next;
+		zero.x = Math.random() * width;
+		zero.y = Math.random() * height;
+		one.x = Math.random() * width;
+		one.y = Math.random() * height;
+		two.x = Math.random() * width;
+		two.y = Math.random() * height;
+		three.x = Math.random() * width;
+		three.y = Math.random() * height;
+		four.transform = "translate3d("+ (Math.random()*width) +"px,"+ (Math.random()*height) + "px,0px)";
+		const previous = five.transform;
+		const next = "translate3d("+ (Math.random()*width) +"px,"+ (Math.random()*height) + "px,0px)";
+		five.addAnimation({
+			property:"transform",
+			type:transformType,
+			from:previous,
+			to:next
+		});
+		five.transform = next;
 		six.style.transform = "translate3d("+ (Math.random()*width) +"px,"+ (Math.random()*height) + "px,0px)";
 
 	}

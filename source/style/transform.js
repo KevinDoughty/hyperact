@@ -6,8 +6,8 @@ import { lengthType } from "./length.js";
 import { numberType } from "./number.js";
 
 // New experimental:
-import { parseNumber } from "../matrix/number-handler.js";
-import { parseAngle, parseLengthOrPercent, parseLength } from "../matrix/dimension-handler.js";
+// import { parseNumber } from "../matrix/number-handler.js";
+// import { parseAngle, parseLengthOrPercent, parseLength } from "../matrix/dimension-handler.js";
 
 
 var convertToDeg = function(num, type) {
@@ -787,22 +787,18 @@ export const transformType = {
 
 	output: function(value, svgMode) {
 		// TODO: fix this :)
-		console.log("transform output:%s;",JSON.stringify(value));
 
-
-		return value.map(function(args, i) {
-			console.log("%s args:%s;",i,JSON.stringify(args));
-			var stringifiedArgs = args.map(function(arg, j) {
-				console.log("%s arg:%s;",j,JSON.stringify(arg));
-				return types[i][1][j](arg);
-			}).join(',');
-			console.log("stringified:%s;",JSON.stringify(stringified));
-			if (types[i][0] == 'matrix' && stringifiedArgs.split(',').length == 16)
-				types[i][0] = 'matrix3d';
-			return types[i][0] + '(' + stringifiedArgs + ')';
-
-		}).join(' ');
-
+// 		return value.map(function(args, i) {
+// 			console.log("%s args:%s;",i,JSON.stringify(args));
+// 			var stringifiedArgs = args.map(function(arg, j) {
+// 				console.log("%s arg:%s;",j,JSON.stringify(arg));
+// 				return types[i][1][j](arg);
+// 			}).join(',');
+// 			console.log("stringified:%s;",JSON.stringify(stringified));
+// 			if (types[i][0] == 'matrix' && stringifiedArgs.split(',').length == 16)
+// 				types[i][0] = 'matrix3d';
+// 			return types[i][0] + '(' + stringifiedArgs + ')';
+// 		}).join(' ');
 
 		//if (typeof value === "string") throw new Error("this should not be a string");
 		if (value === null || typeof value === "undefined") return "";
@@ -944,12 +940,12 @@ export const transformType = {
 // 		return pattern.map(function(x) { return x === _ ? contents[i++] : x; });
 // 	};
 // }
-// 
+
 // function id(x) { return x; }
-// 
+
 // var Opx = {px: 0};
 // var Odeg = {deg: 0};
-// 
+
 // // type: [argTypes, convertTo3D, convertTo2D]
 // // In the argument types string, lowercase characters represent optional arguments
 // var transformFunctions = {
@@ -975,7 +971,7 @@ export const transformType = {
 // 	translatez: ["L", cast([Opx, Opx, _])],
 // 	translate3d: ["TTL", id]
 // };
-// 
+
 // function parseTransform(string) {
 // 	string = string.toLowerCase().trim();
 // 	if (string == "none")
@@ -997,7 +993,7 @@ export const transformType = {
 // 		var argTypes = functionData[0];
 // 		if (argTypes.length < args.length)
 // 			return;
-// 
+
 // 		var parsedArgs = [];
 // 		for (var i = 0; i < argTypes.length; i++) {
 // 			var arg = args[i];

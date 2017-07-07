@@ -1568,6 +1568,11 @@ var lengthAutoType = typeWithKeywords(["auto"], lengthType);
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
 
+// New experimental:
+// import { parseNumber } from "../matrix/number-handler.js";
+// import { parseAngle, parseLengthOrPercent, parseLength } from "../matrix/dimension-handler.js";
+
+
 var convertToDeg = function convertToDeg(num, type) {
 	switch (type) {
 		case "grad":
@@ -1704,6 +1709,111 @@ function build3DRotationMatcher() {
 }
 
 var transformREs = [buildRotationMatcher("rotate", 1, false), buildRotationMatcher("rotateX", 1, false), buildRotationMatcher("rotateY", 1, false), buildRotationMatcher("rotateZ", 1, false), build3DRotationMatcher(), buildRotationMatcher("skew", 1, true, 0), buildRotationMatcher("skewX", 1, false), buildRotationMatcher("skewY", 1, false), buildMatcher("translateX", 1, false, true, { px: 0 }), buildMatcher("translateY", 1, false, true, { px: 0 }), buildMatcher("translateZ", 1, false, true, { px: 0 }), buildMatcher("translate", 1, true, true, { px: 0 }), buildMatcher("translate3d", 3, false, true), buildMatcher("scale", 1, true, false, "copy"), buildMatcher("scaleX", 1, false, false, 1), buildMatcher("scaleY", 1, false, false, 1), buildMatcher("scaleZ", 1, false, false, 1), buildMatcher("scale3d", 3, false, false), buildMatcher("perspective", 1, false, true), buildMatcher("matrix", 6, false, false)];
+
+// The following has been modified from original source:
+// https://github.com/web-animations/web-animations-js/blob/dev/src/transform-handler.js
+
+
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+//	 You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//	 See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+// var _ = null;
+// function cast(pattern) {
+// 	return function(contents) {
+// 		var i = 0;
+// 		return pattern.map(function(x) { return x === _ ? contents[i++] : x; });
+// 	};
+// }
+
+// function id(x) { return x; }
+
+// var Opx = {px: 0};
+// var Odeg = {deg: 0};
+
+// // type: [argTypes, convertTo3D, convertTo2D]
+// // In the argument types string, lowercase characters represent optional arguments
+// var transformFunctions = {
+// 	matrix: ["NNNNNN", [_, _, 0, 0, _, _, 0, 0, 0, 0, 1, 0, _, _, 0, 1], id],
+// 	matrix3d: ["NNNNNNNNNNNNNNNN", id],
+// 	rotate: ["A"],
+// 	rotatex: ["A"],
+// 	rotatey: ["A"],
+// 	rotatez: ["A"],
+// 	rotate3d: ["NNNA"],
+// 	perspective: ["L"],
+// 	scale: ["Nn", cast([_, _, 1]), id],
+// 	scalex: ["N", cast([_, 1, 1]), cast([_, 1])],
+// 	scaley: ["N", cast([1, _, 1]), cast([1, _])],
+// 	scalez: ["N", cast([1, 1, _])],
+// 	scale3d: ["NNN", id],
+// 	skew: ["Aa", null, id],
+// 	skewx: ["A", null, cast([_, Odeg])],
+// 	skewy: ["A", null, cast([Odeg, _])],
+// 	translate: ["Tt", cast([_, _, Opx]), id],
+// 	translatex: ["T", cast([_, Opx, Opx]), cast([_, Opx])],
+// 	translatey: ["T", cast([Opx, _, Opx]), cast([Opx, _])],
+// 	translatez: ["L", cast([Opx, Opx, _])],
+// 	translate3d: ["TTL", id]
+// };
+
+// function parseTransform(string) {
+// 	string = string.toLowerCase().trim();
+// 	if (string == "none")
+// 		return [];
+// 	// FIXME: Using a RegExp means calcs won"t work here
+// 	var transformRegExp = /\s*(\w+)\(([^)]*)\)/g;
+// 	var result = [];
+// 	var match;
+// 	var prevLastIndex = 0;
+// 	while ((match = transformRegExp.exec(string))) {
+// 		if (match.index != prevLastIndex)
+// 			return;
+// 		prevLastIndex = match.index + match[0].length;
+// 		var functionName = match[1];
+// 		var functionData = transformFunctions[functionName];
+// 		if (!functionData)
+// 			return;
+// 		var args = match[2].split(",");
+// 		var argTypes = functionData[0];
+// 		if (argTypes.length < args.length)
+// 			return;
+
+// 		var parsedArgs = [];
+// 		for (var i = 0; i < argTypes.length; i++) {
+// 			var arg = args[i];
+// 			var type = argTypes[i];
+// 			var parsedArg;
+// 			if (!arg)
+// 				parsedArg = ({a: Odeg,
+// 											n: parsedArgs[0],
+// 											t: Opx})[type];
+// 			else
+// 				parsedArg = ({A: function(s) { return s.trim() == "0" ? Odeg : parseAngle(s); },
+// 											N: parseNumber,
+// 											T: parseLengthOrPercent,
+// 											L: parseLength})[type.toUpperCase()](arg);
+// 			if (parsedArg === undefined)
+// 				return;
+// 			parsedArgs.push(parsedArg);
+// 		}
+// 		result.push({t: functionName, d: parsedArgs});
+// 		//if (transformRegExp.lastIndex == string.length) console.log("PARSE:%s; RESULT:%s;",string,JSON.stringify(result));
+// 		if (transformRegExp.lastIndex == string.length)
+// 			return result;
+// 	}
+// };
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
