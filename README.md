@@ -257,11 +257,11 @@ view.x = 1;
   - `speed {number}` Not finished.
   - `iterations {number}` Default is 1.
   - `autoreverse {boolean}` When iterations > 1. Easing also reversed.
-  - `fillMode {string}` Not finished.
+  - `fillMode {string}` Not finished, behavior is not fully realized, thus unreliable
   - `index {number}` For a custom compositing order.
   - `finished {number}` Not finished. Should be `finished {boolean}` or better yet private.
   - `startTime {number}` Set automatically when added.
-  - `onend {function}` Currently fires regardless of fillMode. Should be renamed.
+  - `onend {function}` Fires regardless of fillMode. Should be renamed.
   - `naming {string}` Not finished. "default", "exact", "increment", "nil" but might just be replaced with a "key" property
   - `remove {boolean}` If the animation is removed on completion.
 

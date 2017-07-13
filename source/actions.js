@@ -143,6 +143,11 @@ HyperGroup.prototype = {
 };
 
 
+export function hyperActionIsFilling(action) {
+// used in Core:cleanupAnimationAtIndex // does not apply to group & chain animations, or animations contained in a group or chain
+// Animations with a fill will be very inefficient, because composite will always return true for changed
+	return (action.finished && (action.fillMode === "forwards" || action.fillMode === "both")); // incomplete
+}// TODO: Determine CA behavior with autoreverses && backwards fill
 
 function HyperAction() {
 	this.property; // string, property name
@@ -152,7 +157,7 @@ function HyperAction() {
 	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
 	this.iterations; // float >= 0. Initialized in runAnimation
 	this.autoreverse; // boolean. When iterations > 1. Easing also reversed. Maybe should be named "autoreverses", maybe should be camelCased
-	this.fillMode; // string. Defaults to "none". NOT FINISHED. "forwards" and "backwards" are "both". maybe should be named "fill". maybe should just be a boolean. // I'm unsure of the effect of combining a forward fill with additive // TODO: implement removedOnCompletion
+	this.fillMode; // string. Defaults to "none". NOT FINISHED is an understatement. "forwards" and "backwards" are "both". maybe should be named "fill". maybe should just be a boolean. // I'm unsure of the effect of combining a forward fill with additive // TODO: implement removedOnCompletion
 	this.index = 0; // float. Custom compositing order.
 	this.delay = 0; // float. In seconds. // TODO: easing should be taken in effect after the delay
 	this.blend = "relative"; // also "absolute" // Default should be "absolute" if explicit
@@ -165,7 +170,6 @@ function HyperAction() {
 	//this.naming; // "default","exact","increment","nil" // why not a key property?
 	this.remove = true;
 } // Can't freeze animation objects while implementation of core cleanup sets onend function to null
-
 HyperAction.prototype = {
 	copy: function() { // TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
 		return new this.constructor(this);
@@ -253,7 +257,7 @@ HyperAction.prototype = {
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
-		const changed = (iterationProgress !== this.progress || this.finished);
+		const changed = (iterationProgress !== this.progress || this.finished); // Animations with a fill will be very inefficient.
 		this.progress = iterationProgress;
 		return changed;
 	}

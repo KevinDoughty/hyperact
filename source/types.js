@@ -132,7 +132,7 @@ HyperSet.prototype = {
 				} else if (sort > 0) {
 					array.push(B);
 					j++;
-				}
+				} else throw new Error("HyperSet invalid sort function, add a:"+A+"; b:"+B+"; result:"+sort+";");
 			}
 		} else {
 			array = a.slice(0);
@@ -171,7 +171,7 @@ HyperSet.prototype = {
 					i++;
 				} else if (sort > 0) {
 					j++;
-				}
+				} else throw new Error("HyperSet invalid sort function, subtract a:"+A+"; b:"+B+"; result:"+sort+";");
 			}
 		} else {
 			array = a.slice(0);

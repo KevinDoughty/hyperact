@@ -64,7 +64,10 @@ HyperContext.prototype = {
 	},
 	flushTransaction: function flushTransaction() {
 		// TODO: prevent unterminated when called within display
+		//console.log("flush");
+		//console.log("functions:%s;",this.invalidateFunctions.length);
 		this.invalidateFunctions.forEach(function (invalidate) {
+			// this won't work if there are no animations thus not registered
 			invalidate();
 		});
 	},
@@ -324,6 +327,12 @@ HyperGroup.prototype = {
 	}
 };
 
+function hyperActionIsFilling(action) {
+	// used in Core:cleanupAnimationAtIndex // does not apply to group & chain animations, or animations contained in a group or chain
+	// Animations with a fill will be very inefficient, because composite will always return true for changed
+	return action.finished && (action.fillMode === "forwards" || action.fillMode === "both"); // incomplete
+} // TODO: Determine CA behavior with autoreverses && backwards fill
+
 function HyperAction() {
 	this.property; // string, property name
 	this.type = wetNumberType; // Default
@@ -332,7 +341,7 @@ function HyperAction() {
 	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
 	this.iterations; // float >= 0. Initialized in runAnimation
 	this.autoreverse; // boolean. When iterations > 1. Easing also reversed. Maybe should be named "autoreverses", maybe should be camelCased
-	this.fillMode; // string. Defaults to "none". NOT FINISHED. "forwards" and "backwards" are "both". maybe should be named "fill". maybe should just be a boolean. // I'm unsure of the effect of combining a forward fill with additive // TODO: implement removedOnCompletion
+	this.fillMode; // string. Defaults to "none". NOT FINISHED is an understatement. "forwards" and "backwards" are "both". maybe should be named "fill". maybe should just be a boolean. // I'm unsure of the effect of combining a forward fill with additive // TODO: implement removedOnCompletion
 	this.index = 0; // float. Custom compositing order.
 	this.delay = 0; // float. In seconds. // TODO: easing should be taken in effect after the delay
 	this.blend = "relative"; // also "absolute" // Default should be "absolute" if explicit
@@ -345,7 +354,6 @@ function HyperAction() {
 	//this.naming; // "default","exact","increment","nil" // why not a key property?
 	this.remove = true;
 } // Can't freeze animation objects while implementation of core cleanup sets onend function to null
-
 HyperAction.prototype = {
 	copy: function copy() {
 		// TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
@@ -430,7 +438,7 @@ HyperAction.prototype = {
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
 		}
-		var changed = iterationProgress !== this.progress || this.finished;
+		var changed = iterationProgress !== this.progress || this.finished; // Animations with a fill will be very inefficient.
 		this.progress = iterationProgress;
 		return changed;
 	}
@@ -701,10 +709,10 @@ function activate(controller, delegate, layerInstance) {
 	var shouldSortAnimations = false;
 	var modelBacking = {};
 	var previousBacking = {}; // modelBacking and previousBacking merge like react and there is no way to delete.
-	var presentationBacking = null; // This is not nulled out anymore
+	var presentationBacking = null;
 	var registeredProperties = [];
 	var activeBacking = modelBacking;
-	var presentationTime = -1;
+	//let presentationTime = -1;
 
 	function valueForKey(property) {
 		// don't let this become re-entrant (do not animate delegate.output)
@@ -751,7 +759,10 @@ function activate(controller, delegate, layerInstance) {
 	}
 
 	function invalidate() {
-		presentationTime = -1;
+		// note that you cannot invalidate if there are no animations
+		//console.log("invalidate");
+		//presentationTime = -1;
+		presentationBacking = null;
 	}
 
 	function registerWithContext() {
@@ -785,13 +796,13 @@ function activate(controller, delegate, layerInstance) {
 			});
 		} else if (!(animation instanceof HyperAnimation) && !(animation instanceof HyperKeyframes)) throw new Error("not an animation");
 		if (animation.finished) {
-			cleanupAndRemoveAnimationAtIndex(animation, index);
+			if (!hyperActionIsFilling(animation)) cleanupAndRemoveAnimationAtIndex(animation, index);
 			if (isFunction(animation.onend)) finishedWithCallback.push(animation);
 		}
 	}
 
 	function animationCleanup() {
-		// animations contained within groups ignore remove (removedOnCompletion) but should fire onend
+		// for the context to remove // animations contained within groups ignore remove (removedOnCompletion) but should fire onend
 		var i = allAnimations.length;
 		var finishedWithCallback = [];
 		while (i--) {
@@ -810,6 +821,7 @@ function activate(controller, delegate, layerInstance) {
 	}
 
 	function removeAnimationInstance(animation) {
+		// called from public removeAnimation
 		var index = allAnimations.indexOf(animation);
 		if (index > -1) {
 			allAnimations.splice(index, 1);
@@ -906,18 +918,28 @@ function activate(controller, delegate, layerInstance) {
 
 	Object.defineProperty(controller, "presentation", {
 		get: function get() {
+			//console.log("----------");
 			var transactionTime = hyperContext.currentTransaction().time;
-			if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
+			//console.log("time:%s;",transactionTime);
+			//console.log("presentationBacking:%s;",JSON.stringify(presentationBacking));
+			//console.log("early abort:%s;",transactionTime === presentationTime && presentationBacking !== null);
+			//console.log("early abort:%s;",presentationBacking !== null);
+			//if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
+			if (presentationBacking !== null) return presentationBacking;
 			var presentationLayer = Object.assign(baseLayer(), modelBacking);
+			//console.log("source:%s;",JSON.stringify(presentationLayer));
 			var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
-			if (allAnimations.length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
+			var length = allAnimations.length;
+			if (length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
+			shouldSortAnimations = false;
 			if (changed || presentationBacking === null) {
 				convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer), presentationLayer, delegate.output, delegate);
-				presentationBacking = presentationLayer;
-				Object.freeze(presentationBacking);
+				Object.freeze(presentationLayer);
+				if (length) presentationBacking = presentationLayer;else presentationBacking = null;
+				return presentationLayer;
 			}
-			presentationTime = transactionTime;
-			shouldSortAnimations = false;
+			//presentationTime = transactionTime;
+
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -1165,7 +1187,7 @@ HyperSet.prototype = {
 				} else if (sort > 0) {
 					array.push(B);
 					j++;
-				}
+				} else throw new Error("HyperSet invalid sort function, add a:" + A + "; b:" + B + "; result:" + sort + ";");
 			}
 		} else {
 			array = a.slice(0);
@@ -1206,7 +1228,7 @@ HyperSet.prototype = {
 					i++;
 				} else if (sort > 0) {
 					j++;
-				}
+				} else throw new Error("HyperSet invalid sort function, subtract a:" + A + "; b:" + B + "; result:" + sort + ";");
 			}
 		} else {
 			array = a.slice(0);

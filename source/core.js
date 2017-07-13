@@ -1,5 +1,5 @@
 import { HyperContext } from "./context.js";
-import { HyperAnimation, HyperKeyframes, HyperGroup, HyperChain, animationFromDescription } from "./actions.js";
+import { HyperAnimation, HyperKeyframes, HyperGroup, HyperChain, animationFromDescription, hyperActionIsFilling } from "./actions.js";
 
 const TRANSACTION_DURATION_ALONE_IS_ENOUGH = true; // original was false and required a default animation, but CA behavior is true
 const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
@@ -129,10 +129,10 @@ export function activate(controller, delegate, layerInstance) {
 	let shouldSortAnimations = false;
 	const modelBacking = {};
 	const previousBacking = {}; // modelBacking and previousBacking merge like react and there is no way to delete.
-	let presentationBacking = null; // This is not nulled out anymore
+	let presentationBacking = null;
 	const registeredProperties = [];
 	let activeBacking = modelBacking;
-	let presentationTime = -1;
+	//let presentationTime = -1;
 
 	function valueForKey(property) { // don't let this become re-entrant (do not animate delegate.output)
 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyOutput,delegate);
@@ -176,8 +176,10 @@ export function activate(controller, delegate, layerInstance) {
 		}// else controller.needsDisplay();
 	}
 
-	function invalidate() {
-		presentationTime = -1;
+	function invalidate() { // note that you cannot invalidate if there are no animations
+		//console.log("invalidate");
+		//presentationTime = -1;
+		presentationBacking = null;
 	}
 
 	function registerWithContext() {
@@ -209,12 +211,12 @@ export function activate(controller, delegate, layerInstance) {
 			});
 		} else if (!(animation instanceof HyperAnimation) && !(animation instanceof HyperKeyframes)) throw new Error("not an animation");
 		if (animation.finished) {
-			cleanupAndRemoveAnimationAtIndex(animation,index);
+			if (!hyperActionIsFilling(animation)) cleanupAndRemoveAnimationAtIndex(animation,index);
 			if (isFunction(animation.onend)) finishedWithCallback.push(animation);
 		}
 	}
 
-	function animationCleanup() { // animations contained within groups ignore remove (removedOnCompletion) but should fire onend
+	function animationCleanup() { // for the context to remove // animations contained within groups ignore remove (removedOnCompletion) but should fire onend
 		let i = allAnimations.length;
 		const finishedWithCallback = [];
 		while (i--) {
@@ -232,7 +234,7 @@ export function activate(controller, delegate, layerInstance) {
 		});
 	}
 
-	function removeAnimationInstance(animation) {
+	function removeAnimationInstance(animation) { // called from public removeAnimation
 		const index = allAnimations.indexOf(animation);
 		if (index > -1) {
 			allAnimations.splice(index,1);
@@ -328,18 +330,29 @@ export function activate(controller, delegate, layerInstance) {
 
 	Object.defineProperty(controller, "presentation", {
 		get: function() {
+			//console.log("----------");
 			const transactionTime = hyperContext.currentTransaction().time;
-			if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
+			//console.log("time:%s;",transactionTime);
+			//console.log("presentationBacking:%s;",JSON.stringify(presentationBacking));
+			//console.log("early abort:%s;",transactionTime === presentationTime && presentationBacking !== null);
+			//console.log("early abort:%s;",presentationBacking !== null);
+			//if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
+			if (presentationBacking !== null) return presentationBacking;
 			const presentationLayer = Object.assign(baseLayer(), modelBacking);
+			//console.log("source:%s;",JSON.stringify(presentationLayer));
 			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
-			if (allAnimations.length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
+			const length = allAnimations.length;
+			if (length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
+			shouldSortAnimations = false;
 			if (changed || presentationBacking === null) {
 				convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
-				presentationBacking = presentationLayer;
-				Object.freeze(presentationBacking);
+				Object.freeze(presentationLayer);
+				if (length) presentationBacking = presentationLayer;
+				else presentationBacking = null;
+				return presentationLayer;
 			}
-			presentationTime = transactionTime;
-			shouldSortAnimations = false;
+			//presentationTime = transactionTime;
+			
 			return presentationBacking;
 		},
 		enumerable: false,

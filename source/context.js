@@ -65,7 +65,9 @@ HyperContext.prototype = {
 		this.transactions.pop();
 	},
 	flushTransaction: function() { // TODO: prevent unterminated when called within display
-		this.invalidateFunctions.forEach( function(invalidate) {
+		//console.log("flush");
+		//console.log("functions:%s;",this.invalidateFunctions.length);
+		this.invalidateFunctions.forEach( function(invalidate) { // this won't work if there are no animations thus not registered
 			invalidate();
 		});
 	},

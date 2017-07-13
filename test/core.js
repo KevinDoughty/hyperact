@@ -1,6 +1,7 @@
 import * as core from "../source/core.js";
 const assert = require("assert");
 import { HyperChain, HyperKeyframes } from "../source/actions.js";
+import { HyperSet } from "../source/types.js";
 
 const duration = 0.05; // mocha timeout is 2 seconds
 
@@ -1592,7 +1593,64 @@ describe("core", function() {
 		});
 	});
 
-
+	describe("animation properties", function() {
+		it("fillMode forwards and zero duration", function(done) {
+			const view = {
+				a:0,
+				b:0
+			};
+			core.activate(view);
+			view.addAnimation({
+				property:"a",
+				duration:0 ,
+				from:1,
+				to:1,
+				fillMode:"forwards",
+				blend:"absolute"
+			},"filler");
+			view.addAnimation({
+				property:"b",
+				duration:duration,
+				from:1,
+				to:1,
+				blend:"absolute",
+				onend: function(finished) {
+					const animationCount = view.animations.length;
+					const error = (animationCount === 1 && view.presentation.a === 1) ? null : new Error("animations:"+animationCount+"; presentation:"+JSON.stringify(view.presentation));
+					view.removeAnimation("filler");
+					done(error);
+				}
+			});
+		});
+		it("fillMode forwards and duration", function(done) {
+			const view = {
+				a:0,
+				b:0
+			};
+			core.activate(view);
+			view.addAnimation({
+				property:"a",
+				duration:duration/2,
+				from:1,
+				to:1,
+				fillMode:"forwards",
+				blend:"absolute"
+			},"filler");
+			view.addAnimation({
+				property:"b",
+				duration:duration,
+				from:1,
+				to:1,
+				blend:"absolute",
+				onend: function(finished) {
+					const animationCount = view.animations.length;
+					const error = (animationCount === 1 && view.presentation.a === 1) ? null : new Error("animations:"+animationCount+"; presentation:"+JSON.stringify(view.presentation));
+					view.removeAnimation("filler");
+					done(error);
+				}
+			});
+		});
+	});
 
 	describe("TODO", function() {
 		it("uses presentationLayer, modelLayer, previousLayer syntax not presentation, model, previous (or maybe not)", function() {
@@ -1658,14 +1716,67 @@ describe("core", function() {
 		it("style transform 3d matrix and slerpalerp", function() {
 			assert(false);
 		});
-		it("input and output implemented on type object, not delegate !!! (would make CSS animation so much easier)", function() {
-			assert(false);
-		});
-		it("flushing should invalidate presentation layer, for set type", function() {
+		it("input and output implemented on type object, not delegate !!! (would make CSS animation so much easier, see notes.txt)", function() {
 			assert(false);
 		});
 		
 	});
 
+	describe("set animation", function() {
+		it("flushing should invalidate presentation layer", function() {
+			const view = {};
+			core.activate(view);
+			view.discrete = ["a"];
+			view.addAnimation([
+				{
+					property:"discrete",
+					duration:duration,
+					from:["b"],
+					to:["b"],
+					blend:"absolute",
+					type: new HyperSet( function(a,b) {
+						return a.charCodeAt(0)-b.charCodeAt(0);
+					})
+				}
+			]);
+			view.discrete = ["c"];
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, { discrete:["b","c"] });
+		});
+		it("flushing twice", function() {
+			const view = {};
+			core.activate(view);
+			view.discrete = ["a"];
+			view.addAnimation([
+				{
+					property:"discrete",
+					duration:duration,
+					from:["b"],
+					to:["b"],
+					blend:"absolute",
+					type: new HyperSet( function(a,b) {
+						return a.charCodeAt(0)-b.charCodeAt(0);
+					})
+				}
+			]);
+			view.discrete = ["c"];
+			core.flushTransaction();
+			view.discrete = ["d"];
+			core.flushTransaction();
+			assert.deepEqual(view.presentation, { discrete:["b","d"] });
+		});
+		it("new presentation instance is generated", function() {
+			const view = {};
+			core.activate(view);
+			view.discrete = ["a"];
+			core.flushTransaction();
+			const presentationOne = view.presentation;
+			view.discrete = ["b"];
+			core.flushTransaction();
+			const presentationTwo = view.presentation;
+			assert.notEqual(presentationOne, presentationTwo);
+			console.log("presentationTwo:%s;",JSON.stringify(presentationTwo));
+		});
+	});
 
 });
