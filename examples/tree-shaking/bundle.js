@@ -1235,16 +1235,12 @@ function hyperMakeSize(width, height) {
 function hyperZeroSize() {
 	return hyperMakeSize(0, 0);
 }
-//	var HyperStyleDeclaration = function(element, layer, controller) {
 var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
 
 	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
 		get: function get() {
 			return layer;
 		},
-		//			 set: function(value) {
-		//				 _layer = value;
-		//			 },
 		enumerable: false,
 		configurable: false
 	});
@@ -1253,9 +1249,6 @@ var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
 		get: function get() {
 			return controller;
 		},
-		//			 set: function(value) {
-		//				 _controller = value;
-		//			 },
 		enumerable: false,
 		configurable: false
 	});
@@ -1264,16 +1257,6 @@ var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
 HyperStyleDeclaration.prototype = {
 	constructor: HyperStyleDeclaration
 };
-
-////export HyperStyleDeclaration; // (layer, controller)
-// export const typeOfProperty = function(property,value) {
-// 	return getCssOnlyType(property,value);
-// }
-// export const activateStyleAnimation = HyperStyle.activate; // (element, receiver, layer, delegate)
-// export const addAnimation = HyperStyle.addAnimation; // (element, animation, named)
-// export const setDelegateOfElement = HyperStyle.setDelegateOfElement; // (delegate,element,oldStyle)
-// export const setDelegate = HyperStyle.setDelegate; // (element, delegate, oldStyle)
-// export const compositeStyleAnimation = HyperStyle.composite; // (sourceLayer, sourceAnimations, time)
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy

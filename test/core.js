@@ -1775,7 +1775,19 @@ describe("core", function() {
 			core.flushTransaction();
 			const presentationTwo = view.presentation;
 			assert.notEqual(presentationOne, presentationTwo);
-			console.log("presentationTwo:%s;",JSON.stringify(presentationTwo));
+		});
+		it("discrete with no animation", function() {
+			const view = {};
+			core.activate(view);
+			view.discrete = ["a"];
+			core.flushTransaction();
+			view.discrete = ["b"];
+			core.flushTransaction();
+			view.discrete = ["c"];
+			core.flushTransaction();
+			const presentationThree = view.presentation;
+			assert.deepEqual(presentationThree, { discrete:["c"] });
+			
 		});
 	});
 
