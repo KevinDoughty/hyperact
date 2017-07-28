@@ -666,7 +666,7 @@ function implicitAnimation(property, prettyValue, prettyPrevious, prettyPresenta
 	// TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
 	var description = void 0;
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate, property, prettyValue, prettyPrevious, prettyPresentation); // TODO: rename action or implicit
-	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null;
+	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null; // null stops, undefined continues
 	var animation = animationFromDescription(description);
 	if (!animation) {
 		animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
@@ -729,7 +729,7 @@ function activate(controller, delegate, layerInstance) {
 			var uglyKey = prettyKey;
 			var prettyValue = layer[prettyKey];
 			if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey, delegate.keyInput, delegate);
-			controller.registerAnimatableProperty(uglyKey);
+			controller.registerAnimatableProperty(uglyKey); // automatic registration
 			var uglyValue = convertedValueOfPropertyWithFunction(prettyValue, prettyKey, delegate.input, delegate);
 			var uglyPrevious = modelBacking[uglyKey];
 			previousBacking[uglyKey] = uglyPrevious;
@@ -750,13 +750,11 @@ function activate(controller, delegate, layerInstance) {
 					else controller.needsDisplay();
 				}
 			});
-		} // else controller.needsDisplay();
+		}
 	}
 
 	function invalidate() {
 		// note that you cannot invalidate if there are no animations
-		//console.log("invalidate");
-		//presentationTime = -1;
 		presentationBacking = null;
 	}
 
@@ -837,7 +835,7 @@ function activate(controller, delegate, layerInstance) {
 	}
 
 	controller.registerAnimatableProperty = function (property, defaultAnimation) {
-		// Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
+		// Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary. // TODO: default animation should always be the value true
 		if (!isAllowableProperty(property)) return;
 		var firstTime = false;
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
@@ -913,16 +911,9 @@ function activate(controller, delegate, layerInstance) {
 
 	Object.defineProperty(controller, "presentation", {
 		get: function get() {
-			//console.log("----------");
 			var transactionTime = hyperContext.currentTransaction().time;
-			//console.log("time:%s;",transactionTime);
-			//console.log("presentationBacking:%s;",JSON.stringify(presentationBacking));
-			//console.log("early abort:%s;",transactionTime === presentationTime && presentationBacking !== null);
-			//console.log("early abort:%s;",presentationBacking !== null);
-			//if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
 			if (presentationBacking !== null) return presentationBacking;
 			var presentationLayer = Object.assign(baseLayer(), modelBacking);
-			//console.log("source:%s;",JSON.stringify(presentationLayer));
 			var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			var length = allAnimations.length;
 			if (length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
@@ -933,8 +924,6 @@ function activate(controller, delegate, layerInstance) {
 				if (length) presentationBacking = presentationLayer;else presentationBacking = null;
 				return presentationLayer;
 			}
-			//presentationTime = transactionTime;
-
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -1236,7 +1225,6 @@ function hyperZeroSize() {
 	return hyperMakeSize(0, 0);
 }
 var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
-
 	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
 		get: function get() {
 			return layer;
@@ -1244,7 +1232,6 @@ var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
 		enumerable: false,
 		configurable: false
 	});
-
 	Object.defineProperty(this, "hyperStyleController", { // these will collide with css
 		get: function get() {
 			return controller;

@@ -666,7 +666,7 @@ function implicitAnimation(property, prettyValue, prettyPrevious, prettyPresenta
 	// TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
 	var description = void 0;
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate, property, prettyValue, prettyPrevious, prettyPresentation); // TODO: rename action or implicit
-	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null;
+	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null; // null stops, undefined continues
 	var animation = animationFromDescription(description);
 	if (!animation) {
 		animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
@@ -734,7 +734,7 @@ function activate(controller, delegate, layerInstance) {
 			var uglyKey = prettyKey;
 			var prettyValue = layer[prettyKey];
 			if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey, delegate.keyInput, delegate);
-			controller.registerAnimatableProperty(uglyKey);
+			controller.registerAnimatableProperty(uglyKey); // automatic registration
 			var uglyValue = convertedValueOfPropertyWithFunction(prettyValue, prettyKey, delegate.input, delegate);
 			var uglyPrevious = modelBacking[uglyKey];
 			previousBacking[uglyKey] = uglyPrevious;
@@ -755,13 +755,11 @@ function activate(controller, delegate, layerInstance) {
 					else controller.needsDisplay();
 				}
 			});
-		} // else controller.needsDisplay();
+		}
 	}
 
 	function invalidate() {
 		// note that you cannot invalidate if there are no animations
-		//console.log("invalidate");
-		//presentationTime = -1;
 		presentationBacking = null;
 	}
 
@@ -842,7 +840,7 @@ function activate(controller, delegate, layerInstance) {
 	}
 
 	controller.registerAnimatableProperty = function (property, defaultAnimation) {
-		// Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
+		// Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary. // TODO: default animation should always be the value true
 		if (!isAllowableProperty(property)) return;
 		var firstTime = false;
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
@@ -918,16 +916,9 @@ function activate(controller, delegate, layerInstance) {
 
 	Object.defineProperty(controller, "presentation", {
 		get: function get() {
-			//console.log("----------");
 			var transactionTime = hyperContext.currentTransaction().time;
-			//console.log("time:%s;",transactionTime);
-			//console.log("presentationBacking:%s;",JSON.stringify(presentationBacking));
-			//console.log("early abort:%s;",transactionTime === presentationTime && presentationBacking !== null);
-			//console.log("early abort:%s;",presentationBacking !== null);
-			//if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
 			if (presentationBacking !== null) return presentationBacking;
 			var presentationLayer = Object.assign(baseLayer(), modelBacking);
-			//console.log("source:%s;",JSON.stringify(presentationLayer));
 			var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			var length = allAnimations.length;
 			if (length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
@@ -938,8 +929,6 @@ function activate(controller, delegate, layerInstance) {
 				if (length) presentationBacking = presentationLayer;else presentationBacking = null;
 				return presentationLayer;
 			}
-			//presentationTime = transactionTime;
-
 			return presentationBacking;
 		},
 		enumerable: false,
@@ -1496,37 +1485,30 @@ function hyperIntersectionRange(a, b) {
 }
 
 function prepareDocument(dict, HyperStyleDeclaration) {
-	if (typeof document !== "undefined") for (var property in dict) {
-		//document.documentElement.style) {
-		// 		if (cssStyleDeclarationAttribute[property] || property in cssStyleDeclarationMethodModifiesStyle) {
-		// 			continue;
-		// 		}
-		(function (property) {
-			//console.log("PREPARE:%s;",property);
-			//Object.defineProperty(HyperStyleDeclaration.prototype, property, configureDescriptor({
+	if (typeof document !== "undefined") {
+		for (var property in dict) {
+			//document.documentElement.style) {
+			// 		if (cssStyleDeclarationAttribute[property] || property in cssStyleDeclarationMethodModifiesStyle) {
+			// 			continue;
+			// 		}
+			// 			(function(property) {
 			var type = dict[property];
 			Object.defineProperty(HyperStyleDeclaration.prototype, property, {
 				get: function get() {
-					// I think this is wrong. The layer should be returning pretty value.
 					var layer = this.hyperStyleLayer;
 					var ugly = layer[property];
 					var pretty = type.output(ugly);
-					console.log("!!! hyperact source/style/element.js output property:%s; ugly:%s; pretty:%s; I think this is wrong, layer should be returning pretty value", property, JSON.stringify(ugly), JSON.stringify(pretty));
 					return pretty;
 				},
 				set: function set(value) {
-					//var ugly = type.input(value);
-					//this.hyperStyleController.registerAnimatableProperty(property);
-					//console.log("!!! element will set:%s; pretty:%s; layer:%s;",property,value,JSON.stringify(this.hyperStyleLayer));
-					//this.hyperStyleLayer[property] = ugly; // This will produce animations from and to the ugly values, not CSS values.
 					this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
-					//console.log("!!! element did set:%s; pretty:%s; layer:%s;",property,value,JSON.stringify(this.hyperStyleLayer));
-					this.hyperStyleController.registerAnimatableProperty(property);
+					this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
 				},
 				configurable: true,
 				enumerable: true
 			});
-		})(property);
+			// 			})(property);
+		}
 	}
 }
 // This function is a fallback for when we can't replace an element's style with
@@ -1759,72 +1741,42 @@ function registerAnimatableStyles(dict) {
 	prepareDocument(dict, HyperStyleDeclaration);
 }
 
-// export function activateElement(element,receiver = element) {
-// 	//initialize(element,receiver);
-// 	if (typeof window === "undefined") return;
-// 	if (!element || element.style.hyperStyleInitialized) return;
-// 	HyperStyle.activate(element, receiver);
-// 	element.style.hyperStyleInitialized = true; // formerly _webAnimationsStyleInitialized
-// }
-
 function isFunction$4(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-// const HyperStyle = {};
-
-// function initialize(target, receiver) {
-// 	if (typeof window === "undefined") return;
-// 	if (!target || target.style.hyperStyleInitialized) return;
-// 	HyperStyle.activate(target, receiver);
-// 	target.style.hyperStyleInitialized = true; // formerly _webAnimationsStyleInitialized
-// }
-
 function activateElement(element) {
-	var receiver = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : element;
-
-	if (typeof window === "undefined") return;
-	if (!element || element.style.hyperStyleInitialized) return;
-	// HyperStyle.activate = function(element, receiver) {
-	///console.log("activate element:%s; receiver:%s; layer:%s; delegate:%s;",element,receiver,layer,delegate);
+	var controller = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : element;
+	// compare to activate(controller, delegate, layerInstance)
 	var hyperStyleDelegate = {};
+
+	var delegate = null;
+	var target = null; // allows calling activateElement with undefined element to be set later
+	var original = element ? element.style : null;
 
 	hyperStyleDelegate.typeOfProperty = function (property, value) {
 		if (delegate && isFunction$4(delegate.typeOfProperty)) return delegate.typeOfProperty.call(delegate, property, value); // Not very useful.
 		return typeForStyle(property);
 	};
 	hyperStyleDelegate.input = function (property, prettyValue) {
-		//console.log("_____ hyperStyleDelegate.input:%s; type:%s; pretty:%s;",property,type,JSON.stringify(prettyValue));
 		if (delegate && isFunction$4(delegate.input)) return delegate.input.call(delegate, property, prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
 		var type = typeForStyle(property);
-		var uglyValue = type.input(prettyValue);
-		//console.log("___ hyperStyleDelegate.input:%s; type:%s; pretty:%s; ugly:%s;",property,type.toString(),JSON.stringify(prettyValue),JSON.stringify(uglyValue));
+		var uglyValue = type.input(prettyValue); // allow registering properties with no declared type
 		return uglyValue;
 	};
 	hyperStyleDelegate.output = function (property, uglyValue) {
 		// value is the ugly value // BUG FIXME: sometimes a string
-		//console.log("_____ hyperStyleDelegate.output:%s; type:%s; ugly:%s;",property,type,JSON.stringify(uglyValue));
-		if (delegate && isFunction$4(delegate.output)) {
-			return delegate.output.call(delegate, property, uglyValue);
-		}
+		if (delegate && isFunction$4(delegate.output)) return delegate.output.call(delegate, property, uglyValue);
 		var type = typeForStyle(property);
 		var result = void 0;
-		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type.output(uglyValue);
-		//console.log("___ hyperStyleDelegate.output:%s; type:%s; ugly:%s; pretty:%s;",property,type.toString(),JSON.stringify(uglyValue),JSON.stringify(result));
+		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type.output(uglyValue); // allow registering properties with no declared type
 		return result;
 	};
-	hyperStyleDelegate.animationForKey = function (key, uglyValue, uglyPrevious, target) {
+	hyperStyleDelegate.animationForKey = function (key, prettyValue, prettyPrevious, prettyPresentation) {
 		// sometimesUglySometimesPrettyPrevious // prettyPrevious needs to be uglyPrevious. This is a Pyon problem
-		var propertyType = typeForStyle(key);
-		if (uglyPrevious === null || typeof uglyPrevious === "undefined") {
-			uglyPrevious = uglyValue;
-		}
-		var prettyValue = propertyType.output(uglyValue);
-		var prettyPrevious = propertyType.output(uglyPrevious);
 		if (prettyPrevious === null || typeof prettyPrevious === "undefined") prettyPrevious = prettyValue;
 		var description = void 0; // initially undefined
-		if (delegate && isFunction$4(delegate.animationForKey)) description = delegate.animationForKey(key, prettyValue, prettyPrevious, element);
-		//console.log("~~~~~~ HyperStyleDelegate.animationForKey:%s; uglyV:%s; uglyP:%s; prettyV:%s; prettyP:%s; result:%s;",key,JSON.stringify(uglyValue),JSON.stringify(uglyPrevious),prettyValue,prettyPrevious,JSON.stringify(description));
+		if (delegate && isFunction$4(delegate.animationForKey)) description = delegate.animationForKey(key, prettyValue, prettyPrevious, prettyPresentation, target);else if (delegate && isFunction$4(delegate)) description = delegate(key, prettyValue, prettyPrevious, target);
 		var animation = animationFromDescription(description);
 		if (animation && typeof animation.property === "undefined") animation.property = key;
 		return animation;
@@ -1832,60 +1784,63 @@ function activateElement(element) {
 	hyperStyleDelegate.animationFromDescription = function (description) {
 		// deprecate this because delegate.typeOfProperty is enough?
 		var animation = animationFromDescription(description);
-		if (animation.property) animation.type = typeForStyle(animation.property);
+		if (animation.property) animation.type = typeForStyle(animation.property); // TODO: or discrete type if undefined
 		return animation;
 	};
 	hyperStyleDelegate.display = function () {
-		var presentation = receiver.presentation; // TODO: this should be provided
+		var presentation = controller.presentation; // TODO: this should be provided
 		var presentationKeys = Object.keys(presentation);
 		presentationKeys.forEach(function (key) {
 			var value = presentation[key];
-			style[key] = value; // HyperStyleDeclaration is meant to be mutated.
+			original[key] = value; // HyperStyleDeclaration is meant to be mutated.
 		});
-
 		var previousKeys = Object.keys(previousLayer);
 		previousKeys.forEach(function (key) {
 			// Must nullify properties that are no longer animated, if not on presentation.
 			if (presentationKeys.indexOf(key) === -1) {
 				// FIXME: Sort & walk keys? Not too bad if animating few properties.
-				style[key] = "";
+				original[key] = "";
 			}
 		});
-		//console.log("Hyperact style display presentation:%s;",JSON.stringify(presentation));
 		previousLayer = presentation;
 	};
 
-	var style = element.style;
-	var delegate = null;
-
 	var layer = {};
-	for (var property in usedPropertyTypes) {
-		var prettyValue = element.style[property];
-		var uglyValue = hyperStyleDelegate.input(property, prettyValue);
-		layer[property] = uglyValue;
-	}
-	var hyperStyleDeclaration = new HyperStyleDeclaration(layer, receiver);
+	var hyperStyleDeclaration = new HyperStyleDeclaration(layer, controller);
 	var previousLayer = {};
+	activate(controller, hyperStyleDelegate, layer); // controller can be undefined only if element is not
 
-	activate(receiver, hyperStyleDelegate, layer);
+	function setElement(what) {
+		if (target) return; // you can only assign element once, either as argument or with this function
+		target = what;
+		original = target.style;
 
-	try {
-		Object.defineProperty(element, "style", {
-			get: function get() {
-				return hyperStyleDeclaration;
-			},
-			configurable: true,
-			enumerable: true
-		});
-	} catch (error) {
-		//			patchInlineStyleForAnimation(target.style);
-		console.warn("not animatable by any craft known to Pyon");
+		for (var property in usedPropertyTypes) {
+			var prettyValue = target.style[property];
+			var uglyValue = hyperStyleDelegate.input(property, prettyValue);
+			layer[property] = uglyValue;
+			controller.registerAnimatableProperty(property, true);
+		}
+		try {
+			Object.defineProperty(target, "style", {
+				get: function get() {
+					return hyperStyleDeclaration;
+				},
+				configurable: true,
+				enumerable: true
+			});
+		} catch (error) {
+			//patchInlineStyleForAnimation(target.style);
+			console.warn("not animatable by any craft known to Pyon");
+		}
+		target.style.hyperStyleInitialized = true;
 	}
-	element.style.hyperStyleInitialized = true; // formerly _webAnimationsStyleInitialized
+
+	if (element) setElement(element);
+	return setElement;
 }
 
 var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
-
 	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
 		get: function get() {
 			return layer;
@@ -1893,7 +1848,6 @@ var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
 		enumerable: false,
 		configurable: false
 	});
-
 	Object.defineProperty(this, "hyperStyleController", { // these will collide with css
 		get: function get() {
 			return controller;

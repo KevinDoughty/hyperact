@@ -82,7 +82,7 @@ function presentationTransform(presentationLayer,sourceAnimations,time,shouldSor
 function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimation,transaction) { // TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
 	let description;
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
-	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null;
+	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && description === null) return null; // null stops, undefined continues
 	let animation = animationFromDescription(description);
 	if (!animation) {
 		animation = animationFromDescription(defaultAnimation); // default is not converted to ugly in registerAnimatableProperty
@@ -153,7 +153,7 @@ export function activate(controller, delegate, layerInstance) {
 			let uglyKey = prettyKey;
 			const prettyValue = layer[prettyKey];
 			if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey,delegate.keyInput,delegate);
-			controller.registerAnimatableProperty(uglyKey);
+			controller.registerAnimatableProperty(uglyKey); // automatic registration
 			const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,prettyKey,delegate.input,delegate);
 			const uglyPrevious = modelBacking[uglyKey];
 			previousBacking[uglyKey] = uglyPrevious;
@@ -173,12 +173,10 @@ export function activate(controller, delegate, layerInstance) {
 					else controller.needsDisplay();
 				}
 			});
-		}// else controller.needsDisplay();
+		}
 	}
 
 	function invalidate() { // note that you cannot invalidate if there are no animations
-		//console.log("invalidate");
-		//presentationTime = -1;
 		presentationBacking = null;
 	}
 
@@ -254,7 +252,7 @@ export function activate(controller, delegate, layerInstance) {
 		return ((layerInstance !== controller || (controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0)) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0));
 	}
 
-	controller.registerAnimatableProperty = function(property, defaultAnimation) { // Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary.
+	controller.registerAnimatableProperty = function(property, defaultAnimation) { // Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary. // TODO: default animation should always be the value true
 		if (!isAllowableProperty(property)) return;
 		let firstTime = false;
 		if (registeredProperties.indexOf(property) === -1) firstTime = true;
@@ -330,16 +328,9 @@ export function activate(controller, delegate, layerInstance) {
 
 	Object.defineProperty(controller, "presentation", {
 		get: function() {
-			//console.log("----------");
 			const transactionTime = hyperContext.currentTransaction().time;
-			//console.log("time:%s;",transactionTime);
-			//console.log("presentationBacking:%s;",JSON.stringify(presentationBacking));
-			//console.log("early abort:%s;",transactionTime === presentationTime && presentationBacking !== null);
-			//console.log("early abort:%s;",presentationBacking !== null);
-			//if (transactionTime === presentationTime && presentationBacking !== null) return presentationBacking;
 			if (presentationBacking !== null) return presentationBacking;
 			const presentationLayer = Object.assign(baseLayer(), modelBacking);
-			//console.log("source:%s;",JSON.stringify(presentationLayer));
 			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			const length = allAnimations.length;
 			if (length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
@@ -351,8 +342,6 @@ export function activate(controller, delegate, layerInstance) {
 				else presentationBacking = null;
 				return presentationLayer;
 			}
-			//presentationTime = transactionTime;
-			
 			return presentationBacking;
 		},
 		enumerable: false,
