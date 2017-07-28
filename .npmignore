@@ -1,7 +1,15 @@
-node_modules/
-.DS_Store
 package-lock.json
+yarn-error.log
+yarn.lock
+rollup.config.js
+webpack.config.js
+.babelrc
+.editorconfig
+.eslintrc
+.gitignore
 examples/
+test/
+source/
 NOTtest/
 transform/
 support/
