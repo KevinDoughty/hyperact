@@ -7,6 +7,7 @@ webpack.config.js
 .editorconfig
 .eslintrc
 .gitignore
+.npmignore
 examples/
 test/
 source/
