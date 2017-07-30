@@ -21,10 +21,10 @@ function isFunction(w) { // WET
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-function prepAnimationObjectFromAddAnimation(animation, delegate) {
+function prepAnimationObjectFromAddAnimation(animation, delegate) { // If this is only called from addAnimation, why is it here?
 	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
-		if (delegate && animation.property && isFunction(delegate.type)) {
-			const type = delegate.type.call(delegate, animation.property);
+		if (delegate && animation.property && isFunction(delegate.typeOfProperty)) {
+			const type = delegate.typeOfProperty.call(delegate, animation.property);
 			if (type) animation.type = type;
 		}
 	} else if (animation instanceof HyperGroup) { // recursive

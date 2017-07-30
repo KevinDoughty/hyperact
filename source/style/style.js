@@ -23,8 +23,8 @@ export function activateElement(element, controller = element) { // compare to a
 	let target = null; // allows calling activateElement with undefined element to be set later
 	let original = (element ? element.style : null);
 
-	hyperStyleDelegate.type = function(property) {
-		if (delegate && isFunction(delegate.type)) return delegate.type.call(delegate,property); // Not very useful.
+	hyperStyleDelegate.typeOfProperty = function(property) {
+		if (delegate && isFunction(delegate.typeOfProperty)) return delegate.typeOfProperty.call(delegate,property); // Not very useful.
 		return typeForStyle(property);
 	};
 	hyperStyleDelegate.input = function(property,prettyValue) {

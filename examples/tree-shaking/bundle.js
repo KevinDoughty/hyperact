@@ -622,8 +622,8 @@ function isFunction(w) {
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
 	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
-		if (delegate && animation.property && isFunction(delegate.type)) {
-			var type = delegate.type.call(delegate, animation.property);
+		if (delegate && animation.property && isFunction(delegate.typeOfProperty)) {
+			var type = delegate.typeOfProperty.call(delegate, animation.property);
 			if (type) animation.type = type;
 		}
 	} else if (animation instanceof HyperGroup) {

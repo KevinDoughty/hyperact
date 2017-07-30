@@ -622,8 +622,8 @@ function isFunction(w) {
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
 	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
-		if (delegate && animation.property && isFunction(delegate.type)) {
-			var type = delegate.type.call(delegate, animation.property);
+		if (delegate && animation.property && isFunction(delegate.typeOfProperty)) {
+			var type = delegate.typeOfProperty.call(delegate, animation.property);
 			if (type) animation.type = type;
 		}
 	} else if (animation instanceof HyperGroup) {
@@ -1798,8 +1798,8 @@ function activateElement(element) {
 	var target = null; // allows calling activateElement with undefined element to be set later
 	var original = element ? element.style : null;
 
-	hyperStyleDelegate.type = function (property) {
-		if (delegate && isFunction$4(delegate.type)) return delegate.type.call(delegate, property); // Not very useful.
+	hyperStyleDelegate.typeOfProperty = function (property) {
+		if (delegate && isFunction$4(delegate.typeOfProperty)) return delegate.typeOfProperty.call(delegate, property); // Not very useful.
 		return typeForStyle(property);
 	};
 	hyperStyleDelegate.input = function (property, prettyValue) {
