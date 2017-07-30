@@ -16,14 +16,10 @@ function isFunction(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-export function activateElement(element, controller, delegate) { // compare to activate(controller, delegate, layerInstance)
-	if (typeof window === "undefined") return;
-	if ((typeof delegate === "undefined" || delegate === null) && (typeof controller === "undefined" || controller === null)) controller = element;
-	else if ((typeof delegate === "undefined" || delegate === null) && (typeof controller !== "undefined" && controller !== null) && controller !== element) delegate = controller;
-	else if (typeof controller === "undefined" || controller === null) controller = element; // should really be the HyperStyleDeclaration, not the element itself.
-	
+export function activateElement(element, controller = element) { // compare to activate(controller, delegate, layerInstance)
 	const hyperStyleDelegate = {};
 
+	const delegate = null;
 	let target = null; // allows calling activateElement with undefined element to be set later
 	let original = (element ? element.style : null);
 
@@ -34,7 +30,7 @@ export function activateElement(element, controller, delegate) { // compare to a
 	hyperStyleDelegate.input = function(property,prettyValue) {
 		if (delegate && isFunction(delegate.input)) return delegate.input.call(delegate,property,prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
 		const type = typeForStyle(property);
-		const uglyValue = type ? type.input(prettyValue) : prettyValue; // allow registering properties with no declared type
+		const uglyValue = type.input(prettyValue); // allow registering properties with no declared type
 		return uglyValue;
 	};
 	hyperStyleDelegate.output = function(property,uglyValue) { // value is the ugly value // BUG FIXME: sometimes a string
@@ -42,7 +38,7 @@ export function activateElement(element, controller, delegate) { // compare to a
 		const type = typeForStyle(property);
 		let result;
 		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();
-		else result = type ? type.output(uglyValue) : uglyValue; // allow registering properties with no declared type
+		else result = type.output(uglyValue); // allow registering properties with no declared type
 		return result;
 	};
 	hyperStyleDelegate.animationForKey = function(key,prettyValue,prettyPrevious,prettyPresentation) { // sometimesUglySometimesPrettyPrevious // prettyPrevious needs to be uglyPrevious. This is a Pyon problem
@@ -84,12 +80,6 @@ export function activateElement(element, controller, delegate) { // compare to a
 		if (target) return; // you can only assign element once, either as argument or with this function
 		target = what;
 		original = target.style;
-		
-		Object.keys(original).forEach( key => {
-			if (typeof original[key] !== "undefined" && original[key] !== null && original[key].length === 0) { // most properties on original style object should be an empty string
-				layer[key] = original[key];
-			}
-		});
 		
 		for (let property in usedPropertyTypes) {
 			const prettyValue = target.style[property];

@@ -301,9 +301,10 @@ export function activate(controller, delegate, layerInstance) {
 	Object.defineProperty(controller, "animations", { // TODO: cache this like presentationLayer
 		get: function() {
 			const array = allAnimations.map(function (animation) {
-				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				copy.convert.call(copy,delegate.output,delegate);
-				return copy;
+				return animation.description.call(animation,delegate);
+// 				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
+// 				copy.convert.call(copy,delegate.output,delegate);
+// 				return copy;
 			});
 			return array;
 		},
@@ -432,9 +433,10 @@ export function activate(controller, delegate, layerInstance) {
 	controller.animationNamed = function(name) {
 		const animation = namedAnimations[name];
 		if (animation) {
-			const copy = animation.copy.call(animation);
-			copy.convert.call(copy,delegate.output,delegate);
-			return copy;
+			return animation.description.call(animation,delegate);
+// 			const copy = animation.copy.call(animation);
+// 			copy.convert.call(copy,delegate.output,delegate);
+// 			return copy;
 		}
 		return null;
 	};

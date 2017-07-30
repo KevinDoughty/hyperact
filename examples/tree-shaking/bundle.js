@@ -267,11 +267,18 @@ HyperChain.prototype = {
 		return changed;
 	},
 	convert: function convert(funky, self) {
-		// mutates // animation from, to, and delta
+		// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 		if (isFunction$2(funky)) this.chain.forEach(function (animation) {
 			animation.convert.call(animation, funky, self);
 		});
 	}
+};
+HyperChain.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	copy.chain = this.chain.map(function (animation) {
+		return animation.description(delegate);
+	});
+	return copy;
 };
 
 function HyperGroup(childrenOrSettings) {
@@ -320,11 +327,18 @@ HyperGroup.prototype = {
 		return changed;
 	},
 	convert: function convert(funky, self) {
-		// mutates // animation from, to, and delta
+		// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 		if (isFunction$2(funky)) this.group.forEach(function (animation) {
 			animation.convert.call(animation, funky, self);
 		});
 	}
+};
+HyperGroup.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	copy.group = this.group.map(function (animation) {
+		return animation.description(delegate);
+	});
+	return copy;
 };
 
 function hyperActionIsFilling(action) {
@@ -496,7 +510,7 @@ HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
 HyperKeyframes.prototype.convert = function (funky, self) {
-	// mutates // animation from, to, and delta
+	// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 	if (isFunction$2(funky) && this.property) {
 		var properties = ["keyframes", "delta"];
 		properties.forEach(function (item) {
@@ -511,6 +525,11 @@ HyperKeyframes.prototype.convert = function (funky, self) {
 			}
 		}.bind(this));
 	}
+};
+HyperKeyframes.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	this.convert.call(copy, delegate.output, delegate);
+	return copy;
 };
 
 function HyperAnimation(settings) {
@@ -546,7 +565,7 @@ HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
 HyperAnimation.prototype.convert = function (funky, self) {
-	// mutates // animation from, to, and delta
+	// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 	if (isFunction$2(funky) && this.property) {
 		var properties = ["from", "to", "delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
 		properties.forEach(function (item) {
@@ -555,6 +574,11 @@ HyperAnimation.prototype.convert = function (funky, self) {
 			if (value !== null && typeof value !== "undefined") this[item] = funky.call(self, this.property, value); // intentionally allows animations with an undefined property
 		}.bind(this));
 	}
+};
+HyperAnimation.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	this.convert.call(copy, delegate.output, delegate);
+	return copy;
 };
 
 function animationFromDescription(description) {
@@ -884,9 +908,10 @@ function activate(controller, delegate, layerInstance) {
 	Object.defineProperty(controller, "animations", { // TODO: cache this like presentationLayer
 		get: function get() {
 			var array = allAnimations.map(function (animation) {
-				var copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				copy.convert.call(copy, delegate.output, delegate);
-				return copy;
+				return animation.description.call(animation, delegate);
+				// 				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
+				// 				copy.convert.call(copy,delegate.output,delegate);
+				// 				return copy;
 			});
 			return array;
 		},
@@ -1015,9 +1040,10 @@ function activate(controller, delegate, layerInstance) {
 	controller.animationNamed = function (name) {
 		var animation = namedAnimations[name];
 		if (animation) {
-			var copy = animation.copy.call(animation);
-			copy.convert.call(copy, delegate.output, delegate);
-			return copy;
+			return animation.description.call(animation, delegate);
+			// 			const copy = animation.copy.call(animation);
+			// 			copy.convert.call(copy,delegate.output,delegate);
+			// 			return copy;
 		}
 		return null;
 	};

@@ -1,15 +1,17 @@
 
 
 export function prepareDocument(source, HyperStyleDeclaration) {
+
+
 	if (typeof document !== "undefined") {
 
-// 		const dict = source;
+		const dict = source;
 
-		const styles = Object.keys(document.documentElement.style);
-		const dict = {};
-		styles.forEach( key => {
-			dict[key] = false;
-		});
+// 		const styles = Object.keys(document.documentElement.style);
+// 		const dict = {};
+// 		styles.forEach( key => {
+// 			dict[key] = false;
+// 		});
 // 		Object.assign(dict, source);
 		// Every property change will trigger call to animationForKey even if types are not declared,
 		// so you can animate one style in response to change in another,
@@ -22,24 +24,22 @@ export function prepareDocument(source, HyperStyleDeclaration) {
 	// 			continue;
 	// 		}
 // 			(function(property) {
-				var type = dict[property];
-				Object.defineProperty(HyperStyleDeclaration.prototype, property, {
-					get: function() {
-						var layer = this.hyperStyleLayer;
-						var ugly = layer[property];
-						var pretty = type.output(ugly);
-						return pretty;
-					},
-					set: function(value) {
-						this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
-						if (source[property]) {
-							this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
-						}
-						console.log("element STYLE set:%s; value:%s; result:",property,value,this.hyperStyleLayer);
-					},
-					configurable: true,
-					enumerable: true
-				});
+			var type = dict[property];
+			Object.defineProperty(HyperStyleDeclaration.prototype, property, {
+				get: function() {
+					var layer = this.hyperStyleLayer;
+					var ugly = layer[property];
+					var pretty = type.output(ugly);
+					return pretty;
+				},
+				set: function(value) {
+					this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
+					this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
+					//console.log("element STYLE set:%s; value:%s; result:",property,value,this.hyperStyleLayer);
+				},
+				configurable: true,
+				enumerable: true
+			});
 // 			})(property);
 		}
 	}

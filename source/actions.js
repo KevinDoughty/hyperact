@@ -82,11 +82,16 @@ HyperChain.prototype = {
 		}
 		return changed;
 	},
-	convert: function(funky,self) { // mutates // animation from, to, and delta
+	convert: function(funky,self) { // mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 		if (isFunction(funky)) this.chain.forEach( function(animation) {
 			animation.convert.call(animation,funky,self);
 		});
 	}
+};
+HyperChain.prototype.description = function(delegate) {
+	const copy = Object.assign({},this);
+	copy.chain = this.chain.map( animation => animation.description(delegate) );
+	return copy;
 };
 
 export function HyperGroup(childrenOrSettings) {
@@ -135,13 +140,17 @@ HyperGroup.prototype = {
 		});
 		return changed;
 	},
-	convert: function(funky,self) { // mutates // animation from, to, and delta
+	convert: function(funky,self) { // mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 		if (isFunction(funky)) this.group.forEach( function(animation) {
 			animation.convert.call(animation,funky,self);
 		});
 	}
 };
-
+HyperGroup.prototype.description = function(delegate) {
+	const copy = Object.assign({},this);
+	copy.group = this.group.map( animation => animation.description(delegate) );
+	return copy;
+};
 
 export function hyperActionIsFilling(action) {
 // used in Core:cleanupAnimationAtIndex // does not apply to group & chain animations, or animations contained in a group or chain
@@ -315,7 +324,7 @@ HyperKeyframes.prototype.runAnimation = function(layer,key,transaction) {
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
-HyperKeyframes.prototype.convert = function(funky,self) { // mutates // animation from, to, and delta
+HyperKeyframes.prototype.convert = function(funky,self) { // mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 	if (isFunction(funky) && this.property) {
 		const properties = ["keyframes","delta"];
 		properties.forEach( function(item) { // HyperKeyframes
@@ -327,6 +336,11 @@ HyperKeyframes.prototype.convert = function(funky,self) { // mutates // animatio
 			}
 		}.bind(this));
 	}
+};
+HyperKeyframes.prototype.description = function(delegate) {
+	const copy = Object.assign({},this);
+	this.convert.call(copy, delegate.output, delegate);
+	return copy;
 };
 
 
@@ -362,7 +376,7 @@ HyperAnimation.prototype.runAnimation = function(layer,key,transaction) {
 		this.sortIndex = animationNumber++;
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
-HyperAnimation.prototype.convert = function(funky,self) { // mutates // animation from, to, and delta
+HyperAnimation.prototype.convert = function(funky,self) { // mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 	if (isFunction(funky) && this.property) {
 		const properties = ["from","to","delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
 		properties.forEach( function(item) { // HyperAnimation
@@ -371,7 +385,11 @@ HyperAnimation.prototype.convert = function(funky,self) { // mutates // animatio
 		}.bind(this));
 	}
 };
-
+HyperAnimation.prototype.description = function(delegate) {
+	const copy = Object.assign({},this);
+	this.convert.call(copy, delegate.output, delegate);
+	return copy;
+};
 
 
 export function animationFromDescription(description) {

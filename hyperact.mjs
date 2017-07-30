@@ -267,11 +267,18 @@ HyperChain.prototype = {
 		return changed;
 	},
 	convert: function convert(funky, self) {
-		// mutates // animation from, to, and delta
+		// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 		if (isFunction$2(funky)) this.chain.forEach(function (animation) {
 			animation.convert.call(animation, funky, self);
 		});
 	}
+};
+HyperChain.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	copy.chain = this.chain.map(function (animation) {
+		return animation.description(delegate);
+	});
+	return copy;
 };
 
 function HyperGroup(childrenOrSettings) {
@@ -320,11 +327,18 @@ HyperGroup.prototype = {
 		return changed;
 	},
 	convert: function convert(funky, self) {
-		// mutates // animation from, to, and delta
+		// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 		if (isFunction$2(funky)) this.group.forEach(function (animation) {
 			animation.convert.call(animation, funky, self);
 		});
 	}
+};
+HyperGroup.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	copy.group = this.group.map(function (animation) {
+		return animation.description(delegate);
+	});
+	return copy;
 };
 
 function hyperActionIsFilling(action) {
@@ -496,7 +510,7 @@ HyperKeyframes.prototype.runAnimation = function (layer, key, transaction) {
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
 HyperKeyframes.prototype.convert = function (funky, self) {
-	// mutates // animation from, to, and delta
+	// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 	if (isFunction$2(funky) && this.property) {
 		var properties = ["keyframes", "delta"];
 		properties.forEach(function (item) {
@@ -511,6 +525,11 @@ HyperKeyframes.prototype.convert = function (funky, self) {
 			}
 		}.bind(this));
 	}
+};
+HyperKeyframes.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	this.convert.call(copy, delegate.output, delegate);
+	return copy;
 };
 
 function HyperAnimation(settings) {
@@ -546,7 +565,7 @@ HyperAnimation.prototype.runAnimation = function (layer, key, transaction) {
 	} else throw new Error("Animation runAnimation invalid type. Must implement zero, add, subtract, and interpolate.");
 };
 HyperAnimation.prototype.convert = function (funky, self) {
-	// mutates // animation from, to, and delta
+	// mutates // animation from, to, and delta // Now with description method for output, this is only called in addAnimation
 	if (isFunction$2(funky) && this.property) {
 		var properties = ["from", "to", "delta"]; // addAnimation only has from and to, delta is calcuated from ugly values in runAnimation
 		properties.forEach(function (item) {
@@ -555,6 +574,11 @@ HyperAnimation.prototype.convert = function (funky, self) {
 			if (value !== null && typeof value !== "undefined") this[item] = funky.call(self, this.property, value); // intentionally allows animations with an undefined property
 		}.bind(this));
 	}
+};
+HyperAnimation.prototype.description = function (delegate) {
+	var copy = Object.assign({}, this);
+	this.convert.call(copy, delegate.output, delegate);
+	return copy;
 };
 
 function animationFromDescription(description) {
@@ -889,9 +913,10 @@ function activate(controller, delegate, layerInstance) {
 	Object.defineProperty(controller, "animations", { // TODO: cache this like presentationLayer
 		get: function get() {
 			var array = allAnimations.map(function (animation) {
-				var copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				copy.convert.call(copy, delegate.output, delegate);
-				return copy;
+				return animation.description.call(animation, delegate);
+				// 				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
+				// 				copy.convert.call(copy,delegate.output,delegate);
+				// 				return copy;
 			});
 			return array;
 		},
@@ -1020,9 +1045,10 @@ function activate(controller, delegate, layerInstance) {
 	controller.animationNamed = function (name) {
 		var animation = namedAnimations[name];
 		if (animation) {
-			var copy = animation.copy.call(animation);
-			copy.convert.call(copy, delegate.output, delegate);
-			return copy;
+			return animation.description.call(animation, delegate);
+			// 			const copy = animation.copy.call(animation);
+			// 			copy.convert.call(copy,delegate.output,delegate);
+			// 			return copy;
 		}
 		return null;
 	};
@@ -1485,15 +1511,16 @@ function hyperIntersectionRange(a, b) {
 }
 
 function prepareDocument(source, HyperStyleDeclaration) {
+
 	if (typeof document !== "undefined") {
 
-		// 		const dict = source;
+		var dict = source;
 
-		var styles = Object.keys(document.documentElement.style);
-		var dict = {};
-		styles.forEach(function (key) {
-			dict[key] = false;
-		});
+		// 		const styles = Object.keys(document.documentElement.style);
+		// 		const dict = {};
+		// 		styles.forEach( key => {
+		// 			dict[key] = false;
+		// 		});
 		// 		Object.assign(dict, source);
 		// Every property change will trigger call to animationForKey even if types are not declared,
 		// so you can animate one style in response to change in another,
@@ -1517,10 +1544,8 @@ function prepareDocument(source, HyperStyleDeclaration) {
 				},
 				set: function set(value) {
 					this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
-					if (source[property]) {
-						this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
-					}
-					console.log("element STYLE set:%s; value:%s; result:", property, value, this.hyperStyleLayer);
+					this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
+					//console.log("element STYLE set:%s; value:%s; result:",property,value,this.hyperStyleLayer);
 				},
 				configurable: true,
 				enumerable: true
@@ -1763,13 +1788,12 @@ function isFunction$4(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-function activateElement(element, controller, delegate) {
+function activateElement(element) {
+	var controller = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : element;
 	// compare to activate(controller, delegate, layerInstance)
-	if (typeof window === "undefined") return;
-	if ((typeof delegate === "undefined" || delegate === null) && (typeof controller === "undefined" || controller === null)) controller = element;else if ((typeof delegate === "undefined" || delegate === null) && typeof controller !== "undefined" && controller !== null && controller !== element) delegate = controller;else if (typeof controller === "undefined" || controller === null) controller = element; // should really be the HyperStyleDeclaration, not the element itself.
-
 	var hyperStyleDelegate = {};
 
+	var delegate = null;
 	var target = null; // allows calling activateElement with undefined element to be set later
 	var original = element ? element.style : null;
 
@@ -1780,7 +1804,7 @@ function activateElement(element, controller, delegate) {
 	hyperStyleDelegate.input = function (property, prettyValue) {
 		if (delegate && isFunction$4(delegate.input)) return delegate.input.call(delegate, property, prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
 		var type = typeForStyle(property);
-		var uglyValue = type ? type.input(prettyValue) : prettyValue; // allow registering properties with no declared type
+		var uglyValue = type.input(prettyValue); // allow registering properties with no declared type
 		return uglyValue;
 	};
 	hyperStyleDelegate.output = function (property, uglyValue) {
@@ -1788,7 +1812,7 @@ function activateElement(element, controller, delegate) {
 		if (delegate && isFunction$4(delegate.output)) return delegate.output.call(delegate, property, uglyValue);
 		var type = typeForStyle(property);
 		var result = void 0;
-		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type ? type.output(uglyValue) : uglyValue; // allow registering properties with no declared type
+		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type.output(uglyValue); // allow registering properties with no declared type
 		return result;
 	};
 	hyperStyleDelegate.animationForKey = function (key, prettyValue, prettyPrevious, prettyPresentation) {
@@ -1833,13 +1857,6 @@ function activateElement(element, controller, delegate) {
 		if (target) return; // you can only assign element once, either as argument or with this function
 		target = what;
 		original = target.style;
-
-		Object.keys(original).forEach(function (key) {
-			if (typeof original[key] !== "undefined" && original[key] !== null && original[key].length === 0) {
-				// most properties on original style object should be an empty string
-				layer[key] = original[key];
-			}
-		});
 
 		for (var property in usedPropertyTypes) {
 			var prettyValue = target.style[property];
