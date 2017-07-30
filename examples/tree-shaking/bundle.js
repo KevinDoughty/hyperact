@@ -622,8 +622,8 @@ function isFunction(w) {
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
 	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
-		if (delegate.typeForProperty && animation.property) {
-			var type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
+		if (delegate && animation.property && isFunction(delegate.type)) {
+			var type = delegate.type.call(delegate, animation.property);
 			if (type) animation.type = type;
 		}
 	} else if (animation instanceof HyperGroup) {
@@ -1000,7 +1000,7 @@ function activate(controller, delegate, layerInstance) {
 
 	controller.addAnimation = function (description, name) {
 		// does not register. // should be able to pass a description if type is registered
-		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description);
+		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description); // deprecate this
 		var copy = animationFromDescription(description);
 		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:" + JSON.stringify(copy));
 		copy.convert.call(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation

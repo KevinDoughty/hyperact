@@ -1,5 +1,5 @@
 import { prepareDocument } from "./element.js";
-import { animationFromDescription } from "../actions.js";
+//import { animationFromDescription } from "../actions.js";
 import { activate } from "../core.js";
 
 export function typeForStyle(property) {
@@ -23,8 +23,8 @@ export function activateElement(element, controller = element) { // compare to a
 	let target = null; // allows calling activateElement with undefined element to be set later
 	let original = (element ? element.style : null);
 
-	hyperStyleDelegate.typeOfProperty = function(property,value) {
-		if (delegate && isFunction(delegate.typeOfProperty)) return delegate.typeOfProperty.call(delegate,property,value); // Not very useful.
+	hyperStyleDelegate.type = function(property) {
+		if (delegate && isFunction(delegate.type)) return delegate.type.call(delegate,property); // Not very useful.
 		return typeForStyle(property);
 	};
 	hyperStyleDelegate.input = function(property,prettyValue) {
@@ -46,15 +46,16 @@ export function activateElement(element, controller = element) { // compare to a
 		let description; // initially undefined
 		if (delegate && isFunction(delegate.animationForKey)) description = delegate.animationForKey(key,prettyValue,prettyPrevious,prettyPresentation,target);
 		else if (delegate && isFunction(delegate)) description = delegate(key,prettyValue,prettyPrevious,target);
-		const animation = animationFromDescription(description);
-		if (animation && typeof animation.property === "undefined") animation.property = key;
-		return animation;
+		return description;
+// 		const animation = animationFromDescription(description);
+// 		if (animation && typeof animation.property === "undefined") animation.property = key;
+// 		return animation;
 	};
-	hyperStyleDelegate.animationFromDescription = function(description) { // deprecate this because delegate.typeOfProperty is enough?
-		const animation = animationFromDescription(description);
-		if (animation.property) animation.type = typeForStyle(animation.property); // TODO: or discrete type if undefined
-		return animation;
-	};
+// 	hyperStyleDelegate.animationFromDescription = function(description) { // deprecate this because delegate.typeOfProperty is enough?
+// 		const animation = animationFromDescription(description);
+// 		if (animation.property) animation.type = typeForStyle(animation.property); // TODO: or discrete type if undefined
+// 		return animation;
+// 	};
 	hyperStyleDelegate.display = function() {
 		const presentation = controller.presentation; // TODO: this should be provided
 		const presentationKeys = Object.keys(presentation);

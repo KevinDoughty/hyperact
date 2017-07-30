@@ -622,8 +622,8 @@ function isFunction(w) {
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
 	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
-		if (delegate.typeForProperty && animation.property) {
-			var type = delegate.typeForProperty.call(delegate, animation.property, animation.to);
+		if (delegate && animation.property && isFunction(delegate.type)) {
+			var type = delegate.type.call(delegate, animation.property);
 			if (type) animation.type = type;
 		}
 	} else if (animation instanceof HyperGroup) {
@@ -1005,7 +1005,7 @@ function activate(controller, delegate, layerInstance) {
 
 	controller.addAnimation = function (description, name) {
 		// does not register. // should be able to pass a description if type is registered
-		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description);
+		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description); // deprecate this
 		var copy = animationFromDescription(description);
 		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:" + JSON.stringify(copy));
 		copy.convert.call(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
@@ -1774,6 +1774,7 @@ function prepareDocument(source, HyperStyleDeclaration) {
 // 	zIndex: { initial: 'auto' }
 // };
 
+//import { animationFromDescription } from "../actions.js";
 function typeForStyle(property) {
 	return usedPropertyTypes[property]; // || nonNumericType;
 }
@@ -1797,8 +1798,8 @@ function activateElement(element) {
 	var target = null; // allows calling activateElement with undefined element to be set later
 	var original = element ? element.style : null;
 
-	hyperStyleDelegate.typeOfProperty = function (property, value) {
-		if (delegate && isFunction$4(delegate.typeOfProperty)) return delegate.typeOfProperty.call(delegate, property, value); // Not very useful.
+	hyperStyleDelegate.type = function (property) {
+		if (delegate && isFunction$4(delegate.type)) return delegate.type.call(delegate, property); // Not very useful.
 		return typeForStyle(property);
 	};
 	hyperStyleDelegate.input = function (property, prettyValue) {
@@ -1820,16 +1821,16 @@ function activateElement(element) {
 		if (prettyPrevious === null || typeof prettyPrevious === "undefined") prettyPrevious = prettyValue;
 		var description = void 0; // initially undefined
 		if (delegate && isFunction$4(delegate.animationForKey)) description = delegate.animationForKey(key, prettyValue, prettyPrevious, prettyPresentation, target);else if (delegate && isFunction$4(delegate)) description = delegate(key, prettyValue, prettyPrevious, target);
-		var animation = animationFromDescription(description);
-		if (animation && typeof animation.property === "undefined") animation.property = key;
-		return animation;
+		return description;
+		// 		const animation = animationFromDescription(description);
+		// 		if (animation && typeof animation.property === "undefined") animation.property = key;
+		// 		return animation;
 	};
-	hyperStyleDelegate.animationFromDescription = function (description) {
-		// deprecate this because delegate.typeOfProperty is enough?
-		var animation = animationFromDescription(description);
-		if (animation.property) animation.type = typeForStyle(animation.property); // TODO: or discrete type if undefined
-		return animation;
-	};
+	// 	hyperStyleDelegate.animationFromDescription = function(description) { // deprecate this because delegate.typeOfProperty is enough?
+	// 		const animation = animationFromDescription(description);
+	// 		if (animation.property) animation.type = typeForStyle(animation.property); // TODO: or discrete type if undefined
+	// 		return animation;
+	// 	};
 	hyperStyleDelegate.display = function () {
 		var presentation = controller.presentation; // TODO: this should be provided
 		var presentationKeys = Object.keys(presentation);
