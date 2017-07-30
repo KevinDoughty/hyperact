@@ -394,8 +394,8 @@ export function activate(controller, delegate, layerInstance) {
 		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description);
 		const copy = animationFromDescription(description);
 		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:"+JSON.stringify(copy));
-		copy.convert.call(copy, delegate.input,delegate); // delta is calculated from ugly values in runAnimation
-		prepAnimationObjectFromAddAnimation(copy,delegate);
+		copy.convert.call(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
+		prepAnimationObjectFromAddAnimation(copy, delegate);
 		if (!allAnimations.length) registerWithContext();
 		allAnimations.push(copy);
 		if (name !== null && typeof name !== "undefined") {

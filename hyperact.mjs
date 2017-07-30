@@ -1484,8 +1484,23 @@ function hyperIntersectionRange(a, b) {
 	return { location: location, length: end - location };
 }
 
-function prepareDocument(dict, HyperStyleDeclaration) {
+function prepareDocument(source, HyperStyleDeclaration) {
 	if (typeof document !== "undefined") {
+
+		// 		const dict = source;
+
+		var styles = Object.keys(document.documentElement.style);
+		var dict = {};
+		styles.forEach(function (key) {
+			dict[key] = false;
+		});
+		// 		Object.assign(dict, source);
+		// Every property change will trigger call to animationForKey even if types are not declared,
+		// so you can animate one style in response to change in another,
+		// typically left/top to become transform, no other use cases really.
+		// Maybe display change could be given a group animation with opacity fade.
+		// There needs to be a discrete default, with no interpolation, just a step-end timing function
+
 		for (var property in dict) {
 			//document.documentElement.style) {
 			// 		if (cssStyleDeclarationAttribute[property] || property in cssStyleDeclarationMethodModifiesStyle) {
@@ -1502,7 +1517,10 @@ function prepareDocument(dict, HyperStyleDeclaration) {
 				},
 				set: function set(value) {
 					this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
-					this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
+					if (source[property]) {
+						this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
+					}
+					console.log("element STYLE set:%s; value:%s; result:", property, value, this.hyperStyleLayer);
 				},
 				configurable: true,
 				enumerable: true
@@ -1745,12 +1763,13 @@ function isFunction$4(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-function activateElement(element) {
-	var controller = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : element;
+function activateElement(element, controller, delegate) {
 	// compare to activate(controller, delegate, layerInstance)
+	if (typeof window === "undefined") return;
+	if ((typeof delegate === "undefined" || delegate === null) && (typeof controller === "undefined" || controller === null)) controller = element;else if ((typeof delegate === "undefined" || delegate === null) && typeof controller !== "undefined" && controller !== null && controller !== element) delegate = controller;else if (typeof controller === "undefined" || controller === null) controller = element; // should really be the HyperStyleDeclaration, not the element itself.
+
 	var hyperStyleDelegate = {};
 
-	var delegate = null;
 	var target = null; // allows calling activateElement with undefined element to be set later
 	var original = element ? element.style : null;
 
@@ -1761,7 +1780,7 @@ function activateElement(element) {
 	hyperStyleDelegate.input = function (property, prettyValue) {
 		if (delegate && isFunction$4(delegate.input)) return delegate.input.call(delegate, property, prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
 		var type = typeForStyle(property);
-		var uglyValue = type.input(prettyValue); // allow registering properties with no declared type
+		var uglyValue = type ? type.input(prettyValue) : prettyValue; // allow registering properties with no declared type
 		return uglyValue;
 	};
 	hyperStyleDelegate.output = function (property, uglyValue) {
@@ -1769,7 +1788,7 @@ function activateElement(element) {
 		if (delegate && isFunction$4(delegate.output)) return delegate.output.call(delegate, property, uglyValue);
 		var type = typeForStyle(property);
 		var result = void 0;
-		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type.output(uglyValue); // allow registering properties with no declared type
+		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type ? type.output(uglyValue) : uglyValue; // allow registering properties with no declared type
 		return result;
 	};
 	hyperStyleDelegate.animationForKey = function (key, prettyValue, prettyPrevious, prettyPresentation) {
@@ -1814,6 +1833,13 @@ function activateElement(element) {
 		if (target) return; // you can only assign element once, either as argument or with this function
 		target = what;
 		original = target.style;
+
+		Object.keys(original).forEach(function (key) {
+			if (typeof original[key] !== "undefined" && original[key] !== null && original[key].length === 0) {
+				// most properties on original style object should be an empty string
+				layer[key] = original[key];
+			}
+		});
 
 		for (var property in usedPropertyTypes) {
 			var prettyValue = target.style[property];

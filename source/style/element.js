@@ -1,27 +1,45 @@
 
 
-export function prepareDocument(dict, HyperStyleDeclaration) {
+export function prepareDocument(source, HyperStyleDeclaration) {
 	if (typeof document !== "undefined") {
+
+// 		const dict = source;
+
+		const styles = Object.keys(document.documentElement.style);
+		const dict = {};
+		styles.forEach( key => {
+			dict[key] = false;
+		});
+// 		Object.assign(dict, source);
+		// Every property change will trigger call to animationForKey even if types are not declared,
+		// so you can animate one style in response to change in another,
+		// typically left/top to become transform, no other use cases really.
+		// Maybe display change could be given a group animation with opacity fade.
+		// There needs to be a discrete default, with no interpolation, just a step-end timing function
+
 		for (var property in dict) {//document.documentElement.style) {
 	// 		if (cssStyleDeclarationAttribute[property] || property in cssStyleDeclarationMethodModifiesStyle) {
 	// 			continue;
 	// 		}
 // 			(function(property) {
-			var type = dict[property];
-			Object.defineProperty(HyperStyleDeclaration.prototype, property, {
-				get: function() {
-					var layer = this.hyperStyleLayer;
-					var ugly = layer[property];
-					var pretty = type.output(ugly);
-					return pretty;
-				},
-				set: function(value) {
-					this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
-					this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
-				},
-				configurable: true,
-				enumerable: true
-			});
+				var type = dict[property];
+				Object.defineProperty(HyperStyleDeclaration.prototype, property, {
+					get: function() {
+						var layer = this.hyperStyleLayer;
+						var ugly = layer[property];
+						var pretty = type.output(ugly);
+						return pretty;
+					},
+					set: function(value) {
+						this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
+						if (source[property]) {
+							this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
+						}
+						console.log("element STYLE set:%s; value:%s; result:",property,value,this.hyperStyleLayer);
+					},
+					configurable: true,
+					enumerable: true
+				});
 // 			})(property);
 		}
 	}

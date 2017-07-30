@@ -3,7 +3,7 @@ var path = require("path");
 
 // Dev mode only watches webpack, not rollup (which produces the .mjs)
 
-var modulesPlugins = [
+var plugins = [
 	new webpack.optimize.UglifyJsPlugin({
 		compress: false,
 		mangle: false,
@@ -12,7 +12,7 @@ var modulesPlugins = [
 		sourceMap: true
 	})
 ];
-if (process.env.WEBPACK_ENV === "build") modulesPlugins = [
+if (process.env.WEBPACK_ENV === "build") plugins = [
 	new webpack.optimize.UglifyJsPlugin({
 		compress: true,
 		mangle: true,
@@ -22,25 +22,23 @@ if (process.env.WEBPACK_ENV === "build") modulesPlugins = [
 	})
 ];
 
-module.exports = [
-	{
-		entry: "./source/hyperact.js",
-		output: {
-			path: __dirname,
-			filename: "hyperact.js",
-			library: "Hyperact", // support for script tags is important
-			libraryTarget: "umd" // support for script tags is important
-		},
-		module: {
-			loaders: [
-				{
-					test: /\.js$/,
-					loader: "babel-loader",
-					exclude: /node_modules/,
-					//options: { presets: [ ["es2015", { modules: false }] ] } // .babelrc is different for mocha
-				}
-			]
-		},
-		plugins: modulesPlugins
-	}
-];
+module.exports = [{
+	entry: "./source/hyperact.js",
+	output: {
+		path: __dirname,
+		filename: "hyperact.js",
+		library: "Hyperact", // support for script tags is important
+		libraryTarget: "umd" // support for script tags is important
+	},
+	module: {
+		loaders: [
+			{
+				test: /\.js$/,
+				loader: "babel-loader",
+				exclude: /node_modules/,
+				//options: { presets: [ ["es2015", { modules: false }] ] } // .babelrc is different for mocha
+			}
+		]
+	},
+	plugins: plugins
+}];

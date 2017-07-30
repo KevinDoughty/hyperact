@@ -1,6 +1,6 @@
 import * as core from "../source/core.js";
 const assert = require("assert");
-import { HyperChain, HyperKeyframes } from "../source/actions.js";
+import { HyperChain, HyperKeyframes, HyperAnimation } from "../source/actions.js";
 import { HyperSet } from "../source/types.js";
 
 const duration = 0.05; // mocha timeout is 2 seconds
@@ -1719,7 +1719,34 @@ describe("core", function() {
 		it("input and output implemented on type object, not delegate !!! (would make CSS animation so much easier, see notes.txt)", function() {
 			assert(false);
 		});
-		
+		it("animation classes are not exposed", function(done) {
+			const view = {
+				x:0,
+				y:0
+			};
+			core.activate(view);
+			view.addAnimation({
+				property:"y",
+				duration:duration,
+				from: 1,
+				to: 1,
+				blend:"absolute"
+			});
+			view.addAnimation({
+				property:"x",
+				duration:duration/2,
+				from: 1,
+				to: 1,
+				blend:"absolute",
+				onend: function(finished) {
+					const animations = view.animations;
+					const length = animations.length;
+					const error = (length && !(animations[0] instanceof HyperAnimation)) ? null : new Error("animation instanceof HyperAnimation should be false, result: " + (animations[0] instanceof HyperAnimation));
+					done(error);
+				}
+			});
+			
+		});
 	});
 
 	describe("set animation", function() {
