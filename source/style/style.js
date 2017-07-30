@@ -45,7 +45,7 @@ export function activateElement(element, controller = element) { // compare to a
 		if (prettyPrevious === null || typeof prettyPrevious === "undefined") prettyPrevious = prettyValue;
 		let description; // initially undefined
 		if (delegate && isFunction(delegate.animationForKey)) description = delegate.animationForKey(key,prettyValue,prettyPrevious,prettyPresentation,target);
-		else if (delegate && isFunction(delegate)) description = delegate(key,prettyValue,prettyPrevious,target);
+		else if (delegate && isFunction(delegate)) description = delegate(key,prettyValue,prettyPrevious,prettyPresentation,target);
 		return description;
 // 		const animation = animationFromDescription(description);
 // 		if (animation && typeof animation.property === "undefined") animation.property = key;
