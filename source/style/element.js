@@ -1,18 +1,47 @@
 
 
-export function prepareDocument(source, HyperStyleDeclaration) {
+
+function updateIndices(object, style, length) { // See all that stuff in there, Homie? That's why your robot didn't work.
+	console.log("LAYER STYLE LENGTH:",Object.keys(style).length);
+	//while (length < style.length) {
+	while (length < Object.keys(style).length) {
+		Object.defineProperty(object, length, {
+			configurable: true,
+			enumerable: false,
+			get: (function(index) {
+				return function() {
+					return style[index];
+				};
+			})(length)
+		});
+		length++;
+	}
+	//while (length > style.length) {
+	while (length > Object.keys(style).length) {
+		length--;
+		Object.defineProperty(object, length, {
+			configurable: true,
+			enumerable: false,
+			value: undefined
+		});
+	}
+	return length;
+}
+
+
+export function prepareDocument(animatables, HyperStyleDeclaration) {
 
 
 	if (typeof document !== "undefined") {
 
-		const dict = source;
+//		const dict = animatables;
 
-// 		const styles = Object.keys(document.documentElement.style);
-// 		const dict = {};
-// 		styles.forEach( key => {
-// 			dict[key] = false;
-// 		});
-// 		Object.assign(dict, source);
+		const styles = Object.keys(document.documentElement.style);
+		const dict = {};
+		styles.forEach( key => {
+			dict[key] = false;
+		});
+		Object.assign(dict, animatables);
 		// Every property change will trigger call to animationForKey even if types are not declared,
 		// so you can animate one style in response to change in another,
 		// typically left/top to become transform, no other use cases really.
@@ -23,24 +52,39 @@ export function prepareDocument(source, HyperStyleDeclaration) {
 	// 		if (cssStyleDeclarationAttribute[property] || property in cssStyleDeclarationMethodModifiesStyle) {
 	// 			continue;
 	// 		}
-// 			(function(property) {
-			var type = dict[property];
-			Object.defineProperty(HyperStyleDeclaration.prototype, property, {
-				get: function() {
-					var layer = this.hyperStyleLayer;
-					var ugly = layer[property];
-					var pretty = type.output(ugly);
-					return pretty;
-				},
-				set: function(value) {
-					this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
-					this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
-					//console.log("element STYLE set:%s; value:%s; result:",property,value,this.hyperStyleLayer);
-				},
-				configurable: true,
-				enumerable: true
-			});
-// 			})(property);
+			(function(property) {
+				
+				Object.defineProperty(HyperStyleDeclaration.prototype, property, {
+
+
+					// This needs to be completely reassessed.
+					// It's now different from the original web-animations technique.
+					// web-animations-legacy depended on the original style object.
+					// Whatever the problem, changes are not appearing on non-animated properties.
+
+					// I am missing: _surrogateElement, updateIndices()
+
+					get: function() {
+						var layer = this.hyperStyleLayer;
+						var ugly = layer[property];
+						var type = animatables[property];
+						if (type) return type.output(ugly);
+						return ugly;
+					},
+					set: function(value) {
+						this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
+						//this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
+						if (animatables[property]) {
+							this.hyperStyleController.registerAnimatableProperty(property,animatables[property]); // automatic registration
+						}
+						console.log("element STYLE object:%s; layer:%s; length:%s;",this,JSON.stringify(this.hyperStyleLayer),this.hyperStyleLength);
+						this.hyperStyleLength = updateIndices(this, this.hyperStyleLayer, this.hyperStyleLength);
+						console.log("element STYLE set:%s; value:%s; result:",property,value,this.hyperStyleLayer);
+					},
+					configurable: true,
+					enumerable: true
+				});
+			})(property);
 		}
 	}
 }

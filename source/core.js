@@ -60,7 +60,7 @@ function convertPropertiesOfLayerWithFunction(properties,object,funky,self) { //
 	});
 }
 
-function presentationTransform(presentationLayer,sourceAnimations,time,shouldSortAnimations) { // COMPOSITING
+function presentationTransform(presentationLayer,sourceAnimations,time,shouldSortAnimations) { // COMPOSITING // This function is separated out here for now defunct hyperstyle behavior allowing manual composting given layer and animations.
 	if (!sourceAnimations || !sourceAnimations.length) return false;
 	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
 		sourceAnimations.sort( function(a,b) {
@@ -248,7 +248,7 @@ export function activate(controller, delegate, layerInstance) {
 		}
 	}
 
-	function isAllowableProperty(key) {
+	function isAllowableProperty(key) { // don't trigger animation on functions themselves
 		return ((layerInstance !== controller || (controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0)) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0));
 	}
 
@@ -320,7 +320,7 @@ export function activate(controller, delegate, layerInstance) {
 		configurable: false
 	});
 
-	function baseLayer() {
+	function baseLayer() { // model, presentation, and previous layers start from this
 		return Object.keys(layerInstance).filter(isAllowableProperty).reduce(function(accumulator, current) {
 			accumulator[current] = layerInstance[current];
 			return accumulator;

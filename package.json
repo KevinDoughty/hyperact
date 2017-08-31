@@ -37,10 +37,10 @@
     "chai": "^4.0.2",
     "eslint": "^3.17.1",
     "mocha": "^3.4.2",
-    "rollup": "^0.39.2",
+    "rollup": "^0.45.2",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-eslint": "^3.0.0",
-    "webpack": "^2.6.1",
-    "webpack-dev-server": "^2.4.1"
+    "webpack": "^3.3.0",
+    "webpack-dev-server": "^2.5.1"
   }
 }
