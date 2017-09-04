@@ -770,6 +770,49 @@ describe("core", function() {
 		});
 	});
 
+
+	describe("constructor and activate", function() {
+		it("readiness. activate() does not trigger call to display. display not called before constructor finished", function(done) {
+			// activate can be called mid-constructor,
+			// and since auto registering does not happen for properties declared after,
+			// you cannot trigger a call to display from activate
+			function ReadinessDisplay() {
+				this.a = 0;
+				core.activate(this);
+				this.b = 1;
+			}
+			ReadinessDisplay.prototype = {
+				display: function() {
+					const error = (this.b === 1) ? null : new Error("display called before constructor finished");
+					done(error);
+				},
+				animationForKey: function(key) {
+				
+				}
+			};
+			var readinessDisplay = new ReadinessDisplay();
+			readinessDisplay.a = 1;
+		});
+		it("readiness. activate() does not trigger call to animationForKey. animationForKey not called before constructor finished", function(done) {
+			// activate can be called mid-constructor,
+			// and since auto registering does not happen for properties declared after,
+			// you cannot trigger a call to display (or animationForKey) from activate
+			function ReadinessAnimationForKey() {
+				this.a = 0;
+				core.activate(this);
+				this.b = 1;
+			}
+			ReadinessAnimationForKey.prototype = {
+				animationForKey: function(key) {
+					const error = (this.b === 1) ? null : new Error("animationForKey called before constructor finished");
+					done(error);
+				}
+			};
+			var readinessAnimationForKey = new ReadinessAnimationForKey();
+			readinessAnimationForKey.a = 1;
+		});
+	});
+	
 	describe("five", function() {
 		it("should not reflect presentation outside of display, activate(view,view,layer)", function() {
 			const view = {
@@ -1355,6 +1398,8 @@ describe("core", function() {
 
 	});
 
+
+
 	describe("other", function() {
 		it("sequential changes", function() {
 			const view = {
@@ -1385,6 +1430,7 @@ describe("core", function() {
 			assert(false);
 		});
 	});
+
 
 	describe("added animations", function() {
 
