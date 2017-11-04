@@ -401,6 +401,11 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 
 	if (controller) {
 		controller.registerAnimatableProperty = registerAnimatableProperty;
+		controller.needsDisplay = needsDisplay;
+		controller.addAnimation = addAnimation;
+		controller.removeAnimation = removeAnimation;
+		controller.removeAllAnimations = removeAllAnimations;
+		controller.animationNamed = animationNamed;
 		Object.defineProperty(controller, "layer", { // TODO: I don't like this. Need a merge function.
 			get: getLayer,
 			set: setLayer,
@@ -437,11 +442,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 			enumerable: false,
 			configurable: false
 		});
-		controller.needsDisplay = needsDisplay;
-		controller.addAnimation = addAnimation;
-		controller.removeAnimation = removeAnimation;
-		controller.removeAllAnimations = removeAllAnimations;
-		controller.animationNamed = animationNamed;
 	}
 
 	return controller; // TODO: should return the deactivate function
