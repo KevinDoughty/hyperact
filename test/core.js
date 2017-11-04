@@ -508,15 +508,13 @@ describe("core", function() {
 			layer.a = 1;
 		});
 
-		it("undefined behavior. what is `this`?", function(done) {
+		it("display function `this` is the delegate itself", function(done) {
 			const layer = {
 				a: 0
 			};
 			const delegate = {
 				display: function(layer) {
-					console.log("what is this:%s;",this);
-					console.log("what is this stringified:%s;",JSON.stringify(this));
-					const error = new Error("undefined behavior. what is `this`?");
+					const error = isFunction(this.animationForKey) ? new Error("display function `this` should be delegate");
 					done(error);
 				},
 				animationForKey: function(key,value,previous,presentation) {
