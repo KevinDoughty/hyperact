@@ -118,8 +118,7 @@ export function decorate(controller, delegate, layerInstance) { // deprecated
 
 
 export function activate(controller, delegate, layerInstance) { // layer, delegate, controller?
-	//if (!controller) throw new Error("Nothing to hyperactivate.");
-	if (!controller) { // TODO: layer, delegate, controller
+	if (!controller) { // "Nothing to hyperactivate." // TODO: layer, delegate, controller
 		if (!delegate) delegate = {};
 		if (!layerInstance) layerInstance = delegate;
 	} else {
@@ -151,14 +150,12 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 	}
 	function setValuesOfLayer(layer) {
 		const transaction = hyperContext.currentTransaction();
-		//const presentationLayer = controller.presentation; // Generate presentation even if not accessed for implicit animation. Required for test "registered implicit presentation"
 		const presentationLayer = getPresentation(); // Generate presentation even if not accessed for implicit animation. Required for test "registered implicit presentation"
 		var result = {};
 		Object.keys(layer).forEach( function(prettyKey) {
 			let uglyKey = prettyKey;
 			const prettyValue = layer[prettyKey];
 			if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey,delegate.keyInput,delegate);
-			//controller.registerAnimatableProperty(uglyKey); // automatic registration
 			registerAnimatableProperty(uglyKey); // automatic registration
 			const uglyValue = convertedValueOfPropertyWithFunction(prettyValue,prettyKey,delegate.input,delegate);
 			const uglyPrevious = modelBacking[uglyKey];
@@ -175,8 +172,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 				if (prettyValue !== prettyPrevious) {
 					const prettyPresentation = presentationLayer[prettyKey];
 					const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[prettyKey],transaction);
-// 					if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-// 					else controller.needsDisplay();
 					if (animation) addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
 					else needsDisplay();
 				}
@@ -221,7 +216,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
 			if (!allAnimations.length) {
-				//hyperContext.deregisterTarget(controller);
 				hyperContext.deregisterTarget(layerInstance);
 			}
 		}
@@ -242,7 +236,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
 			if (!allAnimations.length) {
-				//hyperContext.deregisterTarget(controller);
 				hyperContext.deregisterTarget(layerInstance);
 			}
 		}
@@ -364,7 +357,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 		else allNames.push(name);
 		shouldSortAnimations = true;
 		const transaction = hyperContext.currentTransaction();
-		//copy.runAnimation(controller, name, transaction); // this should be layerInstance not controller
 		copy.runAnimation(layerInstance, name, transaction);
 	}
 	function removeAnimation(name) {
@@ -381,7 +373,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 			if (isFunction(animation.onend)) animation.onend.call(animation,false);
 		});
 		if (!ENSURE_ONE_MORE_TICK) {
-			//hyperContext.deregisterTarget(controller);
 			hyperContext.deregisterTarget(layerInstance);
 		}
 	}
@@ -400,7 +391,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 			delegate.display.call(delegate, presentation);
 			activeBacking = modelBacking;
 		};
-		//hyperContext.registerTarget(controller, display, invalidate, animationCleanup, modelBacking);
 		hyperContext.registerTarget(layerInstance, getPresentation, getAnimationCount, display, invalidate, animationCleanup, modelBacking);
 	}
 
@@ -450,8 +440,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 	}
 
 	Object.keys(layerInstance).forEach( function(key) { // more initialization
-// 		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) controller.registerAnimatableProperty(key,true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
-// 		else controller.registerAnimatableProperty(key);
 		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) registerAnimatableProperty(key,true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
 		else registerAnimatableProperty(key);
 	});

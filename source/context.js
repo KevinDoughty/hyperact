@@ -79,7 +79,6 @@ HyperContext.prototype = {
 	},
 
 	registerTarget: function(target,getPresentation,getAnimationCount,display,invalidate,cleanup,layer = null) {
-	//registerTarget: function(target,display,invalidate,cleanup,layer = null) {
 		this.startTicking();
 		const index = this.targets.indexOf(target);
 		if (index < 0) {
