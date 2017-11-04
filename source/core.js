@@ -394,6 +394,11 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 		hyperContext.registerTarget(layerInstance, getPresentation, getAnimationCount, display, invalidate, animationCleanup, modelBacking);
 	}
 
+	Object.keys(layerInstance).forEach( function(key) { // more initialization
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) registerAnimatableProperty(key,true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
+		else registerAnimatableProperty(key);
+	});
+
 	if (controller) {
 		controller.registerAnimatableProperty = registerAnimatableProperty;
 		Object.defineProperty(controller, "layer", { // TODO: I don't like this. Need a merge function.
@@ -438,11 +443,6 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 		controller.removeAllAnimations = removeAllAnimations;
 		controller.animationNamed = animationNamed;
 	}
-
-	Object.keys(layerInstance).forEach( function(key) { // more initialization
-		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) registerAnimatableProperty(key,true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
-		else registerAnimatableProperty(key);
-	});
 
 	return controller; // TODO: should return the deactivate function
 }
