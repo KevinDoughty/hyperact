@@ -514,7 +514,7 @@ describe("core", function() {
 			};
 			const delegate = {
 				display: function(layer) {
-					const error = isFunction(this.animationForKey) ? new Error("display function `this` should be delegate");
+					const error = isFunction(this.animationForKey) ? null : new Error("display function `this` should be delegate");
 					done(error);
 				},
 				animationForKey: function(key,value,previous,presentation) {
