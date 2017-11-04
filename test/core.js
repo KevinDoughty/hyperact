@@ -449,9 +449,6 @@ describe("core", function() {
 
 		it("basic function", function(done) {
 			const delegate = {
-				display: function(layer) {
-					
-				},
 				animationForKey: function(key,value,previous,presentation) {
 					if (key === "a") return {
 						duration:duration/2,
@@ -477,7 +474,7 @@ describe("core", function() {
 
 		it("display gets called", function(done) {
 			const delegate = {
-				display: function(layer) {
+				display: function() {
 					done();
 				},
 				animationForKey: function(key,value,previous,presentation) {
@@ -491,10 +488,10 @@ describe("core", function() {
 			layer.a = 1;
 		});
 
-		it("display has layer argument", function(done) {
+		it("display has presentation layer argument", function(done) {
 			const delegate = {
-				display: function(layer) {
-					const error = layer ? null : new Error("layer is not passed as an argument to display");
+				display: function(presentation) {
+					const error = presentation ? null : new Error("presentation layer is not passed as an argument to display");
 					done(error);
 				},
 				animationForKey: function(key,value,previous,presentation) {
@@ -513,7 +510,7 @@ describe("core", function() {
 				a: 0
 			};
 			const delegate = {
-				display: function(layer) {
+				display: function() {
 					const error = isFunction(this.animationForKey) ? null : new Error("display function `this` should be delegate");
 					done(error);
 				},
@@ -523,6 +520,37 @@ describe("core", function() {
 			};
 			core.activate(null,delegate,layer);
 			layer.a = 1;
+		});
+
+		it("layer returns calculated values during display AKA live", function(done) {
+			const layer = {
+				a: 0,
+				b: 0
+			};
+			const delegate = {
+				display: function() {
+					if (layer.a === 1 && layer.b === 2) done();
+				},
+				animationForKey: function(key,value,previous,presentation) {
+					if (key === "a") return {
+						duration: duration,
+						from: 1,
+						to: 1,
+						onend: function() {
+							const error = new Error("test timed out");
+							done(error);
+						}
+					}
+					if (key === "b") return {
+						duration:duration/2,
+						from: 1,
+						to: 1
+					}
+				}
+			};
+			core.activate(null,delegate,layer);
+			layer.a = 2;
+			layer.b = 2;
 		});
 
 	});

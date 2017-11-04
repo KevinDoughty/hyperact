@@ -111,8 +111,8 @@ HyperContext.prototype = {
 			const display = this.displayFunctions[i]; // strange new implementation
 			if (!target.animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
 				if (isFunction(display)) {
-					target.presentation;
-					display(); // new ensure one last time
+					const presentationLayer = target.presentation;
+					display(presentationLayer);
 				}
 				this.invalidateFunctions[i](); // even stranger implementation
 				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
@@ -121,7 +121,7 @@ HyperContext.prototype = {
 				if (this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
 					if (target.animationCount) this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
 					//display.call(target.delegate);
-					display();
+					display(presentationLayer);
 					this.invalidateFunctions[i](); // even stranger implementation
 				}
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
