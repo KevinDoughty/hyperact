@@ -326,23 +326,27 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 		}, {});
 	}
 
+	function getPresentation() {
+		const transactionTime = hyperContext.currentTransaction().time;
+		if (presentationBacking !== null) return presentationBacking;
+		const presentationLayer = Object.assign(baseLayer(), modelBacking);
+		let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
+		const length = allAnimations.length;
+		if (length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
+		shouldSortAnimations = false;
+		if (changed || presentationBacking === null) {
+			convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
+			Object.freeze(presentationLayer);
+			if (length) presentationBacking = presentationLayer;
+			else presentationBacking = null;
+			return presentationLayer;
+		}
+		return presentationBacking;
+	}
+
 	Object.defineProperty(controller, "presentation", {
 		get: function() {
-			const transactionTime = hyperContext.currentTransaction().time;
-			if (presentationBacking !== null) return presentationBacking;
-			const presentationLayer = Object.assign(baseLayer(), modelBacking);
-			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
-			const length = allAnimations.length;
-			if (length) changed = presentationTransform(presentationLayer,allAnimations,transactionTime,shouldSortAnimations);
-			shouldSortAnimations = false;
-			if (changed || presentationBacking === null) {
-				convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
-				Object.freeze(presentationLayer);
-				if (length) presentationBacking = presentationLayer;
-				else presentationBacking = null;
-				return presentationLayer;
-			}
-			return presentationBacking;
+			return getPresentation();
 		},
 		enumerable: false,
 		configurable: false
