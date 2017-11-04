@@ -27,6 +27,8 @@ export function HyperTransaction(settings) {
 
 export function HyperContext() {
 	this.targets = [];
+	this.getPresentations = [];
+	this.getAnimationCounts = [];
 	this.transactions = [];
 	this.ticking = false;
 	this.animationFrame;
@@ -76,11 +78,14 @@ HyperContext.prototype = {
 		this.startTicking();
 	},
 
-	registerTarget: function(target,display,invalidate,cleanup,layer = null) {
+	registerTarget: function(target,getPresentation,getAnimationCount,display,invalidate,cleanup,layer = null) {
+	//registerTarget: function(target,display,invalidate,cleanup,layer = null) {
 		this.startTicking();
 		const index = this.targets.indexOf(target);
 		if (index < 0) {
 			this.targets.push(target);
+			this.getPresentations.push(getPresentation);
+			this.getAnimationCounts.push(getAnimationCount);
 			this.displayLayers.push(layer); // cachedPresentationLayer
 			this.displayFunctions.push(display);
 			this.cleanupFunctions.push(cleanup);
@@ -92,6 +97,8 @@ HyperContext.prototype = {
 		const index = this.targets.indexOf(target);
 		if (index > -1) {
 			this.targets.splice(index, 1);
+			this.getPresentations.splice(index, 1);
+			this.getAnimationCounts.splice(index, 1);
 			this.displayLayers.splice(index, 1); // cachedPresentationLayer
 			this.displayFunctions.splice(index, 1);
 			this.cleanupFunctions.splice(index, 1);
@@ -108,19 +115,20 @@ HyperContext.prototype = {
 		let i = targets.length;
 		while (i--) {
 			const target = targets[i];
-			const display = this.displayFunctions[i]; // strange new implementation
-			if (!target.animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
+			const display = this.displayFunctions[i]; // this may not exist
+			const animationCount = this.getAnimationCounts[i](); // should exist
+			const getPresentation = this.getPresentations[i]; // should exist
+			if (!animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
 				if (isFunction(display)) {
-					const presentationLayer = target.presentation;
+					const presentationLayer = getPresentation();//target.presentation;
 					display(presentationLayer);
 				}
 				this.invalidateFunctions[i](); // even stranger implementation
 				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
 			} else {
-				const presentationLayer = target.presentation;
+				const presentationLayer = getPresentation();//target.presentation;
 				if (this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
-					if (target.animationCount) this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
-					//display.call(target.delegate);
+					this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
 					display(presentationLayer);
 					this.invalidateFunctions[i](); // even stranger implementation
 				}

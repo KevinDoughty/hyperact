@@ -441,31 +441,34 @@ describe("core", function() {
 	describe("null controller", function() {
 
 		it("is possible", function() {
-			const delegate = {};
 			const layer = {};
+			const delegate = {};
 			core.activate(null,delegate,layer); // currently throws error if there is no controller passed as first argument
 			assert(true);
 		});
 
 		it("basic function", function(done) {
+			const layer = {
+				a: 0,
+				b: 0
+			};
 			const delegate = {
 				animationForKey: function(key,value,previous,presentation) {
 					if (key === "a") return {
 						duration:duration/2,
 						onend: function(finished) {
-							const error = (one.b === 1) ? null : new Error("value is wrong");
+							const error = (layer.b === 1) ? null : new Error("value is wrong");
 							done(error);
 						}
 					};
 					if (key === "b") return {
 						duration:duration,
-						from: 1
+						blend:"absolute",
+						additive:false,
+						from: 2,
+						to: 2
 					};
 				}
-			};
-			const layer = {
-				a: 0,
-				b: 0
 			};
 			core.activate(null,delegate,layer);
 			layer.a = 1;
@@ -473,33 +476,35 @@ describe("core", function() {
 		});
 
 		it("display gets called", function(done) {
+			const layer = {
+				a: 0
+			};
 			const delegate = {
 				display: function() {
 					done();
+					done = function() {};
 				},
 				animationForKey: function(key,value,previous,presentation) {
 					return duration/2;
 				}
-			};
-			const layer = {
-				a: 0
 			};
 			core.activate(null,delegate,layer);
 			layer.a = 1;
 		});
 
 		it("display has presentation layer argument", function(done) {
+			const layer = {
+				a: 0
+			};
 			const delegate = {
 				display: function(presentation) {
-					const error = presentation ? null : new Error("presentation layer is not passed as an argument to display");
+					const error = presentation ? null : new Error("presentation layer is not passed as an argument to display. presentation:"+JSON.stringify(presentation));
 					done(error);
+					done = function() {};
 				},
 				animationForKey: function(key,value,previous,presentation) {
 					return duration/2;
 				}
-			};
-			const layer = {
-				a: 0
 			};
 			core.activate(null,delegate,layer);
 			layer.a = 1;
@@ -513,6 +518,7 @@ describe("core", function() {
 				display: function() {
 					const error = isFunction(this.animationForKey) ? null : new Error("display function `this` should be delegate");
 					done(error);
+					done = function() {};
 				},
 				animationForKey: function(key,value,previous,presentation) {
 					return duration/2;
@@ -528,29 +534,36 @@ describe("core", function() {
 				b: 0
 			};
 			const delegate = {
-				display: function() {
-					if (layer.a === 1 && layer.b === 2) done();
+				display: function(presentation) {
+					if (layer.a === 2 && layer.b === 1) {
+						done();
+						done = function() {};
+					}
 				},
 				animationForKey: function(key,value,previous,presentation) {
 					if (key === "a") return {
 						duration: duration,
-						from: 1,
-						to: 1,
+						blend:"absolute",
+						additive:false,
+						from: 2,
+						to: 2,
 						onend: function() {
-							const error = new Error("test timed out");
+							const error = new Error("AKA live test timed out. layer:"+JSON.stringify(layer));
 							done(error);
 						}
 					};
 					if (key === "b") return {
 						duration:duration/2,
-						from: 1,
-						to: 1
+						blend:"absolute",
+						additive:false,
+						from: 2,
+						to: 2
 					};
 				}
 			};
 			core.activate(null,delegate,layer);
-			layer.a = 2;
-			layer.b = 2;
+			layer.a = 1;
+			layer.b = 1;
 		});
 
 	});
