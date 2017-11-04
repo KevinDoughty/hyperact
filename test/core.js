@@ -540,12 +540,12 @@ describe("core", function() {
 							const error = new Error("test timed out");
 							done(error);
 						}
-					}
+					};
 					if (key === "b") return {
 						duration:duration/2,
 						from: 1,
 						to: 1
-					}
+					};
 				}
 			};
 			core.activate(null,delegate,layer);
