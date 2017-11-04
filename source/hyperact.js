@@ -1,7 +1,7 @@
 export * from "./core.js";
 export * from "./types.js";
 
-//export { typeForStyle, registerAnimatableStyles, activateElement } from "./style/style.js"; // This is now Hyperstyle
+export { typeForStyle, registerAnimatableStyles, activateElement } from "./style/style.js"; // deprecated // Soon to be Hyperstyle
 
 export { transformType } from "./style/transform.js";
 export { colorType } from "./style/color.js";

@@ -5,7 +5,14 @@
 		"document": true,
 		"window": true,
 		"setTimeout": true,
-		"console": true
+		"console": true,
+
+		"self": true,
+		"Blob": true,
+		"Worker": true,
+		"ArrayBuffer": true,
+		"URL": true
+
 	},
 	"rules": {
 		"indent": ["error", "tab", { "SwitchCase": 1 }],

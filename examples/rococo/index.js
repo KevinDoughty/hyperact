@@ -22,7 +22,6 @@ class View {
 		this.radius = 100;
 		this.value = value;
 		this.positionArray = this.plot();
-		
 		this.registerAnimatableProperty("positionArray");
 	}
 	animationForKey(key,value,previous) {
@@ -61,7 +60,7 @@ class View {
 	layout(value) {
 		this.value = value;
 		this.positionArray = this.plot();
-		this.needsDisplay(); // temporary bug fix
+		this.needsDisplay(); // temporary bug fix...
 	}
 	display() {
 		const canvas = this.element;

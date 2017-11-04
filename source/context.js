@@ -4,7 +4,7 @@ const rAF = typeof window !== "undefined" && (
 		window.mozRequestAnimationFrame ||
 		window.msRequestAnimationFrame ||
 		window.oRequestAnimationFrame
-	) || function(callback) { setTimeout(callback, 0); }; // node has setTimeout
+	) || function(callback) { setTimeout(callback, 0); };
 
 function isFunction(w) { // WET
 	return w && {}.toString.call(w) === "[object Function]";
@@ -31,7 +31,7 @@ export function HyperContext() {
 	this.ticking = false;
 	this.animationFrame;
 	this.displayLayers = []; // renderLayer
-	this.displayFunctions = []; // strange new implementation // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
+	this.displayFunctions = []; // strange new implementation // I don"t want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
 	this.cleanupFunctions = [];
 	this.invalidateFunctions = [];
 }
@@ -65,9 +65,7 @@ HyperContext.prototype = {
 		this.transactions.pop();
 	},
 	flushTransaction: function() { // TODO: prevent unterminated when called within display
-		//console.log("flush");
-		//console.log("functions:%s;",this.invalidateFunctions.length);
-		this.invalidateFunctions.forEach( function(invalidate) { // this won't work if there are no animations thus not registered
+		this.invalidateFunctions.forEach( function(invalidate) { // this won"t work if there are no animations thus not registered
 			invalidate();
 		});
 	},
@@ -78,12 +76,12 @@ HyperContext.prototype = {
 		this.startTicking();
 	},
 
-	registerTarget: function(target,display,invalidate,cleanup) {
+	registerTarget: function(target,display,invalidate,cleanup,layer = null) {
 		this.startTicking();
 		const index = this.targets.indexOf(target);
 		if (index < 0) {
 			this.targets.push(target);
-			this.displayLayers.push(null); // cachedPresentationLayer
+			this.displayLayers.push(layer); // cachedPresentationLayer
 			this.displayFunctions.push(display);
 			this.cleanupFunctions.push(cleanup);
 			this.invalidateFunctions.push(invalidate);
@@ -106,7 +104,7 @@ HyperContext.prototype = {
 	},
 	ticker: function() { // Need to manually cancel animation frame if calling directly.
 		this.animationFrame = undefined;
-		const targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don't think I was traversing backwards.
+		const targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don"t think I was traversing backwards.
 		let i = targets.length;
 		while (i--) {
 			const target = targets[i];

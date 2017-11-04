@@ -174,10 +174,16 @@ function(module, __webpack_exports__, __webpack_require__) {
     /* unused harmony export hyperIndexInRange */
     /* unused harmony export hyperEqualRanges */
     /* unused harmony export hyperIntersectionRange */
+    //import { work } from "./worker.js";
+    //import { HyperChain, HyperGroup, HyperAnimation } from "./actions.js";
+    // 
+    // //   E X P E R I M E N T A L
+    // import * as actions from "./actions.js";
+    // import { compositor } from "./compositor.js";
+    // import { work } from "./worker.js";
     var rAF = typeof window !== "undefined" && (window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.msRequestAnimationFrame || window.oRequestAnimationFrame) || function(callback) {
         setTimeout(callback, 0);
     };
-    // node has setTimeout
     function isFunction$1(w) {
         // WET
         return w && {}.toString.call(w) === "[object Function]";
@@ -185,6 +191,39 @@ function(module, __webpack_exports__, __webpack_require__) {
     var now = Date.getTime;
     if (Date.now) now = Date.now;
     if (typeof window !== "undefined" && typeof window.performance !== "undefined" && typeof window.performance.now !== "undefined") now = window.performance.now.bind(window.performance);
+    // 
+    // // //   E X P E R I M E N T A L
+    // // function work() {
+    // // 	console.log("BLOB WORK");
+    // // 	self.addEventListener("message", function(e) {
+    // // 		console.log("Context work. message:",e.data);
+    // // 		//console.log("Animation:",HyperAnimation);
+    // // 		//self.postMessage(e.data);
+    // // 		self.postMessage(null);
+    // // 	});
+    // // }
+    // 
+    // 
+    // // function workerURL(fn) {
+    // // 	var blob = new Blob(["("+fn.toString()+")()"], {type: "application/javascript"});
+    // // 	return URL.createObjectURL(blob);
+    // // }
+    // // if (typeof Worker !== "undefined") {
+    // // 	const url = workerURL(work);
+    // // 	const worker = new Worker(url);
+    // // 	//const worker = new Worker(window.URL.createObjectURL(blob));
+    // // 	worker.addEventListener("message", e => {
+    // // 		//respond(i,e.data);
+    // // 		console.log("response:",e.data);
+    // // 	});
+    // // 	var ab = new ArrayBuffer(1);
+    // // 	worker.postMessage(ab, [ab]);
+    // // 	if (ab.byteLength) {
+    // // 		console.log("Transferables are not supported");
+    // // 	} else {
+    // // 		console.log("Transferables are supported");
+    // // 	}
+    // // }
     function HyperTransaction(settings) {
         this.time;
         // set in createTransaction so value is same as parent transaction and can be frozen
@@ -205,7 +244,7 @@ function(module, __webpack_exports__, __webpack_require__) {
         this.displayLayers = [];
         // renderLayer
         this.displayFunctions = [];
-        // strange new implementation // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
+        // strange new implementation // I don"t want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
         this.cleanupFunctions = [];
         this.invalidateFunctions = [];
     }
@@ -249,7 +288,7 @@ function(module, __webpack_exports__, __webpack_require__) {
             //console.log("flush");
             //console.log("functions:%s;",this.invalidateFunctions.length);
             this.invalidateFunctions.forEach(function(invalidate) {
-                // this won't work if there are no animations thus not registered
+                // this won"t work if there are no animations thus not registered
                 invalidate();
             });
         },
@@ -262,11 +301,13 @@ function(module, __webpack_exports__, __webpack_require__) {
             this.startTicking();
         },
         registerTarget: function registerTarget(target, display, invalidate, cleanup) {
+            var layer = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
             this.startTicking();
             var index = this.targets.indexOf(target);
             if (index < 0) {
                 this.targets.push(target);
-                this.displayLayers.push(null);
+                //this.displayLayers.push(null); // cachedPresentationLayer
+                this.displayLayers.push(layer);
                 // cachedPresentationLayer
                 this.displayFunctions.push(display);
                 this.cleanupFunctions.push(cleanup);
@@ -292,7 +333,7 @@ function(module, __webpack_exports__, __webpack_require__) {
             // Need to manually cancel animation frame if calling directly.
             this.animationFrame = undefined;
             var targets = this.targets;
-            // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don't think I was traversing backwards.
+            // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don"t think I was traversing backwards.
             var i = targets.length;
             while (i--) {
                 var target = targets[i];
@@ -844,7 +885,7 @@ function(module, __webpack_exports__, __webpack_require__) {
         });
     }
     function presentationTransform(presentationLayer, sourceAnimations, time, shouldSortAnimations) {
-        // COMPOSITING
+        // COMPOSITING // This function is separated out here for now defunct hyperstyle behavior allowing manual composting given layer and animations.
         if (!sourceAnimations || !sourceAnimations.length) return false;
         if (shouldSortAnimations) {
             // animation index. No connection to setType animation sorting
@@ -918,7 +959,6 @@ function(module, __webpack_exports__, __webpack_require__) {
         var presentationBacking = null;
         var registeredProperties = [];
         var activeBacking = modelBacking;
-        //let presentationTime = -1;
         function valueForKey(property) {
             // don't let this become re-entrant (do not animate delegate.output)
             if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property, delegate.keyOutput, delegate);
@@ -973,7 +1013,7 @@ function(module, __webpack_exports__, __webpack_require__) {
                 delegate.display.call(delegate);
                 activeBacking = modelBacking;
             };
-            hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
+            hyperContext.registerTarget(controller, display, invalidate, animationCleanup, modelBacking);
         }
         function cleanupAndRemoveAnimationAtIndex(animation, index) {
             if (index > -1) {
@@ -1035,6 +1075,7 @@ function(module, __webpack_exports__, __webpack_require__) {
             }
         }
         function isAllowableProperty(key) {
+            // don't trigger animation on functions themselves
             return (layerInstance !== controller || controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0);
         }
         controller.registerAnimatableProperty = function(property, defaultAnimation) {
@@ -1104,6 +1145,7 @@ function(module, __webpack_exports__, __webpack_require__) {
             configurable: false
         });
         function baseLayer() {
+            // model, presentation, and previous layers start from this
             return Object.keys(layerInstance).filter(isAllowableProperty).reduce(function(accumulator, current) {
                 accumulator[current] = layerInstance[current];
                 return accumulator;
@@ -1111,6 +1153,7 @@ function(module, __webpack_exports__, __webpack_require__) {
         }
         Object.defineProperty(controller, "presentation", {
             get: function get() {
+                var debugNow = performance.now();
                 var transactionTime = hyperContext.currentTransaction().time;
                 if (presentationBacking !== null) return presentationBacking;
                 var presentationLayer = Object.assign(baseLayer(), modelBacking);
@@ -1123,8 +1166,10 @@ function(module, __webpack_exports__, __webpack_require__) {
                     convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer), presentationLayer, delegate.output, delegate);
                     Object.freeze(presentationLayer);
                     if (length) presentationBacking = presentationLayer; else presentationBacking = null;
+                    //console.log("===> presentation:",performance.now() - debugNow);
                     return presentationLayer;
                 }
+                //console.log("> presentation:",performance.now() - debugNow);
                 return presentationBacking;
             },
             enumerable: false,

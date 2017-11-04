@@ -1,6 +1,6 @@
 var rAF = typeof window !== "undefined" && (window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.msRequestAnimationFrame || window.oRequestAnimationFrame) || function (callback) {
 	setTimeout(callback, 0);
-}; // node has setTimeout
+};
 
 function isFunction$1(w) {
 	// WET
@@ -28,7 +28,7 @@ function HyperContext() {
 	this.ticking = false;
 	this.animationFrame;
 	this.displayLayers = []; // renderLayer
-	this.displayFunctions = []; // strange new implementation // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
+	this.displayFunctions = []; // strange new implementation // I don"t want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
 	this.cleanupFunctions = [];
 	this.invalidateFunctions = [];
 }
@@ -64,10 +64,8 @@ HyperContext.prototype = {
 	},
 	flushTransaction: function flushTransaction() {
 		// TODO: prevent unterminated when called within display
-		//console.log("flush");
-		//console.log("functions:%s;",this.invalidateFunctions.length);
 		this.invalidateFunctions.forEach(function (invalidate) {
-			// this won't work if there are no animations thus not registered
+			// this won"t work if there are no animations thus not registered
 			invalidate();
 		});
 	},
@@ -80,11 +78,13 @@ HyperContext.prototype = {
 	},
 
 	registerTarget: function registerTarget(target, display, invalidate, cleanup) {
+		var layer = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+
 		this.startTicking();
 		var index = this.targets.indexOf(target);
 		if (index < 0) {
 			this.targets.push(target);
-			this.displayLayers.push(null); // cachedPresentationLayer
+			this.displayLayers.push(layer); // cachedPresentationLayer
 			this.displayFunctions.push(display);
 			this.cleanupFunctions.push(cleanup);
 			this.invalidateFunctions.push(invalidate);
@@ -109,7 +109,7 @@ HyperContext.prototype = {
 	ticker: function ticker() {
 		// Need to manually cancel animation frame if calling directly.
 		this.animationFrame = undefined;
-		var targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don't think I was traversing backwards.
+		var targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don"t think I was traversing backwards.
 		var i = targets.length;
 		while (i--) {
 			var target = targets[i];
@@ -723,6 +723,7 @@ function decorate(controller, delegate, layerInstance) {
 }
 
 function activate(controller, delegate, layerInstance) {
+	// layer, delegate, controller?
 	if (!controller) throw new Error("Nothing to hyperactivate.");
 	if (controller.registerAnimatableProperty || controller.addAnimation) throw new Error("Already hyperactive"); // TODO: be more thorough
 	if (!delegate) delegate = controller;
@@ -737,7 +738,6 @@ function activate(controller, delegate, layerInstance) {
 	var presentationBacking = null;
 	var registeredProperties = [];
 	var activeBacking = modelBacking;
-	//let presentationTime = -1;
 
 	function valueForKey(property) {
 		// don't let this become re-entrant (do not animate delegate.output)
@@ -795,7 +795,7 @@ function activate(controller, delegate, layerInstance) {
 			delegate.display.call(delegate);
 			activeBacking = modelBacking;
 		};
-		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
+		hyperContext.registerTarget(controller, display, invalidate, animationCleanup, modelBacking);
 	}
 
 	function cleanupAndRemoveAnimationAtIndex(animation, index) {
@@ -1062,7 +1062,7 @@ function activate(controller, delegate, layerInstance) {
 		else controller.registerAnimatableProperty(key);
 	});
 
-	return controller;
+	return controller; // should return the deactivate function
 }
 
 function isFunction$3(w) {
@@ -1512,6 +1512,456 @@ function hyperIntersectionRange(a, b) {
 	var end = Math.min(a.location + a.length, b.location + b.length);
 	return { location: location, length: end - location };
 }
+
+function updateIndices(object, style, length) {
+	// See all that stuff in there, Homie? That's why your robot didn't work.
+	console.log("LAYER STYLE LENGTH:", Object.keys(style).length);
+	//while (length < style.length) {
+	while (length < Object.keys(style).length) {
+		Object.defineProperty(object, length, {
+			configurable: true,
+			enumerable: false,
+			get: function (index) {
+				return function () {
+					return style[index];
+				};
+			}(length)
+		});
+		length++;
+	}
+	//while (length > style.length) {
+	while (length > Object.keys(style).length) {
+		length--;
+		Object.defineProperty(object, length, {
+			configurable: true,
+			enumerable: false,
+			value: undefined
+		});
+	}
+	return length;
+}
+
+function prepareDocument(animatables, HyperStyleDeclaration) {
+
+	if (typeof document !== "undefined") {
+
+		//		const dict = animatables;
+
+		var styles = Object.keys(document.documentElement.style);
+		var dict = {};
+		styles.forEach(function (key) {
+			dict[key] = false;
+		});
+		Object.assign(dict, animatables);
+		// Every property change will trigger call to animationForKey even if types are not declared,
+		// so you can animate one style in response to change in another,
+		// typically left/top to become transform, no other use cases really.
+		// Maybe display change could be given a group animation with opacity fade.
+		// There needs to be a discrete default, with no interpolation, just a step-end timing function
+
+		for (var property in dict) {
+			//document.documentElement.style) {
+			// 		if (cssStyleDeclarationAttribute[property] || property in cssStyleDeclarationMethodModifiesStyle) {
+			// 			continue;
+			// 		}
+			(function (property) {
+
+				Object.defineProperty(HyperStyleDeclaration.prototype, property, {
+
+					// This needs to be completely reassessed.
+					// It's now different from the original web-animations technique.
+					// web-animations-legacy depended on the original style object.
+					// Whatever the problem, changes are not appearing on non-animated properties.
+
+					// I am missing: _surrogateElement, updateIndices()
+
+					get: function get() {
+						var layer = this.hyperStyleLayer;
+						var ugly = layer[property];
+						var type = animatables[property];
+						if (type) return type.output(ugly);
+						return ugly;
+					},
+					set: function set(value) {
+						this.hyperStyleLayer[property] = value; // This will produce animations from and to the ugly values, not CSS values.
+						//this.hyperStyleController.registerAnimatableProperty(property); // automatic registration
+						if (animatables[property]) {
+							this.hyperStyleController.registerAnimatableProperty(property, animatables[property]); // automatic registration
+						}
+						console.log("element STYLE object:%s; layer:%s; length:%s;", this, JSON.stringify(this.hyperStyleLayer), this.hyperStyleLength);
+						this.hyperStyleLength = updateIndices(this, this.hyperStyleLayer, this.hyperStyleLength);
+						console.log("element STYLE set:%s; value:%s; result:", property, value, this.hyperStyleLayer);
+					},
+					configurable: true,
+					enumerable: true
+				});
+			})(property);
+		}
+	}
+}
+// This function is a fallback for when we can't replace an element's style with
+// AnimatatedCSSStyleDeclaration and must patch the existing style to behave
+// in a similar way.
+// Only the methods listed in cssStyleDeclarationMethodModifiesStyle will
+// be patched to behave in the same manner as a native implementation,
+// getter properties like style.left or style[0] will be tainted by the
+// polyfill's animation engine.
+
+// var patchInlineStyleForAnimation = function(style) {
+// 	var surrogateElement = document.createElement('div');
+// 	copyInlineStyle(style, surrogateElement.style);
+// 	var isAnimatedProperty = {};
+// 	for (var method in cssStyleDeclarationMethodModifiesStyle) {
+// 		if (!(method in style)) {
+// 			continue;
+// 		}
+// 		Object.defineProperty(style, method, configureDescriptor({
+// 			value: (function(method, originalMethod, modifiesStyle) {
+// 				return function() {
+// 					var result = surrogateElement.style[method].apply(
+// 							surrogateElement.style, arguments);
+// 					if (modifiesStyle) {
+// 						if (!isAnimatedProperty[arguments[0]]) {
+// 							originalMethod.apply(style, arguments);
+// 						}
+// 						animatedInlineStyleChanged(); //retick
+// 					}
+// 					return result;
+// 				}
+// 			})(method, style[method], cssStyleDeclarationMethodModifiesStyle[method])
+// 		}));
+// 	}
+// 	style._clearAnimatedProperty = function(property) {
+// 		this[property] = surrogateElement.style[property];
+// 		isAnimatedProperty[property] = false;
+// 	};
+// 	style._setAnimatedProperty = function(property, value) {
+// 		this[property] = value;
+// 		isAnimatedProperty[property] = true;
+// 	};
+// };
+
+
+// var propertyTypes = {
+// 	backgroundColor: colorType,
+// 	backgroundPosition: positionListType,
+// 	borderBottomColor: colorType,
+// 	borderBottomLeftRadius: percentLengthType,
+// 	borderBottomRightRadius: percentLengthType,
+// 	borderBottomWidth: lengthType,
+// 	borderLeftColor: colorType,
+// 	borderLeftWidth: lengthType,
+// 	borderRightColor: colorType,
+// 	borderRightWidth: lengthType,
+// 	borderSpacing: lengthType,
+// 	borderTopColor: colorType,
+// 	borderTopLeftRadius: percentLengthType,
+// 	borderTopRightRadius: percentLengthType,
+// 	borderTopWidth: lengthType,
+// 	bottom: percentLengthAutoType,
+// 	boxShadow: shadowType,
+// 	clip: typeWithKeywords(['auto'], rectangleType),
+// 	color: colorType,
+// 	cx: lengthType,
+// 	// TODO: Handle these keywords properly.
+// 	fontSize: typeWithKeywords(['smaller', 'larger'], percentLengthType),
+// 	fontWeight: typeWithKeywords(['lighter', 'bolder'], fontWeightType),
+// 	height: percentLengthAutoType,
+// 	left: percentLengthAutoType,
+// 	letterSpacing: typeWithKeywords(['normal'], lengthType),
+// 	lineHeight: percentLengthType, // TODO: Should support numberType as well.
+// 	marginBottom: lengthAutoType,
+// 	marginLeft: lengthAutoType,
+// 	marginRight: lengthAutoType,
+// 	marginTop: lengthAutoType,
+// 	maxHeight: typeWithKeywords(
+// 			['none', 'max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	maxWidth: typeWithKeywords(
+// 			['none', 'max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	minHeight: typeWithKeywords(
+// 			['max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	minWidth: typeWithKeywords(
+// 			['max-content', 'min-content', 'fill-available', 'fit-content'],
+// 			percentLengthType),
+// 	//opacity: numberType, // does NOT use 1 as the default underlying value when not specified. animations relative to zero not one. Need to use propertyValueAliases
+// 	opacity: opacityType, //
+// 	outlineColor: typeWithKeywords(['invert'], colorType),
+// 	outlineOffset: lengthType,
+// 	outlineWidth: lengthType,
+// 	paddingBottom: lengthType,
+// 	paddingLeft: lengthType,
+// 	paddingRight: lengthType,
+// 	paddingTop: lengthType,
+// 	right: percentLengthAutoType,
+// 	textIndent: typeWithKeywords(['each-line', 'hanging'], percentLengthType),
+// 	textShadow: shadowType,
+// 	top: percentLengthAutoType,
+// 	transform: transformType,
+// 	WebkitTransform: transformType, // React?
+// 	webkitTransform: transformType, // temporary
+// 	msTransform: transformType, // temporary
+// 	verticalAlign: typeWithKeywords([
+// 		'baseline',
+// 		'sub',
+// 		'super',
+// 		'text-top',
+// 		'text-bottom',
+// 		'middle',
+// 		'top',
+// 		'bottom'
+// 	], percentLengthType),
+// 	visibility: visibilityType,
+// 	width: typeWithKeywords([
+// 		'border-box',
+// 		'content-box',
+// 		'auto',
+// 		'max-content',
+// 		'min-content',
+// 		'available',
+// 		'fit-content'
+// 	], percentLengthType),
+// 	wordSpacing: typeWithKeywords(['normal'], percentLengthType),
+// 	x: lengthType,
+// 	y: lengthType,
+// 	zIndex: typeWithKeywords(['auto'], integerType)
+// };
+
+// var svgProperties = {
+// 	'cx': 1,
+// 	'width': 1,
+// 	'x': 1,
+// 	'y': 1
+// };
+
+// var borderWidthAliases = {
+// 	initial: '3px',
+// 	thin: '1px',
+// 	medium: '3px',
+// 	thick: '5px'
+// };
+
+// var propertyValueAliases = {
+// 	backgroundColor: { initial: 'transparent' },
+// 	backgroundPosition: { initial: '0% 0%' },
+// 	borderBottomColor: { initial: 'currentColor' },
+// 	borderBottomLeftRadius: { initial: '0px' },
+// 	borderBottomRightRadius: { initial: '0px' },
+// 	borderBottomWidth: borderWidthAliases,
+// 	borderLeftColor: { initial: 'currentColor' },
+// 	borderLeftWidth: borderWidthAliases,
+// 	borderRightColor: { initial: 'currentColor' },
+// 	borderRightWidth: borderWidthAliases,
+// 	// Spec says this should be 0 but in practise it is 2px.
+// 	borderSpacing: { initial: '2px' },
+// 	borderTopColor: { initial: 'currentColor' },
+// 	borderTopLeftRadius: { initial: '0px' },
+// 	borderTopRightRadius: { initial: '0px' },
+// 	borderTopWidth: borderWidthAliases,
+// 	bottom: { initial: 'auto' },
+// 	clip: { initial: 'rect(0px, 0px, 0px, 0px)' },
+// 	color: { initial: 'black' }, // Depends on user agent.
+// 	fontSize: {
+// 		initial: '100%',
+// 		'xx-small': '60%',
+// 		'x-small': '75%',
+// 		'small': '89%',
+// 		'medium': '100%',
+// 		'large': '120%',
+// 		'x-large': '150%',
+// 		'xx-large': '200%'
+// 	},
+// 	fontWeight: {
+// 		initial: '400',
+// 		normal: '400',
+// 		bold: '700'
+// 	},
+// 	height: { initial: 'auto' },
+// 	left: { initial: 'auto' },
+// 	letterSpacing: { initial: 'normal' },
+// 	lineHeight: {
+// 		initial: '120%',
+// 		normal: '120%'
+// 	},
+// 	marginBottom: { initial: '0px' },
+// 	marginLeft: { initial: '0px' },
+// 	marginRight: { initial: '0px' },
+// 	marginTop: { initial: '0px' },
+// 	maxHeight: { initial: 'none' },
+// 	maxWidth: { initial: 'none' },
+// 	minHeight: { initial: '0px' },
+// 	minWidth: { initial: '0px' },
+// 	opacity: { initial: '1.0' },
+// 	outlineColor: { initial: 'invert' },
+// 	outlineOffset: { initial: '0px' },
+// 	outlineWidth: borderWidthAliases,
+// 	paddingBottom: { initial: '0px' },
+// 	paddingLeft: { initial: '0px' },
+// 	paddingRight: { initial: '0px' },
+// 	paddingTop: { initial: '0px' },
+// 	right: { initial: 'auto' },
+// 	textIndent: { initial: '0px' },
+// 	textShadow: {
+// 		initial: '0px 0px 0px transparent',
+// 		none: '0px 0px 0px transparent'
+// 	},
+// 	top: { initial: 'auto' },
+// 	transform: {
+// 		initial: "matrix(1, 0, 0, 1, 0, 0)",
+// 		none: "matrix(1, 0, 0, 1, 0, 0)"
+// 	},
+// 	verticalAlign: { initial: '0px' },
+// 	visibility: { initial: 'visible' },
+// 	width: { initial: 'auto' },
+// 	wordSpacing: { initial: 'normal' },
+// 	zIndex: { initial: 'auto' }
+// };
+
+//import { animationFromDescription } from "../actions.js";
+function typeForStyle(property) {
+	return usedPropertyTypes[property]; // || nonNumericType;
+}
+
+var usedPropertyTypes = {};
+function registerAnimatableStyles(dict) {
+	Object.assign(usedPropertyTypes, dict);
+	prepareDocument(dict, HyperStyleDeclaration);
+}
+
+function isFunction$4(w) {
+	return w && {}.toString.call(w) === "[object Function]";
+}
+
+function activateElement(element, controller, delegate) {
+	// compare to activate(controller, delegate, layerInstance)
+	if (typeof window === "undefined") return;
+	if ((typeof delegate === "undefined" || delegate === null) && (typeof controller === "undefined" || controller === null)) controller = element;else if ((typeof delegate === "undefined" || delegate === null) && typeof controller !== "undefined" && controller !== null && controller !== element) delegate = controller;else if (typeof controller === "undefined" || controller === null) controller = element; // should really be the HyperStyleDeclaration, not the element itself.
+
+	var hyperStyleDelegate = {};
+
+	var target = null; // allows calling activateElement with undefined element to be set later
+	var original = element ? element.style : null;
+
+	hyperStyleDelegate.typeOfProperty = function (property) {
+		if (delegate && isFunction$4(delegate.typeOfProperty)) return delegate.typeOfProperty.call(delegate, property); // Not very useful.
+		return typeForStyle(property);
+	};
+	hyperStyleDelegate.input = function (property, prettyValue) {
+		if (delegate && isFunction$4(delegate.input)) return delegate.input.call(delegate, property, prettyValue); // Not as useful because it includes unit suffix. Also unsure about native
+		var type = typeForStyle(property);
+		var uglyValue = type ? type.input(prettyValue) : prettyValue; // allow registering properties with no declared type
+		return uglyValue;
+	};
+	hyperStyleDelegate.output = function (property, uglyValue) {
+		// value is the ugly value // BUG FIXME: sometimes a string
+		if (delegate && isFunction$4(delegate.output)) return delegate.output.call(delegate, property, uglyValue);
+		var type = typeForStyle(property);
+		var result = void 0;
+		if (uglyValue === null || typeof uglyValue === "undefined") result = type.zero();else result = type ? type.output(uglyValue) : uglyValue; // allow registering properties with no declared type
+		return result;
+	};
+	hyperStyleDelegate.animationForKey = function (key, prettyValue, prettyPrevious, prettyPresentation) {
+		// sometimesUglySometimesPrettyPrevious // prettyPrevious needs to be uglyPrevious. This is a Pyon problem
+		if (prettyPrevious === null || typeof prettyPrevious === "undefined") prettyPrevious = prettyValue;
+		var description = void 0; // initially undefined
+		if (delegate && isFunction$4(delegate.animationForKey)) description = delegate.animationForKey(key, prettyValue, prettyPrevious, prettyPresentation, target);else if (delegate && isFunction$4(delegate)) description = delegate(key, prettyValue, prettyPrevious, prettyPresentation, target);
+		return description;
+		// 		const animation = animationFromDescription(description);
+		// 		if (animation && typeof animation.property === "undefined") animation.property = key;
+		// 		return animation;
+	};
+	// 	hyperStyleDelegate.animationFromDescription = function(description) { // deprecate this because delegate.typeOfProperty is enough?
+	// 		const animation = animationFromDescription(description);
+	// 		if (animation.property) animation.type = typeForStyle(animation.property); // TODO: or discrete type if undefined
+	// 		return animation;
+	// 	};
+	hyperStyleDelegate.display = function () {
+		var presentation = controller.presentation; // TODO: this should be provided
+		var presentationKeys = Object.keys(presentation);
+		presentationKeys.forEach(function (key) {
+			var value = presentation[key];
+			original[key] = value; // HyperStyleDeclaration is meant to be mutated.
+		});
+		var previousKeys = Object.keys(previousLayer);
+		previousKeys.forEach(function (key) {
+			// Must nullify properties that are no longer animated, if not on presentation.
+			if (presentationKeys.indexOf(key) === -1) {
+				// FIXME: Sort & walk keys? Not too bad if animating few properties.
+				original[key] = "";
+			}
+		});
+		previousLayer = presentation;
+	};
+
+	var layer = {};
+	var hyperStyleDeclaration = new HyperStyleDeclaration(layer, controller);
+	var previousLayer = {};
+	activate(controller, hyperStyleDelegate, layer); // controller can be undefined only if element is not
+
+	function setElement(what) {
+		if (target) return; // you can only assign element once, either as argument or with this function
+		target = what;
+		original = target.style;
+		console.log("SET ELEMENT ORIGINAL STYLE:", original);
+		console.log("Layer zero:", JSON.stringify(layer));
+		Object.keys(original).forEach(function (key) {
+			if (typeof original[key] !== "undefined" && original[key] !== null && original[key].length !== 0) {
+				// most properties on original style object should be an empty string
+				layer[key] = original[key];
+			}
+		});
+		console.log("Layer one:", JSON.stringify(layer));
+		for (var property in usedPropertyTypes) {
+			var prettyValue = original[property];
+			var uglyValue = hyperStyleDelegate.input(property, prettyValue);
+			console.log("prop:%s; pretty:%s; ugly:%s;", property, prettyValue, uglyValue);
+			layer[property] = uglyValue;
+			controller.registerAnimatableProperty(property, true);
+		}
+		console.log("Layer two:", JSON.stringify(layer));
+		console.log("Layer three:", layer);
+		try {
+			Object.defineProperty(target, "style", {
+				get: function get() {
+					return hyperStyleDeclaration;
+				},
+				configurable: true,
+				enumerable: true
+			});
+		} catch (error) {
+			//patchInlineStyleForAnimation(target.style);
+			console.warn("not animatable by any craft known to Pyon");
+		}
+		target.style.hyperStyleInitialized = true;
+	}
+
+	if (element) setElement(element);
+	return setElement;
+}
+
+var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
+	this.hyperStyleLength = 0;
+	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
+		get: function get() {
+			return layer;
+		},
+		enumerable: false,
+		configurable: false
+	});
+	Object.defineProperty(this, "hyperStyleController", { // these will collide with css
+		get: function get() {
+			return controller;
+		},
+		enumerable: false,
+		configurable: false
+	});
+};
+
+HyperStyleDeclaration.prototype = {
+	constructor: HyperStyleDeclaration
+};
 
 // This file is a heavily modified derivative work of:
 // https://github.com/web-animations/web-animations-js-legacy
@@ -3684,4 +4134,4 @@ var visibilityType = createObject(nonNumericType, {
 	}
 });
 
-export { transformType, colorType, nonNumericType, integerType, opacityType, lengthType, lengthAutoType, positionType, positionListType, rectangleType, shadowType, fontWeightType, visibilityType, beginTransaction, commitTransaction, currentTransaction, flushTransaction, disableAnimation, decorate, activate, HyperNumber, HyperScale, HyperArray, HyperSet, HyperPoint, HyperSize, HyperRect, hyperNotFound, hyperMakeRect, hyperZeroRect, hyperEqualRects, hyperMakePoint, hyperZeroPoint, hyperEqualPoints, hyperMakeSize, hyperZeroSize, hyperEqualSizes, hyperMakeRange, hyperZeroRange, hyperNullRange, hyperIndexInRange, hyperEqualRanges, hyperIntersectionRange };
+export { typeForStyle, registerAnimatableStyles, activateElement, transformType, colorType, nonNumericType, integerType, opacityType, lengthType, lengthAutoType, positionType, positionListType, rectangleType, shadowType, fontWeightType, visibilityType, beginTransaction, commitTransaction, currentTransaction, flushTransaction, disableAnimation, decorate, activate, HyperNumber, HyperScale, HyperArray, HyperSet, HyperPoint, HyperSize, HyperRect, hyperNotFound, hyperMakeRect, hyperZeroRect, hyperEqualRects, hyperMakePoint, hyperZeroPoint, hyperEqualPoints, hyperMakeSize, hyperZeroSize, hyperEqualSizes, hyperMakeRange, hyperZeroRange, hyperNullRange, hyperIndexInRange, hyperEqualRanges, hyperIntersectionRange };

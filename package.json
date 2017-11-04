@@ -7,7 +7,7 @@
   "scripts": {
     "build": "./node_modules/.bin/rollup -c && BABEL_ENV=webpack WEBPACK_ENV=build webpack --progress --colors",
     "dev": "./node_modules/.bin/rollup -c && BABEL_ENV=webpack WEBPACK_ENV=dev webpack --progress --colors",
-    "test": "eslint source/*.js && eslint test/*.js --rule 'no-undef:0' && BABEL_ENV=mocha mocha --compilers js:babel-core/register --colors",
+    "test": "eslint source/*.js ; eslint test/*.js --rule 'no-undef:0' ; BABEL_ENV=mocha mocha --compilers js:babel-core/register --colors",
     "transform": "eslint test/transform.js --rule 'no-undef:0' && BABEL_ENV=mocha mocha --compilers js:babel-core/register --colors",
     "gcc": "gcc -framework Cocoa -framework QuartzCore -x objective-c -o ./test/objc ./test/objc.m ; ./test/objc ; rm ./test/objc"
   },

@@ -117,7 +117,7 @@ export function decorate(controller, delegate, layerInstance) { // deprecated
 
 
 
-export function activate(controller, delegate, layerInstance) {
+export function activate(controller, delegate, layerInstance) { // layer, delegate, controller?
 	if (!controller) throw new Error("Nothing to hyperactivate.");
 	if (controller.registerAnimatableProperty || controller.addAnimation) throw new Error("Already hyperactive"); // TODO: be more thorough
 	if (!delegate) delegate = controller;
@@ -132,7 +132,6 @@ export function activate(controller, delegate, layerInstance) {
 	let presentationBacking = null;
 	const registeredProperties = [];
 	let activeBacking = modelBacking;
-	//let presentationTime = -1;
 
 	function valueForKey(property) { // don't let this become re-entrant (do not animate delegate.output)
 		if (DELEGATE_DOUBLE_WHAMMY) property = convertedKey(property,delegate.keyOutput,delegate);
@@ -187,7 +186,7 @@ export function activate(controller, delegate, layerInstance) {
 			delegate.display.call(delegate);
 			activeBacking = modelBacking;
 		};
-		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
+		hyperContext.registerTarget(controller, display, invalidate, animationCleanup, modelBacking);
 	}
 
 	function cleanupAndRemoveAnimationAtIndex(animation, index) {
@@ -319,7 +318,7 @@ export function activate(controller, delegate, layerInstance) {
 		enumerable: false,
 		configurable: false
 	});
-
+ 
 	function baseLayer() { // model, presentation, and previous layers start from this
 		return Object.keys(layerInstance).filter(isAllowableProperty).reduce(function(accumulator, current) {
 			accumulator[current] = layerInstance[current];
@@ -446,5 +445,5 @@ export function activate(controller, delegate, layerInstance) {
 		else controller.registerAnimatableProperty(key);
 	});
 
-	return controller;
+	return controller; // should return the deactivate function
 }

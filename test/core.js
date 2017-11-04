@@ -438,6 +438,97 @@ describe("core", function() {
 		});
 	});
 
+	describe("null controller", function() {
+
+		it("is possible", function() {
+			const delegate = {};
+			const layer = {};
+			core.activate(null,delegate,layer); // currently throws error if there is no controller passed as first argument
+			assert(true);
+		});
+
+		it("basic function", function(done) {
+			const delegate = {
+				display: function(layer) {
+					
+				},
+				animationForKey: function(key,value,previous,presentation) {
+					if (key === "a") return {
+						duration:duration/2,
+						onend: function(finished) {
+							const error = (one.b === 1) ? null : new Error("value is wrong");
+							done(error);
+						}
+					};
+					if (key === "b") return {
+						duration:duration,
+						from: 1
+					};
+				}
+			};
+			const layer = {
+				a: 0,
+				b: 0
+			};
+			core.activate(null,delegate,layer);
+			layer.a = 1;
+			layer.b = 1;
+		});
+
+		it("display gets called", function(done) {
+			const delegate = {
+				display: function(layer) {
+					done();
+				},
+				animationForKey: function(key,value,previous,presentation) {
+					return duration/2;
+				}
+			};
+			const layer = {
+				a: 0
+			};
+			core.activate(null,delegate,layer);
+			layer.a = 1;
+		});
+
+		it("display has layer argument", function(done) {
+			const delegate = {
+				display: function(layer) {
+					const error = layer ? null : new Error("layer is not passed as an argument to display");
+					done(error);
+				},
+				animationForKey: function(key,value,previous,presentation) {
+					return duration/2;
+				}
+			};
+			const layer = {
+				a: 0
+			};
+			core.activate(null,delegate,layer);
+			layer.a = 1;
+		});
+
+		it("undefined behavior. what is `this`?", function(done) {
+			const layer = {
+				a: 0
+			};
+			const delegate = {
+				display: function(layer) {
+					console.log("what is this:%s;",this);
+					console.log("what is this stringified:%s;",JSON.stringify(this));
+					const error = new Error("undefined behavior. what is `this`?");
+					done(error);
+				},
+				animationForKey: function(key,value,previous,presentation) {
+					return duration/2;
+				}
+			};
+			core.activate(null,delegate,layer);
+			layer.a = 1;
+		});
+
+	});
+
 	describe("two", function() {
 
 		let two;
