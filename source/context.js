@@ -85,7 +85,7 @@ HyperContext.prototype = {
 			this.targets.push(target);
 			this.getPresentations.push(getPresentation);
 			this.getAnimationCounts.push(getAnimationCount);
-			this.displayLayers.push(layer); // cachedPresentationLayer
+			this.displayLayers.push(layer);
 			this.displayFunctions.push(display);
 			this.cleanupFunctions.push(cleanup);
 			this.invalidateFunctions.push(invalidate);
@@ -98,7 +98,7 @@ HyperContext.prototype = {
 			this.targets.splice(index, 1);
 			this.getPresentations.splice(index, 1);
 			this.getAnimationCounts.splice(index, 1);
-			this.displayLayers.splice(index, 1); // cachedPresentationLayer
+			this.displayLayers.splice(index, 1);
 			this.displayFunctions.splice(index, 1);
 			this.cleanupFunctions.splice(index, 1);
 			this.invalidateFunctions.splice(index,1);
@@ -119,17 +119,17 @@ HyperContext.prototype = {
 			const getPresentation = this.getPresentations[i]; // should exist
 			if (!animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
 				if (isFunction(display)) {
-					const presentationLayer = getPresentation();//target.presentation;
+					const presentationLayer = getPresentation();
 					display(presentationLayer);
 				}
-				this.invalidateFunctions[i](); // even stranger implementation
+				this.invalidateFunctions[i]();
 				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
 			} else {
-				const presentationLayer = getPresentation();//target.presentation;
+				const presentationLayer = getPresentation();
 				if (this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
-					this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
+					this.displayLayers[i] = presentationLayer;
 					display(presentationLayer);
-					this.invalidateFunctions[i](); // even stranger implementation
+					this.invalidateFunctions[i]();
 				}
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
 			}
