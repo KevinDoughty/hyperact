@@ -37,7 +37,7 @@ const rotationX = 0;
 const rotationY = 0;
 const rotationZ = Math.PI / 2;
 
-
+let toggling = false;
 
 const tau = Math.PI * 2;
 const thetaThreshold = tau/vertices;
@@ -263,7 +263,7 @@ function mouseUp(e) {
 }
 
 function mouseDown(e) {
-	running = !running;
+	running = !running && toggling;
 	randomize();
 	layout();
 };

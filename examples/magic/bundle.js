@@ -6880,6 +6880,8 @@ var rotationX = 0;
 var rotationY = 0;
 var rotationZ = Math.PI / 2;
 
+var toggling = false;
+
 var tau = Math.PI * 2;
 var thetaThreshold = tau / vertices;
 var thickness = 0.002;
@@ -7107,7 +7109,7 @@ function mouseUp(e) {
 }
 
 function mouseDown(e) {
-	running = !running;
+	running = !running && toggling;
 	randomize();
 	layout();
 };
@@ -7218,8 +7220,8 @@ function resize(e) {
 	gl.viewportWidth = width;
 	gl.viewportHeight = height;
 
-	radiusA = radius; // * (width>height ? width/height : 1);
-	radiusB = radius; // * (width>height ? width/height : 1);
+	radiusA = radius;
+	radiusB = radius;
 	delegate.display(controller.presentation);
 }
 
