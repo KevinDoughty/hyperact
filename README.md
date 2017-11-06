@@ -21,6 +21,7 @@ view.x = 1;
 ## Examples
 
 
+- [magic](https://kevindoughty.github.io/hyperact/examples/magic/) Fractal lissajous curves in WebGL
 - [rocketship](https://kevindoughty.github.io/hyperact/examples/rocketship/) Blending a keyframe path and more
 - [transaction](https://kevindoughty.github.io/hyperact/examples/transaction/) Implicit, like ReactNative LayoutAnimation
 - [rococo](https://kevindoughty.github.io/hyperact/examples/rococo/) Canvas drawing example
