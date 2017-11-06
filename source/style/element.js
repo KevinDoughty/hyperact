@@ -2,7 +2,6 @@
 
 
 function updateIndices(object, style, length) { // See all that stuff in there, Homie? That's why your robot didn't work.
-	console.log("LAYER STYLE LENGTH:",Object.keys(style).length);
 	//while (length < style.length) {
 	while (length < Object.keys(style).length) {
 		Object.defineProperty(object, length, {
@@ -77,9 +76,7 @@ export function prepareDocument(animatables, HyperStyleDeclaration) {
 						if (animatables[property]) {
 							this.hyperStyleController.registerAnimatableProperty(property,animatables[property]); // automatic registration
 						}
-						console.log("element STYLE object:%s; layer:%s; length:%s;",this,JSON.stringify(this.hyperStyleLayer),this.hyperStyleLength);
 						this.hyperStyleLength = updateIndices(this, this.hyperStyleLayer, this.hyperStyleLength);
-						console.log("element STYLE set:%s; value:%s; result:",property,value,this.hyperStyleLayer);
 					},
 					configurable: true,
 					enumerable: true

@@ -85,23 +85,17 @@ export function activateElement(element, controller, delegate) { // compare to a
 		if (target) return; // you can only assign element once, either as argument or with this function
 		target = what;
 		original = target.style;
-		console.log("SET ELEMENT ORIGINAL STYLE:",original);
-		console.log("Layer zero:",JSON.stringify(layer));
 		Object.keys(original).forEach( key => {
 			if (typeof original[key] !== "undefined" && original[key] !== null && original[key].length !== 0) { // most properties on original style object should be an empty string
 				layer[key] = original[key];
 			}
 		});
-		console.log("Layer one:",JSON.stringify(layer));
 		for (let property in usedPropertyTypes) {
 			const prettyValue = original[property];
 			const uglyValue = hyperStyleDelegate.input(property, prettyValue);
-			console.log("prop:%s; pretty:%s; ugly:%s;",property,prettyValue,uglyValue);
 			layer[property] = uglyValue;
 			controller.registerAnimatableProperty(property,true);
 		}
-		console.log("Layer two:",JSON.stringify(layer));
-		console.log("Layer three:",layer);
 		try {
 			Object.defineProperty(target, "style", {
 				get: function() {

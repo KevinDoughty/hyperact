@@ -444,5 +444,5 @@ export function activate(controller, delegate, layerInstance) { // layer, delega
 		});
 	}
 
-	return controller; // TODO: should return the deactivate function
+	return controller; // TODO: should return the deactivate function // or maybe the layerInstance
 }

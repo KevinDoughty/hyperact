@@ -1,6 +1,6 @@
 var rAF = typeof window !== "undefined" && (window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.msRequestAnimationFrame || window.oRequestAnimationFrame) || function (callback) {
 	setTimeout(callback, 0);
-}; // node has setTimeout
+};
 
 function isFunction$1(w) {
 	// WET
@@ -24,11 +24,13 @@ function HyperTransaction(settings) {
 
 function HyperContext() {
 	this.targets = [];
+	this.getPresentations = [];
+	this.getAnimationCounts = [];
 	this.transactions = [];
 	this.ticking = false;
 	this.animationFrame;
 	this.displayLayers = []; // renderLayer
-	this.displayFunctions = []; // strange new implementation // I don't want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
+	this.displayFunctions = []; // strange new implementation // I don"t want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
 	this.cleanupFunctions = [];
 	this.invalidateFunctions = [];
 }
@@ -64,10 +66,8 @@ HyperContext.prototype = {
 	},
 	flushTransaction: function flushTransaction() {
 		// TODO: prevent unterminated when called within display
-		//console.log("flush");
-		//console.log("functions:%s;",this.invalidateFunctions.length);
 		this.invalidateFunctions.forEach(function (invalidate) {
-			// this won't work if there are no animations thus not registered
+			// this won"t work if there are no animations thus not registered
 			invalidate();
 		});
 	},
@@ -79,12 +79,16 @@ HyperContext.prototype = {
 		this.startTicking();
 	},
 
-	registerTarget: function registerTarget(target, display, invalidate, cleanup) {
+	registerTarget: function registerTarget(target, getPresentation, getAnimationCount, display, invalidate, cleanup) {
+		var layer = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : null;
+
 		this.startTicking();
 		var index = this.targets.indexOf(target);
 		if (index < 0) {
 			this.targets.push(target);
-			this.displayLayers.push(null); // cachedPresentationLayer
+			this.getPresentations.push(getPresentation);
+			this.getAnimationCounts.push(getAnimationCount);
+			this.displayLayers.push(layer);
 			this.displayFunctions.push(display);
 			this.cleanupFunctions.push(cleanup);
 			this.invalidateFunctions.push(invalidate);
@@ -95,7 +99,9 @@ HyperContext.prototype = {
 		var index = this.targets.indexOf(target);
 		if (index > -1) {
 			this.targets.splice(index, 1);
-			this.displayLayers.splice(index, 1); // cachedPresentationLayer
+			this.getPresentations.splice(index, 1);
+			this.getAnimationCounts.splice(index, 1);
+			this.displayLayers.splice(index, 1);
 			this.displayFunctions.splice(index, 1);
 			this.cleanupFunctions.splice(index, 1);
 			this.invalidateFunctions.splice(index, 1);
@@ -109,27 +115,28 @@ HyperContext.prototype = {
 	ticker: function ticker() {
 		// Need to manually cancel animation frame if calling directly.
 		this.animationFrame = undefined;
-		var targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don't think I was traversing backwards.
+		var targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don"t think I was traversing backwards.
 		var i = targets.length;
 		while (i--) {
 			var target = targets[i];
-			var display = this.displayFunctions[i]; // strange new implementation
-			if (!target.animationCount) {
+			var display = this.displayFunctions[i]; // this may not exist
+			var animationCount = this.getAnimationCounts[i](); // should exist
+			var getPresentation = this.getPresentations[i]; // should exist
+			if (!animationCount) {
 				// Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
 				if (isFunction$1(display)) {
-					target.presentation;
-					display(); // new ensure one last time
+					var presentationLayer = getPresentation();
+					display(presentationLayer);
 				}
-				this.invalidateFunctions[i](); // even stranger implementation
+				this.invalidateFunctions[i]();
 				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
 			} else {
-				var presentationLayer = target.presentation;
-				if (this.displayLayers[i] !== presentationLayer) {
+				var _presentationLayer = getPresentation();
+				if (this.displayLayers[i] !== _presentationLayer) {
 					// suppress unnecessary displays
-					if (target.animationCount) this.displayLayers[i] = presentationLayer; // cachedPresentationLayer
-					//display.call(target.delegate);
-					display();
-					this.invalidateFunctions[i](); // even stranger implementation
+					this.displayLayers[i] = _presentationLayer;
+					display(_presentationLayer);
+					this.invalidateFunctions[i]();
 				}
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
 			}
@@ -621,6 +628,7 @@ function isFunction(w) {
 }
 
 function prepAnimationObjectFromAddAnimation(animation, delegate) {
+	// If this is only called from addAnimation, why is it here?
 	if (animation instanceof HyperAnimation || animation instanceof HyperKeyframes) {
 		if (delegate && animation.property && isFunction(delegate.typeOfProperty)) {
 			var type = delegate.typeOfProperty.call(delegate, animation.property);
@@ -666,7 +674,7 @@ function convertPropertiesOfLayerWithFunction(properties, object, funky, self) {
 }
 
 function presentationTransform(presentationLayer, sourceAnimations, time, shouldSortAnimations) {
-	// COMPOSITING
+	// COMPOSITING // This function is separated out here for now defunct hyperstyle behavior allowing manual composting given layer and animations.
 	if (!sourceAnimations || !sourceAnimations.length) return false;
 	if (shouldSortAnimations) {
 		// animation index. No connection to setType animation sorting
@@ -717,21 +725,26 @@ function implicitAnimation(property, prettyValue, prettyPrevious, prettyPresenta
 }
 
 function activate(controller, delegate, layerInstance) {
-	if (!controller) throw new Error("Nothing to hyperactivate.");
-	if (controller.registerAnimatableProperty || controller.addAnimation) throw new Error("Already hyperactive"); // TODO: be more thorough
-	if (!delegate) delegate = controller;
-	if (!layerInstance) layerInstance = controller;
+	// layer, delegate, controller?
+	if (!controller) {
+		// "Nothing to hyperactivate." // TODO: layer, delegate, controller
+		if (!delegate) delegate = {};
+		if (!layerInstance) layerInstance = delegate;
+	} else {
+		if (controller.registerAnimatableProperty || controller.addAnimation) throw new Error("Already hyperactive"); // TODO: be more thorough
+		if (!delegate) delegate = controller;
+		if (!layerInstance) layerInstance = controller;
+	}
 	var allAnimations = [];
 	var allNames = [];
 	var namedAnimations = {};
-	var defaultAnimations = {};
+	var defaultAnimations = {}; // Shouldn't defaultAnimations be passed as delegate.animationDict instead of being registered with registerAnimatableProperty?
 	var shouldSortAnimations = false;
 	var modelBacking = {};
 	var previousBacking = {}; // modelBacking and previousBacking merge like react and there is no way to delete.
 	var presentationBacking = null;
 	var registeredProperties = [];
 	var activeBacking = modelBacking;
-	//let presentationTime = -1;
 
 	function valueForKey(property) {
 		// don't let this become re-entrant (do not animate delegate.output)
@@ -747,13 +760,13 @@ function activate(controller, delegate, layerInstance) {
 	}
 	function setValuesOfLayer(layer) {
 		var transaction = hyperContext.currentTransaction();
-		var presentationLayer = controller.presentation; // Generate presentation even if not accessed for implicit animation. Required for test "registered implicit presentation"
+		var presentationLayer = getPresentation(); // Generate presentation even if not accessed for implicit animation. Required for test "registered implicit presentation"
 		var result = {};
 		Object.keys(layer).forEach(function (prettyKey) {
 			var uglyKey = prettyKey;
 			var prettyValue = layer[prettyKey];
 			if (DELEGATE_DOUBLE_WHAMMY) uglyKey = convertedKey(prettyKey, delegate.keyInput, delegate);
-			controller.registerAnimatableProperty(uglyKey); // automatic registration
+			registerAnimatableProperty(uglyKey); // automatic registration
 			var uglyValue = convertedValueOfPropertyWithFunction(prettyValue, prettyKey, delegate.input, delegate);
 			var uglyPrevious = modelBacking[uglyKey];
 			previousBacking[uglyKey] = uglyPrevious;
@@ -770,8 +783,8 @@ function activate(controller, delegate, layerInstance) {
 				if (prettyValue !== prettyPrevious) {
 					var prettyPresentation = presentationLayer[prettyKey];
 					var animation = implicitAnimation(prettyKey, prettyValue, prettyPrevious, prettyPresentation, delegate, defaultAnimations[prettyKey], transaction);
-					if (animation) controller.addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-					else controller.needsDisplay();
+					if (animation) addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
+					else needsDisplay();
 				}
 			});
 		}
@@ -780,16 +793,6 @@ function activate(controller, delegate, layerInstance) {
 	function invalidate() {
 		// note that you cannot invalidate if there are no animations
 		presentationBacking = null;
-	}
-
-	function registerWithContext() {
-		var display = function display() {};
-		if (isFunction(delegate.display)) display = function display() {
-			activeBacking = controller.presentation;
-			delegate.display.call(delegate);
-			activeBacking = modelBacking;
-		};
-		hyperContext.registerTarget(controller, display, invalidate, animationCleanup);
 	}
 
 	function cleanupAndRemoveAnimationAtIndex(animation, index) {
@@ -828,7 +831,7 @@ function activate(controller, delegate, layerInstance) {
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
 			if (!allAnimations.length) {
-				hyperContext.deregisterTarget(controller);
+				hyperContext.deregisterTarget(layerInstance);
 			}
 		}
 		finishedWithCallback.forEach(function (animation) {
@@ -849,16 +852,17 @@ function activate(controller, delegate, layerInstance) {
 		}
 		if (!ENSURE_ONE_MORE_TICK) {
 			if (!allAnimations.length) {
-				hyperContext.deregisterTarget(controller);
+				hyperContext.deregisterTarget(layerInstance);
 			}
 		}
 	}
 
 	function isAllowableProperty(key) {
+		// don't trigger animation on functions themselves
 		return (layerInstance !== controller || controllerMethods.indexOf(key) < 0 && controllerProperties.indexOf(key) < 0) && (layerInstance !== delegate || delegateMethods.indexOf(key) < 0);
 	}
 
-	controller.registerAnimatableProperty = function (property, defaultAnimation) {
+	function registerAnimatableProperty(property, defaultAnimation) {
 		// Workaround for lack of Proxy // Needed to trigger implicit animation. // FIXME: defaultValue is broken. TODO: Proper default animations dictionary. // TODO: default animation should always be the value true
 		if (!isAllowableProperty(property)) return;
 		var firstTime = false;
@@ -882,123 +886,82 @@ function activate(controller, delegate, layerInstance) {
 				configurable: true
 			});
 		}
-	};
-
-	Object.defineProperty(controller, "layer", { // TODO: I don't like this. Need a merge function.
-		get: function get() {
-			return layerInstance;
-		},
-		set: function set(layer) {
-			if (layer) {
-				setValuesOfLayer(layer);
-			}
-		},
-		enumerable: false,
-		configurable: false
-	});
-
-	Object.defineProperty(controller, "animationCount", { // Performs better than asking for animations.length, especially with delegate.input and delegate.output
-		get: function get() {
-			return allAnimations.length;
-		},
-		enumerable: false,
-		configurable: false
-	});
-
-	Object.defineProperty(controller, "animations", { // TODO: cache this like presentationLayer
-		get: function get() {
-			var array = allAnimations.map(function (animation) {
-				return animation.description.call(animation, delegate);
-				// 				const copy = animation.copy.call(animation); // TODO: optimize me. Lots of copying. Potential optimization. Instead maybe freeze properties.
-				// 				copy.convert.call(copy,delegate.output,delegate);
-				// 				return copy;
-			});
-			return array;
-		},
-		enumerable: false,
-		configurable: false
-	});
-
-	Object.defineProperty(controller, "animationNames", {
-		get: function get() {
-			return Object.keys(namedAnimations);
-		},
-		enumerable: false,
-		configurable: false
-	});
-
+	}
+	function getLayer() {
+		return layerInstance;
+	}
+	function setLayer(layer) {
+		if (layer) {
+			setValuesOfLayer(layer);
+		}
+	}
+	function getAnimationCount() {
+		return allAnimations.length;
+	}
+	function getAnimations() {
+		return allAnimations.map(function (animation) {
+			return animation.description.call(animation, delegate);
+		});
+	}
+	function getAnimationNames() {
+		return Object.keys(namedAnimations);
+	}
 	function baseLayer() {
+		// model, presentation, and previous layers start from this
 		return Object.keys(layerInstance).filter(isAllowableProperty).reduce(function (accumulator, current) {
 			accumulator[current] = layerInstance[current];
 			return accumulator;
 		}, {});
 	}
-
-	Object.defineProperty(controller, "presentation", {
-		get: function get() {
-			var transactionTime = hyperContext.currentTransaction().time;
-			if (presentationBacking !== null) return presentationBacking;
-			var presentationLayer = Object.assign(baseLayer(), modelBacking);
-			var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
-			var length = allAnimations.length;
-			if (length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
-			shouldSortAnimations = false;
-			if (changed || presentationBacking === null) {
-				convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer), presentationLayer, delegate.output, delegate);
-				Object.freeze(presentationLayer);
-				if (length) presentationBacking = presentationLayer;else presentationBacking = null;
-				return presentationLayer;
-			}
-			return presentationBacking;
-		},
-		enumerable: false,
-		configurable: false
-	});
-
-	Object.defineProperty(controller, "model", {
-		get: function get() {
-			var layer = baseLayer();
-			registeredProperties.forEach(function (key) {
-				var value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output, delegate);
-				Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
-					value: value,
-					enumerable: true,
-					configurable: false
-				});
+	function getPresentation() {
+		var transactionTime = hyperContext.currentTransaction().time;
+		if (presentationBacking !== null) return presentationBacking;
+		var presentationLayer = Object.assign(baseLayer(), modelBacking);
+		var changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
+		var length = allAnimations.length;
+		if (length) changed = presentationTransform(presentationLayer, allAnimations, transactionTime, shouldSortAnimations);
+		shouldSortAnimations = false;
+		if (changed || presentationBacking === null) {
+			convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer), presentationLayer, delegate.output, delegate);
+			Object.freeze(presentationLayer);
+			if (length) presentationBacking = presentationLayer;else presentationBacking = null;
+			return presentationLayer;
+		}
+		return presentationBacking;
+	}
+	function getModel() {
+		var layer = baseLayer();
+		registeredProperties.forEach(function (key) {
+			var value = convertedValueOfPropertyWithFunction(modelBacking[key], key, delegate.output, delegate);
+			Object.defineProperty(layer, key, { // modelInstance has defined properties. Must redefine.
+				value: value,
+				enumerable: true,
+				configurable: false
 			});
-			Object.freeze(layer);
-			return layer;
-		},
-		enumerable: false,
-		configurable: false
-	});
-
-	Object.defineProperty(controller, "previous", {
-		get: function get() {
-			var layer = baseLayer(); //Object.assign({},layerInstance);
-			registeredProperties.forEach(function (key) {
-				var value = convertedValueOfPropertyWithFunction(previousBacking[key], key, delegate.output, delegate);
-				Object.defineProperty(layer, key, {
-					value: value,
-					enumerable: true,
-					configurable: false
-				});
-				previousBacking[key] = modelBacking[key];
+		});
+		Object.freeze(layer);
+		return layer;
+	}
+	function getPrevious() {
+		var layer = baseLayer(); //Object.assign({},layerInstance);
+		registeredProperties.forEach(function (key) {
+			var value = convertedValueOfPropertyWithFunction(previousBacking[key], key, delegate.output, delegate);
+			Object.defineProperty(layer, key, {
+				value: value,
+				enumerable: true,
+				configurable: false
 			});
-			Object.freeze(layer);
-			return layer;
-		},
-		enumerable: false,
-		configurable: false
-	});
-
-	controller.needsDisplay = function () {
+			previousBacking[key] = modelBacking[key];
+		});
+		Object.freeze(layer);
+		return layer;
+	}
+	function needsDisplay() {
 		// This should be used instead of directly calling display
 		presentationBacking = null;
 		if (!allAnimations.length) registerWithContext(); // This might not be sufficient to produce a new presentationLayer
-	};
-
-	controller.addAnimation = function (description, name) {
+	}
+	function addAnimation(description, name) {
 		// does not register. // should be able to pass a description if type is registered
 		if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description); // deprecate this
 		var copy = animationFromDescription(description);
@@ -1015,17 +978,15 @@ function activate(controller, delegate, layerInstance) {
 		if (typeof name === "undefined" || name === null || name === false) allNames.push(null);else allNames.push(name);
 		shouldSortAnimations = true;
 		var transaction = hyperContext.currentTransaction();
-		copy.runAnimation(controller, name, transaction);
-	};
-
-	controller.removeAnimation = function (name) {
+		copy.runAnimation(layerInstance, name, transaction);
+	}
+	function removeAnimation(name) {
 		var animation = namedAnimations[name];
 		if (animation) {
 			removeAnimationInstance(animation);
 		}
-	};
-
-	controller.removeAllAnimations = function () {
+	}
+	function removeAllAnimations() {
 		allAnimations.length = 0;
 		allNames.length = 0;
 		namedAnimations = {};
@@ -1033,28 +994,80 @@ function activate(controller, delegate, layerInstance) {
 			if (isFunction(animation.onend)) animation.onend.call(animation, false);
 		});
 		if (!ENSURE_ONE_MORE_TICK) {
-			hyperContext.deregisterTarget(controller);
+			hyperContext.deregisterTarget(layerInstance);
 		}
-	};
-
-	controller.animationNamed = function (name) {
+	}
+	function animationNamed(name) {
 		var animation = namedAnimations[name];
 		if (animation) {
 			return animation.description.call(animation, delegate);
-			// 			const copy = animation.copy.call(animation);
-			// 			copy.convert.call(copy,delegate.output,delegate);
-			// 			return copy;
 		}
 		return null;
-	};
+	}
+
+	function registerWithContext() {
+		var display = function display() {};
+		if (isFunction(delegate.display)) display = function display(presentation) {
+			// layer returns calculated values during display
+			activeBacking = getPresentation();
+			delegate.display.call(delegate, presentation);
+			activeBacking = modelBacking;
+		};
+		hyperContext.registerTarget(layerInstance, getPresentation, getAnimationCount, display, invalidate, animationCleanup, modelBacking);
+	}
 
 	Object.keys(layerInstance).forEach(function (key) {
 		// more initialization
-		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) controller.registerAnimatableProperty(key, true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
-		else controller.registerAnimatableProperty(key);
+		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) registerAnimatableProperty(key, true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
+		else registerAnimatableProperty(key);
 	});
 
-	return controller;
+	if (controller) {
+		controller.registerAnimatableProperty = registerAnimatableProperty;
+		controller.needsDisplay = needsDisplay;
+		controller.addAnimation = addAnimation;
+		controller.removeAnimation = removeAnimation;
+		controller.removeAllAnimations = removeAllAnimations;
+		controller.animationNamed = animationNamed;
+		Object.defineProperty(controller, "layer", { // TODO: I don't like this. Need a merge function.
+			get: getLayer,
+			set: setLayer,
+			enumerable: false,
+			configurable: false
+		});
+		Object.defineProperty(controller, "animationCount", { // Performs better than asking for animations.length, especially with delegate.input and delegate.output
+			get: getAnimationCount,
+			enumerable: false,
+			configurable: false
+		});
+		Object.defineProperty(controller, "animations", { // TODO: cache this like presentationLayer
+			get: getAnimations,
+			enumerable: false,
+			configurable: false
+		});
+		Object.defineProperty(controller, "animationNames", {
+			get: getAnimationNames,
+			enumerable: false,
+			configurable: false
+		});
+		Object.defineProperty(controller, "presentation", {
+			get: getPresentation,
+			enumerable: false,
+			configurable: false
+		});
+		Object.defineProperty(controller, "model", {
+			get: getModel,
+			enumerable: false,
+			configurable: false
+		});
+		Object.defineProperty(controller, "previous", {
+			get: getPrevious,
+			enumerable: false,
+			configurable: false
+		});
+	}
+
+	return controller; // TODO: should return the deactivate function // or maybe the layerInstance
 }
 
 function isFunction$3(w) {
@@ -1251,6 +1264,7 @@ function hyperZeroSize() {
 	return hyperMakeSize(0, 0);
 }
 var HyperStyleDeclaration = function HyperStyleDeclaration(layer, controller) {
+	this.hyperStyleLength = 0;
 	Object.defineProperty(this, "hyperStyleLayer", { // these will collide with css
 		get: function get() {
 			return layer;
