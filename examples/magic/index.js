@@ -378,8 +378,8 @@ function resize(e) {
 	gl.viewportWidth = width;
 	gl.viewportHeight = height;
 
-	radiusA = radius;// * (width>height ? width/height : 1);
-	radiusB = radius;// * (width>height ? width/height : 1);
+	radiusA = radius;
+	radiusB = radius;
 	delegate.display(controller.presentation);
 }
 
