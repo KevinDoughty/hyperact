@@ -6,7 +6,8 @@ const vec3 = glMatrix.vec3;
 const mat3 = glMatrix.mat3;
 const mat4 = glMatrix.mat4;
 
-// The fabric of the universe as viewed through Lissajous curves
+import createHistory from "history/createBrowserHistory";
+const history = createHistory();
 
 const numberOfWorkers = 4;
 
@@ -19,17 +20,27 @@ const interval = 1.0;
 const omega = 20;
 const zeta = 0.75;
 
-let asymmetry = 0;
-let leadingEdge = 0;
-let trailingEdge = 0;
+let state = {
+	asymmetry:0,
+	leadingEdge:0,
+	trailingEdge:0,
+	a:1,
+	b:2,
+	d:0,
+	ribbon:0,
+	radiusA:0,
+	radiusB:0
+};
+if (history.location.state) state = history.location.state;
+
+window.onpopstate = function(event) {
+	state = event.state;
+};
 
 const lissajous = true;
 const lissajousMax = 3;
 const lissajousMin = 1;
 
-let a = 1;
-let b = 2;
-let d = 0;
 
 const radius = 1.0;
 
@@ -45,7 +56,6 @@ const thickness = 0.002;
 const additional = 0;
 const base = 25;
 const messy = false;
-let ribbon = 0;
 
 const stretchOnHold = false;
 
@@ -57,8 +67,6 @@ let queued = false;
 let animated = false;
 const workers = [];
 let date = performance.now();
-let radiusA = 0;
-let radiusB = 0;
 let incompleteLayer = [];
 if (!numberOfWorkers) incompleteLayer = {
 	positionArray:[],
@@ -118,6 +126,7 @@ gl.enable(gl.BLEND);
 gl.blendEquation(gl.FUNC_ADD);
 gl.blendFunc(gl.SRC_COLOR, gl.ONE); // http://delphic.me.uk/webglalpha.html // http://mrdoob.github.io/webgl-blendfunctions/blendfunc.html
 
+randomize();
 resize();
 layout();
 
@@ -275,7 +284,7 @@ function manual() {
 	let nextCoordArray = [];
 	const count = Math.max(1,numberOfWorkers);
 	for (let index=0; index<count; index++) {
-		const nextLayer = plot({iterations,radiusA,radiusB,a,b,d,thetaThreshold,divisions:count,index,leadingEdge,trailingEdge,ribbon});
+		const nextLayer = plot({iterations,radiusA:state.radiusA,radiusB:state.radiusB,a:state.a,b:state.b,d:state.d,thetaThreshold,divisions:count,index,leadingEdge:state.leadingEdge,trailingEdge:state.trailingEdge,ribbon:state.ribbon});
 		nextPositionArray = nextPositionArray.concat(nextLayer.positionArray);
 		nextNormalArray = nextNormalArray.concat(nextLayer.normalArray);
 		nextCoordArray = nextCoordArray.concat(nextLayer.coordArray);
@@ -287,6 +296,8 @@ function manual() {
 }
 
 function randomize() {
+	let asymmetry,leadingEdge,trailingEdge,a,b,d,ribbon;
+
 	const numerator = Math.ceil(Math.random() * base);
 	let denominator = numerator;
 	while (denominator === numerator || numerator > denominator) denominator = Math.ceil(Math.random() * base * 2);
@@ -301,6 +312,18 @@ function randomize() {
 	b = a + 1;
 	d = Math.random() * tau;
 	ribbon = thickness * tau / a;
+	state = {
+		asymmetry,
+		leadingEdge,
+		trailingEdge,
+		a,
+		b,
+		d,
+		ribbon,
+		radiusA:radius,
+		radiusB:radius
+	};
+	history.replace({state});
 }
 
 function layout() {
@@ -322,7 +345,7 @@ function layout() {
 
 	for (let index=0; index<numberOfWorkers; index++) {
 		working++;
-		workers[index].postMessage({iterations,radiusA,radiusB,a,b,d,thetaThreshold,divisions:numberOfWorkers,index,leadingEdge,trailingEdge,ribbon});
+		workers[index].postMessage({iterations,radiusA:state.radiusA,radiusB:state.radiusB,a:state.a,b:state.b,d:state.d,thetaThreshold,divisions:numberOfWorkers,index,leadingEdge:state.leadingEdge,trailingEdge:state.trailingEdge,ribbon:state.ribbon});
 	}
 
 	if (!numberOfWorkers) respond(0, manual());
@@ -378,8 +401,8 @@ function resize(e) {
 	gl.viewportWidth = width;
 	gl.viewportHeight = height;
 
-	radiusA = radius;
-	radiusB = radius;
+	state = Object.assign({},state,{radiusA:radius,radiusB:radius});
+	history.replace({state});
 	delegate.display(controller.presentation);
 }
 

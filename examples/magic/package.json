@@ -20,6 +20,8 @@
     "webpack-dev-server": "^2.4.1"
   },
   "dependencies": {
-    "gl-matrix": "^2.4.0"
+    "gl-matrix": "^2.4.0",
+    "history": "^4.7.2",
+    "query-string": "^5.0.1"
   }
 }
