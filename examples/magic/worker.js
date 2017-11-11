@@ -2,7 +2,7 @@ export function work() {
 	const plot = function({iterations,radiusA,radiusB,a,b,d,thetaThreshold,divisions,index,leadingEdge,trailingEdge,ribbon}) {
 		const tau = Math.PI * 2;
 		const radiusC = Math.min(radiusA,radiusB);
-		const start = index/divisions * tau;
+		const start = tau * index/divisions;
 		const end = start + tau / divisions;
 		const span = end - start;
 		const full = Math.round(tau / thetaThreshold);
@@ -12,15 +12,17 @@ export function work() {
 		const slice = span / vertices;
 		const lissajous = true;
 		const latitudeBands = vertices;
-		const longitudeBands = 1;//ribbon;
+		let longitudeBands = 1;
 		const positionArray = [];
 		const normalArray = [];
 		const coordArray = [];
-		for (let latNumber = 0; latNumber < latitudeBands; latNumber++) { // vertices
+		const debuggingSpace = false;
+		const length = latitudeBands;//
+		for (let latNumber = 0; latNumber < length; latNumber++) { // vertices
 			const theta1 = start + latNumber * slice;
 			const theta2 = start + (latNumber + 1) * slice;
 			for (let longNumber = 0; longNumber <= longitudeBands; longNumber++) { // ribbon
-				const U = longNumber / longitudeBands;
+				const U = 0;
 				const V = theta1 / tau;
 				const phi = longNumber * ribbon;
 				let asymmetry = trailingEdge;

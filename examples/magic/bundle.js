@@ -2611,7 +2611,7 @@ function work() {
 
 		var tau = Math.PI * 2;
 		var radiusC = Math.min(radiusA, radiusB);
-		var start = index / divisions * tau;
+		var start = tau * index / divisions;
 		var end = start + tau / divisions;
 		var span = end - start;
 		var full = Math.round(tau / thetaThreshold);
@@ -2621,17 +2621,19 @@ function work() {
 		var slice = span / vertices;
 		var lissajous = true;
 		var latitudeBands = vertices;
-		var longitudeBands = 1; //ribbon;
+		var longitudeBands = 1;
 		var positionArray = [];
 		var normalArray = [];
 		var coordArray = [];
-		for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+		var debuggingSpace = false;
+		var length = latitudeBands; //
+		for (var latNumber = 0; latNumber < length; latNumber++) {
 			// vertices
 			var theta1 = start + latNumber * slice;
 			var theta2 = start + (latNumber + 1) * slice;
 			for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
 				// ribbon
-				var U = longNumber / longitudeBands;
+				var U = 0;
 				var V = theta1 / tau;
 				var phi = longNumber * ribbon;
 				var asymmetry = trailingEdge;
@@ -3112,14 +3114,14 @@ exports.default = createBrowserHistory;
 /* unused harmony export visibilityType */
 /* unused harmony export beginTransaction */
 /* unused harmony export commitTransaction */
-/* unused harmony export currentTransaction */
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return currentTransaction; });
 /* unused harmony export flushTransaction */
 /* unused harmony export disableAnimation */
 /* unused harmony export decorate */
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "c", function() { return activate; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return HyperNumber; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "d", function() { return activate; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "c", function() { return HyperNumber; });
 /* unused harmony export HyperScale */
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return HyperArray; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return HyperArray; });
 /* unused harmony export HyperSet */
 /* unused harmony export HyperPoint */
 /* unused harmony export HyperSize */
@@ -7312,6 +7314,7 @@ var interval = 1.0;
 var omega = 20;
 var zeta = 0.75;
 
+var beginning = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["a" /* currentTransaction */])().time;
 var state = {
 	asymmetry: 0,
 	leadingEdge: 0,
@@ -7323,7 +7326,13 @@ var state = {
 	radiusA: 0,
 	radiusB: 0
 };
-if (history.location.state) state = history.location.state;
+if (history.location.state) {
+	var copy = Object.assign({}, history.location.state);
+	Object.keys(state).forEach(function (key) {
+		if (typeof copy[key] === "undefined") copy[key] = state.key;
+	});
+	state = copy;
+}
 
 window.onpopstate = function (event) {
 	state = event.state;
@@ -7334,10 +7343,6 @@ var lissajousMax = 3;
 var lissajousMin = 1;
 
 var radius = 1.0;
-
-var rotationX = 0;
-var rotationY = 0;
-var rotationZ = Math.PI / 2;
 
 var toggling = false;
 
@@ -7388,7 +7393,13 @@ document.body.appendChild(canvas);
 var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 if (!gl) throw new Error("no web gl");
 
-var layer = manual();
+var layer = Object.assign(manual(), {
+	progress: [0.0, 0.0, 0.0],
+	light: [-1.0, -1.0, -1.0],
+	ambient: [0.5, 0.5, 0.5],
+	directional: [1, 1, 1],
+	rotation: [0, 0, Math.PI / 2]
+});
 var delegate = {
 	display: function display(presentation) {
 		applyBuffers(presentation);
@@ -7397,7 +7408,7 @@ var delegate = {
 	animationForKey: function animationForKey(key, value, previous) {
 		if (key === "positionArray" || key === "normalArray") {
 			var animation = {
-				type: new __WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["a" /* HyperArray */](new __WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["b" /* HyperNumber */](), value.length),
+				type: new __WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["b" /* HyperArray */](new __WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["c" /* HyperNumber */](), value.length),
 				duration: duration,
 				easing: easing
 			};
@@ -7405,11 +7416,21 @@ var delegate = {
 				return 0;
 			});
 			return animation;
+		} else if (key === "progress" || key === "light" || key === "directional") {
+			var _animation = {
+				type: new __WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["b" /* HyperArray */](new __WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["c" /* HyperNumber */](), 3),
+				duration: duration,
+				easing: easing
+			};
+			if (!previous.length) _animation.from = value.map(function () {
+				return 0;
+			});
+			return _animation;
 		}
 	}
 };
 var controller = {};
-__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["c" /* activate */])(controller, delegate, layer);
+__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0__hyperact_mjs__["d" /* activate */])(controller, delegate, layer);
 
 var shaderProgram = initShaders();
 
@@ -7425,6 +7446,7 @@ randomize();
 resize();
 layout();
 
+document.addEventListener("keydown", keyDown);
 document.addEventListener("mousedown", mouseDown);
 document.addEventListener("mouseup", mouseUp);
 window.addEventListener("resize", resize);
@@ -7484,6 +7506,8 @@ function initShaders() {
 	shaderProgram.lightingDirection = gl.getUniformLocation(shaderProgram, "lightingDirection");
 	shaderProgram.directionalColor = gl.getUniformLocation(shaderProgram, "directionalColor");
 
+	shaderProgram.progress = gl.getUniformLocation(shaderProgram, "progress");
+
 	return shaderProgram;
 }
 
@@ -7506,16 +7530,19 @@ function applyBuffers(layer) {
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(layer.coordArray));
 }
 
-function rotateMatrix(matrix, deltaTime) {
-	mat4.rotate(matrix, matrix, rotationX, vec3.fromValues(1, 0, 0));
-	mat4.rotate(matrix, matrix, rotationY, vec3.fromValues(0, 1, 0));
-	mat4.rotate(matrix, matrix, rotationZ, vec3.fromValues(0, 0, 1));
+function rotateMatrix(matrix) {
+	var presentation = controller.presentation;
+	var rotation = presentation.rotation;
+	mat4.rotate(matrix, matrix, rotation[0], vec3.fromValues(1, 0, 0));
+	mat4.rotate(matrix, matrix, rotation[1], vec3.fromValues(0, 1, 0));
+	mat4.rotate(matrix, matrix, rotation[2], vec3.fromValues(0, 0, 1));
 }
 
 function lightScene() {
-	var light = [-1, -1, -1];
-	var ambient = [0, 0, 0];
-	var directional = [1, 1, 1];
+	var presentation = controller.presentation;
+	var light = presentation.light;
+	var ambient = presentation.ambient;
+	var directional = presentation.directional;
 
 	var adjusted = vec3.create();
 	vec3.normalize(adjusted, light, adjusted);
@@ -7525,11 +7552,16 @@ function lightScene() {
 	gl.uniform3fv(shaderProgram.lightingDirection, adjusted);
 	gl.uniform3f(shaderProgram.directionalColor, directional[0], directional[1], directional[2]);
 }
+function colorScene() {
+	var progress = controller.presentation.progress;
+	gl.uniform3fv(shaderProgram.progress, progress);
+}
 
 function drawScene(deltaTime) {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+	colorScene();
 	lightScene();
 
 	var normalMatrix = mat3.create();
@@ -7558,11 +7590,8 @@ function drawScene(deltaTime) {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, positionBuffer.numItems);
 }
 
-function mouseUp(e) {
-	if (stretchOnHold) {
-		trailingEdge = leadingEdge;
-		layout();
-	}
+function keyDown(e) {
+	console.log(state);
 }
 
 function mouseDown(e) {
@@ -7570,6 +7599,13 @@ function mouseDown(e) {
 	randomize();
 	layout();
 };
+
+function mouseUp(e) {
+	if (stretchOnHold) {
+		trailingEdge = leadingEdge;
+		layout();
+	}
+}
 
 function manual() {
 	var result = {};
@@ -7586,6 +7622,7 @@ function manual() {
 	result.positionArray = nextPositionArray.slice(0);
 	result.normalArray = nextNormalArray.slice(0);
 	result.coordArray = nextCoordArray.slice(0);
+	result.progress = [0.0, 0.0, 0.0];
 	return result;
 }
 
@@ -7598,20 +7635,38 @@ function randomize() {
 	    d = void 0,
 	    ribbon = void 0;
 
+	var scale = 1.0;
+	var x = Math.random() * 2 * scale - 1 * scale;
+	var y = Math.random() * 2 * scale - 1 * scale;
+	var z = -1;
+	var light = [x, y, z];
+	layer.light = light;
+
+	var X = Math.random() * 1;
+	var Y = Math.random() * 1;
+	var Z = Math.random() * 1;
+	var ambient = [X, Y, Z];
+	layer.directional = ambient;
+
+	var progress = Math.random();
+	layer.progress = [progress, 0, 0];
+
 	var numerator = Math.ceil(Math.random() * base);
-	var denominator = numerator;
-	while (denominator === numerator || numerator > denominator) {
-		denominator = Math.ceil(Math.random() * base * 2);
-	}if (messy) asymmetry = Math.random() * tau;else asymmetry = numerator / denominator * tau;
+	var denominator = numerator + Math.ceil(Math.random() * base);
+
+	if (messy) asymmetry = Math.random() * tau;else asymmetry = numerator / denominator * tau;
 	if (Math.round(Math.random())) {
 		asymmetry += Math.random() * additional;
 	}
 	leadingEdge = asymmetry;
 	if (!stretchOnHold || running) trailingEdge = asymmetry;
+
 	a = lissajousMin + Math.ceil(Math.random() * lissajousMax);
 	b = a + 1;
 	d = Math.random() * tau;
+
 	ribbon = thickness * tau / a;
+
 	state = {
 		asymmetry: asymmetry,
 		leadingEdge: leadingEdge,
@@ -7646,7 +7701,6 @@ function layout() {
 		working++;
 		workers[index].postMessage({ iterations: iterations, radiusA: state.radiusA, radiusB: state.radiusB, a: state.a, b: state.b, d: state.d, thetaThreshold: thetaThreshold, divisions: numberOfWorkers, index: index, leadingEdge: state.leadingEdge, trailingEdge: state.trailingEdge, ribbon: state.ribbon });
 	}
-
 	if (!numberOfWorkers) respond(0, manual());
 }
 

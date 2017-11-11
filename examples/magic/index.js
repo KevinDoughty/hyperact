@@ -1,4 +1,4 @@
-import { activate, disableAnimation, HyperArray, HyperNumber } from "../../hyperact.mjs";
+import { activate, disableAnimation, HyperArray, HyperNumber, currentTransaction } from "../../hyperact.mjs";
 import { work } from "./worker.js";
 
 const glMatrix = require("gl-matrix");
@@ -20,6 +20,7 @@ const interval = 1.0;
 const omega = 20;
 const zeta = 0.75;
 
+const beginning = currentTransaction().time;
 let state = {
 	asymmetry:0,
 	leadingEdge:0,
@@ -31,7 +32,13 @@ let state = {
 	radiusA:0,
 	radiusB:0
 };
-if (history.location.state) state = history.location.state;
+if (history.location.state) {
+	const copy = Object.assign({},history.location.state);
+	Object.keys(state).forEach( key => {
+		if (typeof copy[key] === "undefined") copy[key] = state.key;
+	});
+	state = copy;
+}
 
 window.onpopstate = function(event) {
 	state = event.state;
@@ -44,9 +51,6 @@ const lissajousMin = 1;
 
 const radius = 1.0;
 
-const rotationX = 0;
-const rotationY = 0;
-const rotationZ = Math.PI / 2;
 
 let toggling = false;
 
@@ -93,7 +97,14 @@ document.body.appendChild(canvas);
 const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl"); 
 if (!gl) throw new Error("no web gl");
 
-const layer = manual();
+
+const layer = Object.assign(manual(),{
+	progress: [0.0,0.0,0.0],
+	light:[-1.0,-1.0,-1.0],
+	ambient:[0.5,0.5,0.5],
+	directional:[1,1,1],
+	rotation:[0,0,Math.PI/2]
+});
 const delegate = {
 	display: function(presentation) {
 		applyBuffers(presentation);
@@ -103,6 +114,16 @@ const delegate = {
 		if (key === "positionArray" || key === "normalArray") {
 			 const animation = {
 				type: new HyperArray( new HyperNumber, value.length),
+				duration: duration,
+				easing: easing
+			};
+			if (!previous.length) animation.from = value.map( function() {
+				return 0;
+			});
+			return animation;
+		} else if (key === "progress" || key === "light" || key === "directional") {
+			 const animation = {
+				type: new HyperArray( new HyperNumber, 3),
 				duration: duration,
 				easing: easing
 			};
@@ -130,6 +151,7 @@ randomize();
 resize();
 layout();
 
+document.addEventListener("keydown",keyDown);
 document.addEventListener("mousedown",mouseDown);
 document.addEventListener("mouseup",mouseUp);
 window.addEventListener("resize", resize);
@@ -189,6 +211,8 @@ function initShaders() { // http://learningwebgl.com/blog/?p=1253
 	shaderProgram.ambientColor = gl.getUniformLocation(shaderProgram, "ambientColor");
 	shaderProgram.lightingDirection = gl.getUniformLocation(shaderProgram, "lightingDirection");
 	shaderProgram.directionalColor = gl.getUniformLocation(shaderProgram, "directionalColor");
+
+	shaderProgram.progress = gl.getUniformLocation(shaderProgram, "progress");
 	
 	return shaderProgram;
 }
@@ -211,16 +235,19 @@ function applyBuffers(layer) {
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(layer.coordArray));
 }
 
-function rotateMatrix(matrix,deltaTime) {
-	mat4.rotate(matrix, matrix, rotationX, vec3.fromValues(1, 0, 0));
-	mat4.rotate(matrix, matrix, rotationY, vec3.fromValues(0, 1, 0));
-	mat4.rotate(matrix, matrix, rotationZ, vec3.fromValues(0, 0, 1));
+function rotateMatrix(matrix) {
+	const presentation = controller.presentation;
+	const rotation = presentation.rotation;
+	mat4.rotate(matrix, matrix, rotation[0], vec3.fromValues(1, 0, 0));
+	mat4.rotate(matrix, matrix, rotation[1], vec3.fromValues(0, 1, 0));
+	mat4.rotate(matrix, matrix, rotation[2], vec3.fromValues(0, 0, 1));
 }
 
 function lightScene() {
-	const light = [-1,-1,-1];
-	const ambient = [0,0,0];
-	const directional = [1,1,1];
+	const presentation = controller.presentation;
+	const light = presentation.light;
+	const ambient = presentation.ambient;
+	const directional = presentation.directional;
 	
 	const adjusted = vec3.create();
 	vec3.normalize(adjusted, light, adjusted);
@@ -230,11 +257,16 @@ function lightScene() {
 	gl.uniform3fv(shaderProgram.lightingDirection, adjusted);
 	gl.uniform3f(shaderProgram.directionalColor, directional[0], directional[1], directional[2]);
 }
+function colorScene() {
+	const progress = controller.presentation.progress;
+	gl.uniform3fv(shaderProgram.progress, progress);
+}
 
 function drawScene(deltaTime) {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+	colorScene();
 	lightScene();
 	
 	const normalMatrix = mat3.create();
@@ -242,7 +274,7 @@ function drawScene(deltaTime) {
 	mat4.perspective(perspectiveMatrix, 50, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
 	
 	const modelMatrix = mat4.create();
-
+	
 	mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, 0, -10));
 	
 	rotateMatrix(modelMatrix,deltaTime);
@@ -263,12 +295,8 @@ function drawScene(deltaTime) {
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, positionBuffer.numItems);
 }
 
-
-function mouseUp(e) {
-	if (stretchOnHold) {
-		trailingEdge = leadingEdge;
-		layout();
-	}
+function keyDown(e) {
+	console.log(state);
 }
 
 function mouseDown(e) {
@@ -276,6 +304,13 @@ function mouseDown(e) {
 	randomize();
 	layout();
 };
+
+function mouseUp(e) {
+	if (stretchOnHold) {
+		trailingEdge = leadingEdge;
+		layout();
+	}
+}
 
 function manual() {
 	const result = {};
@@ -292,15 +327,32 @@ function manual() {
 	result.positionArray = nextPositionArray.slice(0);
 	result.normalArray = nextNormalArray.slice(0);
 	result.coordArray = nextCoordArray.slice(0);
+	result.progress = [0.0,0.0,0.0];
 	return result;
 }
 
 function randomize() {
 	let asymmetry,leadingEdge,trailingEdge,a,b,d,ribbon;
 
+	const scale = 1.0;
+	const x = Math.random() * 2 * scale - 1 * scale;
+	const y = Math.random() * 2 * scale - 1 * scale;
+	const z = -1;
+	const light = [x,y,z];
+	layer.light = light;
+
+	const X = Math.random() * 1;
+	const Y = Math.random() * 1;
+	const Z = Math.random() * 1;
+	const ambient = [X,Y,Z];
+	layer.directional = ambient;
+
+	const progress = Math.random();
+	layer.progress = [progress,0,0];
+
 	const numerator = Math.ceil(Math.random() * base);
-	let denominator = numerator;
-	while (denominator === numerator || numerator > denominator) denominator = Math.ceil(Math.random() * base * 2);
+	const denominator = numerator + Math.ceil(Math.random() * base);
+
 	if (messy) asymmetry = Math.random() * tau;
 	else asymmetry = numerator/denominator * tau;
 	if (Math.round(Math.random())) {
@@ -308,10 +360,14 @@ function randomize() {
 	}
 	leadingEdge = asymmetry;
 	if (!stretchOnHold || running) trailingEdge = asymmetry;
+
+
 	a = lissajousMin + Math.ceil(Math.random() * lissajousMax);
 	b = a + 1;
 	d = Math.random() * tau;
+
 	ribbon = thickness * tau / a;
+
 	state = {
 		asymmetry,
 		leadingEdge,
@@ -347,10 +403,8 @@ function layout() {
 		working++;
 		workers[index].postMessage({iterations,radiusA:state.radiusA,radiusB:state.radiusB,a:state.a,b:state.b,d:state.d,thetaThreshold,divisions:numberOfWorkers,index,leadingEdge:state.leadingEdge,trailingEdge:state.trailingEdge,ribbon:state.ribbon});
 	}
-
 	if (!numberOfWorkers) respond(0, manual());
 }
-
 
 function respond(index,data) {
 	if (numberOfWorkers) incompleteLayer[index] = data;
@@ -374,9 +428,9 @@ function stroke() {
 	let previousNormalArray = layer.normalArray;
 	let previousCoordArray = layer.coordArray;
 	if (numberOfWorkers) {
-		let nextPositionArray = []
-		let nextNormalArray = []
-		let nextCoordArray = []
+		let nextPositionArray = [];
+		let nextNormalArray = [];
+		let nextCoordArray = [];
 		for (let i=0; i<numberOfWorkers; i++) {
 			const nextLayerArray = incompleteLayer[i];
 			nextPositionArray = nextPositionArray.concat(nextLayerArray.positionArray);
