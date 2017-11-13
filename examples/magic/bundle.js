@@ -2626,7 +2626,7 @@ function work() {
 		var normalArray = [];
 		var coordArray = [];
 		var debuggingSpace = false;
-		var length = latitudeBands; //
+		var length = latitudeBands;
 		for (var latNumber = 0; latNumber < length; latNumber++) {
 			// vertices
 			var theta1 = start + latNumber * slice;
@@ -7324,7 +7324,12 @@ var state = {
 	d: 0,
 	ribbon: 0,
 	radiusA: 0,
-	radiusB: 0
+	radiusB: 0,
+	progress: 0,
+	light: [-1.0, -1.0, -1.0],
+	ambient: [0.5, 0.5, 0.5],
+	directional: [1, 1, 1],
+	rotation: [0, 0, Math.PI / 2]
 };
 if (history.location.state) {
 	var copy = Object.assign({}, history.location.state);
@@ -7394,10 +7399,10 @@ var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 if (!gl) throw new Error("no web gl");
 
 var layer = Object.assign(manual(), {
-	progress: [0.0, 0.0, 0.0],
-	light: [-1.0, -1.0, -1.0],
+	progress: [state.progress, 0.0, 0.0],
+	light: state.light, //[-1.0,-1.0,-1.0],
 	ambient: [0.5, 0.5, 0.5],
-	directional: [1, 1, 1],
+	directional: state.directional, //[1,1,1],
 	rotation: [0, 0, Math.PI / 2]
 });
 var delegate = {
@@ -7412,7 +7417,7 @@ var delegate = {
 				duration: duration,
 				easing: easing
 			};
-			if (!previous.length) animation.from = value.map(function () {
+			if (!previous || !previous.length) animation.from = value.map(function () {
 				return 0;
 			});
 			return animation;
@@ -7422,7 +7427,7 @@ var delegate = {
 				duration: duration,
 				easing: easing
 			};
-			if (!previous.length) _animation.from = value.map(function () {
+			if (!previous || !previous.length) _animation.from = value.map(function () {
 				return 0;
 			});
 			return _animation;
@@ -7645,8 +7650,8 @@ function randomize() {
 	var X = Math.random() * 1;
 	var Y = Math.random() * 1;
 	var Z = Math.random() * 1;
-	var ambient = [X, Y, Z];
-	layer.directional = ambient;
+	var directional = [X, Y, Z];
+	layer.directional = directional; //
 
 	var progress = Math.random();
 	layer.progress = [progress, 0, 0];
@@ -7676,7 +7681,10 @@ function randomize() {
 		d: d,
 		ribbon: ribbon,
 		radiusA: radius,
-		radiusB: radius
+		radiusB: radius,
+		progress: progress,
+		light: light,
+		directional: directional
 	};
 	history.replace({ state: state });
 }

@@ -17,7 +17,7 @@ export function work() {
 		const normalArray = [];
 		const coordArray = [];
 		const debuggingSpace = false;
-		const length = latitudeBands;//
+		const length = latitudeBands;
 		for (let latNumber = 0; latNumber < length; latNumber++) { // vertices
 			const theta1 = start + latNumber * slice;
 			const theta2 = start + (latNumber + 1) * slice;

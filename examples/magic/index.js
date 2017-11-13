@@ -30,7 +30,12 @@ let state = {
 	d:0,
 	ribbon:0,
 	radiusA:0,
-	radiusB:0
+	radiusB:0,
+	progress:0,
+	light:[-1.0,-1.0,-1.0],
+	ambient:[0.5,0.5,0.5],
+	directional:[1,1,1],
+	rotation:[0,0,Math.PI/2]
 };
 if (history.location.state) {
 	const copy = Object.assign({},history.location.state);
@@ -99,10 +104,10 @@ if (!gl) throw new Error("no web gl");
 
 
 const layer = Object.assign(manual(),{
-	progress: [0.0,0.0,0.0],
-	light:[-1.0,-1.0,-1.0],
+	progress: [state.progress,0.0,0.0],
+	light:state.light,//[-1.0,-1.0,-1.0],
 	ambient:[0.5,0.5,0.5],
-	directional:[1,1,1],
+	directional:state.directional,//[1,1,1],
 	rotation:[0,0,Math.PI/2]
 });
 const delegate = {
@@ -117,7 +122,7 @@ const delegate = {
 				duration: duration,
 				easing: easing
 			};
-			if (!previous.length) animation.from = value.map( function() {
+			if (!previous || !previous.length) animation.from = value.map( function() {
 				return 0;
 			});
 			return animation;
@@ -127,7 +132,7 @@ const delegate = {
 				duration: duration,
 				easing: easing
 			};
-			if (!previous.length) animation.from = value.map( function() {
+			if (!previous || !previous.length) animation.from = value.map( function() {
 				return 0;
 			});
 			return animation;
@@ -344,8 +349,8 @@ function randomize() {
 	const X = Math.random() * 1;
 	const Y = Math.random() * 1;
 	const Z = Math.random() * 1;
-	const ambient = [X,Y,Z];
-	layer.directional = ambient;
+	const directional = [X,Y,Z];
+	layer.directional = directional;//
 
 	const progress = Math.random();
 	layer.progress = [progress,0,0];
@@ -377,7 +382,10 @@ function randomize() {
 		d,
 		ribbon,
 		radiusA:radius,
-		radiusB:radius
+		radiusB:radius,
+		progress,
+		light,
+		directional
 	};
 	history.replace({state});
 }
