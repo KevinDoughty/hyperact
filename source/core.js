@@ -60,25 +60,6 @@ function convertPropertiesOfLayerWithFunction(properties,object,funky,self) { //
 	});
 }
 
-function presentationTransform(presentationLayer,sourceAnimations,time,shouldSortAnimations) { // COMPOSITING // This function is separated out here for now defunct hyperstyle behavior allowing manual composting given layer and animations.
-	if (!sourceAnimations || !sourceAnimations.length) return false;
-	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
-		sourceAnimations.sort( function(a,b) {
-			const A = a.index || 0;
-			const B = b.index || 0;
-			let result = A - B;
-			if (!result) result = a.startTime - b.startTime;
-			if (!result) result = a.sortIndex - b.sortIndex; // animation number is needed because sort is not guaranteed to be stable
-			return result;
-		});
-	}
-	let progressChanged = false;
-	sourceAnimations.forEach( function(animation) {
-		progressChanged = animation.composite(presentationLayer,time) || progressChanged; // progressChanged is a premature optimization
-	});
-	return progressChanged;
-}
-
 function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimation,transaction) { // TODO: Ensure modelLayer is fully populated before calls to animationForKey so you can use other props conditionally to determine animation
 	let description;
 	if (isFunction(delegate.animationForKey)) description = delegate.animationForKey.call(delegate,property,prettyValue,prettyPrevious,prettyPresentation); // TODO: rename action or implicit
@@ -109,13 +90,28 @@ function implicitAnimation(property,prettyValue,prettyPrevious,prettyPresentatio
 	return animation;
 }
 
-
+export function presentationTransform(sourceLayer,sourceAnimations,time,shouldSortAnimations) { // COMPOSITING // This function mutates, allowing manual composting given layer and animations.
+	if (!sourceAnimations || !sourceAnimations.length) return false;
+	if (shouldSortAnimations) { // animation index. No connection to setType animation sorting
+		sourceAnimations.sort( function(a,b) {
+			const A = a.index || 0;
+			const B = b.index || 0;
+			let result = A - B;
+			if (!result) result = a.startTime - b.startTime;
+			if (!result) result = a.sortIndex - b.sortIndex; // animation number is needed because sort is not guaranteed to be stable
+			return result;
+		});
+	}
+	let progressChanged = false;
+	sourceAnimations.forEach( function(animation) {
+		progressChanged = animation.composite(sourceLayer,time) || progressChanged; // progressChanged is a premature optimization
+	});
+	return progressChanged;
+}
 
 export function decorate(controller, delegate, layerInstance) { // deprecated
 	return activate(controller, delegate, layerInstance);
 }
-
-
 
 export function activate(controller, delegate, layerInstance) { // layer, delegate, controller?
 	if (!controller) { // "Nothing to hyperactivate." // TODO: layer, delegate, controller

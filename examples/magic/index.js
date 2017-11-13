@@ -35,12 +35,23 @@ let state = {
 	light:[-1.0,-1.0,-1.0],
 	ambient:[0.5,0.5,0.5],
 	directional:[1,1,1],
-	rotation:[0,0,Math.PI/2]
+	rotation:[0,0,Math.PI/2],
+	animations:[],
+	time:beginning
 };
 if (history.location.state) {
 	const copy = Object.assign({},history.location.state);
 	Object.keys(state).forEach( key => {
-		if (typeof copy[key] === "undefined") copy[key] = state.key;
+		if (typeof copy[key] === "undefined") {
+			copy[key] = state[key];
+		} else if (Array.isArray(copy[key])) copy[key] = copy[key].slice(0);
+	});
+	copy.animations.forEach(animation => {
+		const length = animation.to.length;
+		animation.type = new HyperArray(new HyperNumber, length);
+		animation.easing = easing;
+		//if (animation.property === "positionArray") animation.onend = onend;
+		animation.startTime = animation.startTime + state.time - beginning;
 	});
 	state = copy;
 }
@@ -102,6 +113,18 @@ document.body.appendChild(canvas);
 const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl"); 
 if (!gl) throw new Error("no web gl");
 
+function onend() {
+	const animations = controller.animations;
+	animations.forEach(animation => {
+		animation.type = null;
+		animation.easing = null;
+		animation.onend = null;
+		animation.startTime = animation.startTime - beginning;
+	});
+	state.animations = animations;
+	history.replace({state});
+	//console.log("onend",animations);
+}
 
 const layer = Object.assign(manual(),{
 	progress: [state.progress,0.0,0.0],
@@ -120,8 +143,10 @@ const delegate = {
 			 const animation = {
 				type: new HyperArray( new HyperNumber, value.length),
 				duration: duration,
-				easing: easing
+				easing: easing,
+				//onend: onend
 			};
+			//if (key === "positionArray") animation.onend = onend;
 			if (!previous || !previous.length) animation.from = value.map( function() {
 				return 0;
 			});
@@ -130,7 +155,8 @@ const delegate = {
 			 const animation = {
 				type: new HyperArray( new HyperNumber, 3),
 				duration: duration,
-				easing: easing
+				easing: easing,
+				//onend: onend
 			};
 			if (!previous || !previous.length) animation.from = value.map( function() {
 				return 0;
@@ -141,7 +167,9 @@ const delegate = {
 }
 const controller = {};
 activate(controller,delegate,layer);
-
+state.animations.forEach(animation => {
+	controller.addAnimation(animation);
+});
 const shaderProgram = initShaders();
 
 const positionBuffer = initBuffer(3,layer.positionArray.slice(0));
@@ -361,13 +389,21 @@ function randomize() {
 	leadingEdge = asymmetry;
 	if (!stretchOnHold || running) trailingEdge = asymmetry;
 
-
 	a = lissajousMin + Math.ceil(Math.random() * lissajousMax);
 	b = a + 1;
 	d = Math.random() * tau;
 
 	ribbon = thickness * tau / a;
 
+	//const animations = controller.animations; // this is incredibly expensive
+	const animations = [];
+	animations.forEach(animation => {
+		animation.type = null;
+		animation.easing = null;
+		animation.onend = null;
+		animation.startTime = animation.startTime - beginning;
+	});
+	//console.log("animations",animations);
 	state = {
 		asymmetry,
 		leadingEdge,
@@ -380,7 +416,9 @@ function randomize() {
 		radiusB:radius,
 		progress,
 		light,
-		directional
+		directional,
+		animations,
+		time:beginning
 	};
 	history.replace({state});
 }
