@@ -156,7 +156,6 @@ randomize();
 resize();
 layout();
 
-document.addEventListener("keydown",keyDown);
 document.addEventListener("mousedown",mouseDown);
 document.addEventListener("mouseup",mouseUp);
 window.addEventListener("resize", resize);
@@ -298,10 +297,6 @@ function drawScene(deltaTime) {
 	gl.uniformMatrix4fv(shaderProgram.modelMatrix, false, modelMatrix);
 	
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, positionBuffer.numItems);
-}
-
-function keyDown(e) {
-	console.log(state);
 }
 
 function mouseDown(e) {
