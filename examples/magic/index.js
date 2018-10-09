@@ -133,7 +133,6 @@ function onend() {
 	});
 	state.animations = animations;
 	history.replace({state});
-	//console.log("onend",animations);
 }
 
 const layer = Object.assign(manual(),{
@@ -358,14 +357,12 @@ function mouseUp(e) {
 	}
 }
 function keyPress(e) {
-	//console.log("keypress =====>",e.keyCode);
 	if (e.keyCode < 20 && e.keyCode > 15) return;
 	running = !running && toggling;
 	randomize();
 	layout();
 }
 function keyDown(e) {
-	// console.log("keydown =====>",e.keyCode);
 	// if (e.keyCode > 19 || e.keyCode < 16) return;
 	// running = !running && toggling;
 	// randomize();
@@ -434,7 +431,6 @@ function randomize() {
 
 	ribbon = plotThickness * tau / a;
 
-	//const animations = controller.animations; // this is incredibly expensive
 	const animations = [];
 	animations.forEach(animation => {
 		animation.type = null;
@@ -442,7 +438,7 @@ function randomize() {
 		animation.onend = null;
 		animation.startTime = animation.startTime - beginning;
 	});
-	//console.log("animations",animations);
+
 	state = {
 		symmetry,
 		leadingEdge,
@@ -460,7 +456,6 @@ function randomize() {
 		time:beginning
 	};
 	history.replace({state});
-	//console.log({iterations:plotIterations,numerator,denominator,a,b,d:dd});
 }
 
 function layout() {

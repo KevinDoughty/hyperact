@@ -5,38 +5,6 @@ import { isFunction, prepAnimationObjectFromAddAnimation, convertedKey, converte
 const verbose = false;
 
 
-// if there are no animations and no type registered
-// you can't convert from ugly backing to pretty.
-// In that case the ugly backing should actually be a pretty value.
-// That would be very hard to do, have to keep track of animations per property.
-// input output conversion comes from many sources,
-// delegate, registered type, animation type.
-
-// generate a model layer on property value change with no animations.
-// how do you convert from ugly to pretty?
-// Or the inverse, when initially setting?
-// convertedInputOfProperty
-// if it doesn't have an animation and it doesn't have a default,
-// what would happen if it stored a pretty value?
-// When adding an animation, you might have to convert to ugly but wouldn't know
-// Store whether it's ugly or pretty in a dict.
-// Store the pretty value in another dict and delete if using ugly value.
-
-// The only other option is keeping track of types for conversion.
-// The last added animation's type would be kept.
-
-// cache invalidation.
-
-// now might not be the time for RENDER_LAYER
-
-// Transforms used to be removed from style object on completion. Was that Hyperreact?
-
-// Maybe the solution to conversion is RENDER_LAYER
-// activeBacking is supposed to have pretty values
-
-// I also want to get rid of the caching in ticker
-
-
 export const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
 
@@ -44,9 +12,7 @@ const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time aft
 
 export const VAGUE_TYPE_SPAGHETTI_HACK = false;
 //const NO_DELEGATE_INPUT_OUTPUT = false;
-// false:52 failures, true:57 failures, now true only causes one bug. // core, one, unregistered animation presentation flushed
 
-//////
 const FASTER_RENDER_LAYER = true; // !!! // Original false // true causes rococo to not animate first time, failure of tests "fake set animation" // Probably not faster but was suppossed to be a step towards fewer object instantiations. Now it's slower with more state. Render layer generates less than a full presentation layer. More caching, no single source of truth, invalidation problem.
 //const MUTATE_RENDER_LAYER = true;
 const AVOID_CREATING_PRESENTATION_LAYER = false; // Original false // in setValuesOfLayer // true causes flicker in transaction example // true causes test failure of "combination register" and if RENDER_LAYER is also true then "registered implicit presentation" fails too.
@@ -54,36 +20,10 @@ const NEWER_RENDER_CACHING = true; // original false // causes flicker in transa
 
 //const DESPERATE_TIMES_CALL_FOR_DESPERATE_ACTION = true;
 
-// 0000 // 65 failures // flicker one fails, step end easing
-// 1000 // 71 failures // flicker one fails, step end easing
-// 1010 // 66 failures // flicker one, two and five fail
-// 1110 // 75 failures // flicker one, and entire registered implicit presentation
-
-// 0001 // 70 failures //
-// 1001 // 76 failures //
-// 1011 // 53 failures // flicker 1, 2, & 5
-// 1111 // 76 failures
-
-////////////////// previously:
-
-// 111 // 74 // 71 failures // causes number 8 to flicker and number 14 to miss first animation in transaction example
-
-// 101 // 63 // 61 failures, in fake set // causes number 8 to flicker and number 14 to miss first animation in transaction example
-// flushing should invalidate presentation layer (registered) // AssertionError [ERR_ASSERTION]: { discrete: [ 'a', 'b' ] } deepEqual { discrete: [ 'b', 'c' ] }
-// flushing twice (registered) // AssertionError [ERR_ASSERTION]: { discrete: [ 'a', 'b' ] } deepEqual { discrete: [ 'b', 'd' ] }
-
-// 110 // 74 // 72 failures // causes many to flicker in transaction example
-
-// 100 // 70 // 61 failures, in step end // does not flicker but now it's causing the transaction example to layout items at the top only
-// fake set animation does not display at every tick // Error: display called 2110 times
-// number animation does not display at every tick // Error: display called 7749 times
-
-// transaction flickering number 8 has explicit animation added before setting underlying value. 13 has it added after and does not flicker.
-
 export const FAKE_SET_BUG_FIX = true;
 
 const DOUBLE_CACHED_RENDER = false; // must be false // all animation tests time out
-//////
+
 
 //const ADD_ANIMATION_AUTO_REGISTER = true; // animations with temporary properties and values, which are otherwise undefined
 
@@ -115,8 +55,6 @@ export function presentationTransform(sourceLayer,sourceAnimations,time,shouldSo
 	sourceAnimations.forEach( function(animation) {
 		progressChanged = animation.composite(sourceLayer,time) || progressChanged; // progressChanged is a premature optimization
 		const debugProperty = animation.property;
-		//if (debugProperty) console.log("..... hyperact presentationTransform property:%s; value:%s; type:%s;",debugProperty,JSON.stringify(sourceLayer[debugProperty]),JSON.stringify(animation.type || { "noType":"noType" } ));
-		//else console.log("..... hyperact presentationTransform NO PROPERTY");
 		if (debugProperty && sourceLayer[debugProperty] && sourceLayer[debugProperty].px && sourceLayer[debugProperty].px.length && sourceLayer[debugProperty].px.substring && sourceLayer[debugProperty].px.substring(sourceLayer[debugProperty].px.length-3) === "NaN") {
 			throw new Error("hyperact NaN composite sourceLayer:"+JSON.stringify(sourceLayer)+";");
 		}
@@ -181,34 +119,7 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	function setValuesOfLayer(layer) {
 		if (FAKE_SET_BUG_FIX) hyperContext.registerFlusher(flusher); // don't need to bind
 		const transaction = hyperContext.currentTransaction();
-		//if (false) cachedPresentationLayer = null;
-		//if (false) invalidate();
-		//const presentationLayer = getPresentation();
 		const presentationLayer = AVOID_CREATING_PRESENTATION_LAYER ? null : getPresentation();
-
-		// Generate presentation even if not accessed for implicit animation.
-		// Required for test "registered implicit presentation (unflushed)", but no longer causes failure in 28 others.
-		// But this has conceptual problems, I don't want to generate presentation until after animations are added, else you'll get a flicker.
-		// presentationLayer must be generated at beginning of transaction before setting new values.
-
-		// I need presentation values to pass to animationForKey.
-		// Can I use the previous transaction's presentation values?
-		// Would have to completely redo invalidation
-
-		// Or I could have a two pass presentationLayer generation
-		// Only layers that change will have performance negatively affected, and not by much
-
-		// Generate presentation by adding up animations
-		// Then ask for new ones
-		// Then finish the process with the new ones.
-
-		// Is it worth the trouble?
-		// Which is less trouble, using the previous transactions presentation layers, or two part presentation generation?
-		// The latter, but it's already pretty hairy.
-
-		// Have to hold off calling Object.freeze() until the second pass
-
-		// But wait, this is only a problem with hyperreact, so it more likely has to do with react rendering, not presentationLayer generation.
 
 		const keys = Object.keys(layer);
 		if (keys.length) {
@@ -238,16 +149,12 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			}
 		});
 
-		//console.log("***** ***** ***** hyperact setValuesOfLayer disableAnimation:",transaction.disableAnimation);
-
-
 		//if (!transaction.disableAnimation) { // setValuesOfLayer
 		Object.keys(layer).forEach( function(prettyKey) { // using result not layer because key might be different
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
 			const prettyValue = FASTER_RENDER_LAYER ? getModel()[prettyKey] : layer[prettyKey];
 			const uglyPrevious = previousBacking[uglyKey];
 			const prettyPrevious = FASTER_RENDER_LAYER ? getPrevious()[prettyKey] : convertedOutputOfProperty(uglyPrevious,uglyKey, delegate, defaultTypes);
-			//console.log("***** ***** ***** hyperact setValuesOfLayer property:%s; value:%s; previous:%s; equal:%s;",prettyKey,prettyValue,prettyPrevious,prettyValue===prettyPrevious);
 
 			if (prettyValue !== prettyPrevious) {
 				const prettyPresentation = AVOID_CREATING_PRESENTATION_LAYER ? getPresentation()[prettyKey] : presentationLayer[prettyKey]; // pretty key.
@@ -429,31 +336,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 		}, {});
 	}
 
-	// Invalidate and flush are two separate actions.
-	// Flush needs to be implemented differently.
-	// I should be keeping track of pending changes and apply them at transaction flush or commit.
-	// Except remember that Core Animation asks for animationForKey immediately, not on flush or commit
-	// Are they separate actions?
-	// Flush will not work if there are no animations thus not registered.
-	// So you can't just pass another function for flushing.
-	// Since there is no layer hierachy, can't unregister any other way.
-	// You will have to return a deactivate function from activate. (Currently returning controller but not using anywhere)
-	// I would much rather not have circular references
-	// Reverse registration.
-	// Every controller should have a way to get the current transaction.
-	// Every value change should register with that transaction,
-	// and that transaction should automatically unregister when needed.
-	// The private, transaction wrapper that is.
-	// But what does the transaction do with registered controllers?
-	// The transaction will be given a different invalidate function?
-	// Or is it the same?
-	//
-
-	// function NOTinvalidate() {
-	// 	if (!FAKE_SET_BUG_FIX) cachedPresentationLayer = null;
-	// 	if (!NEWER_RENDER_CACHING || FAKE_SET_BUG_FIX) cachedRenderLayer = null;
-	// 	cachedCachedRenderLayer = null;
-	// }
 	function flusher() {
 		cachedPresentationLayer = null;
 		cachedRenderLayer = null;
@@ -481,18 +363,9 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			const nextRenderLayer = Object.assign({},uglyBacking);//Object.assign(baseLayer(), modelBacking);
 			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			const length = allAnimations.length;
-			//console.log("!!! hyperact getRender ugly:",uglyBacking);
-			// For some reason this might not be populated with ugly values.
-			// Might be because the style prefix is not stripped, maybe there is no type?
-			// Maybe there is no type at instantiation.
-			//
 
 			if (length) changed = presentationTransform(nextRenderLayer,allAnimations,transactionTime,shouldSortAnimations);
-			//console.log("!!! hyperact getRender transformed:",Object.assign({},nextRenderLayer));
 			shouldSortAnimations = false;
-			//console.log("!!! hyperact delegate is not null or undefined:",delegate !== null && typeof delegate !== "undefined");f
-			//console.log("!!! !!! !!! hyperact defaultTypes:",defaultTypes);
-
 			if (changed || !cachedRenderLayer) {// || cachedRenderLayer === null) { // cachedRenderLayer is always null here
 				registeredProperties.forEach( function(prettyKey) {
 					const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyOutput,delegate) : prettyKey;
@@ -506,7 +379,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 					}
 				});
 				Object.freeze(nextRenderLayer);
-				//console.log("!!! hyperact getRender next:",nextRenderLayer);
 				cachedRenderLayer = nextRenderLayer;
 			}
 			cachedCachedRenderLayer = cachedRenderLayer;
@@ -642,7 +514,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	}
 	function addAnimation(description,name) { // does not register. // should be able to pass a description if type is registered
 		//if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description); // deprecate this
-		//console.log("=====> addAnimation:",JSON.stringify(description));
 
 		const transaction = hyperContext.currentTransaction();
 		getPresentation(); // cached layers are deleted at the beginning of a transaction, this ensures presentation is generated before animations added, else new animations contribute to presentation before flushing and you might get flicker. Must be presentationLayer, not renderLayer for some reason.
@@ -666,10 +537,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 		if (typeof name === "undefined" || name === null || name === false) allNames.push(null);
 		else allNames.push(name);
 		shouldSortAnimations = true;
-		//const transaction = hyperContext.currentTransaction();
-		//const debugType = copy.type;
-		//if (!debugType) console.log("Invalid (no) type:",JSON.stringify(copy));
-		//else if (!isDuckType(debugType)) console.log("Invalid type:",JSON.stringify(Object.keys(debugType)));
 		copy.runAnimation(layerInstance, name, transaction);
 	}
 	function removeAnimation(name) {
@@ -736,12 +603,7 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 		registerAnimatableProperty(uglyKey, description); // automatic registration
 
 		const uglyValue = convertedInputOfProperty(prettyValue,uglyKey,delegate,defaultTypes);
-		//const uglyPrevious = modelBacking[uglyKey];
-		// if (prettyKey === "testo") {
-		// 	console.log("#### ### ## # initial pretty:%s;",JSON.stringify(prettyValue));
-		// 	console.log("#### ### ## # initial ugly:%s;",JSON.stringify(uglyValue));
-		// }
-		if (verbose) console.log("CORE INITIAL KEY VALUE",uglyKey,uglyValue);
+
 		if (FASTER_RENDER_LAYER) { // init
 			//uglyBacking[uglyKey] = uglyValue;
 			prettyBacking[uglyKey] = prettyValue;
@@ -804,8 +666,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			configurable: false
 		});
 	}
-
-	if (verbose) console.log("=====>> CORE INITIAL MODEL BACKING:",JSON.stringify(modelBacking));
 
 	return controller; // TODO: should return the deactivate function // or maybe the layerInstance
 }

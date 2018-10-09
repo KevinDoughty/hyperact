@@ -10,8 +10,6 @@ class One {
 		this.y = 0;
 		this.z = 0;
 		this.display = function() {
-			//console.log(document.getElementById(element));
-			//console.log("this:",this);
 			document.getElementById(element).innerHTML = "one:" + JSON.stringify(this.presentation);
 			// document.getElementById(element).innerHTML = //element +":<br>" +
 			// 	"keys&nbsp;" + JSON.stringify(Object.keys(this)) + "<br>" +
