@@ -10,7 +10,7 @@ var plugins = [
 		comments: true,
 		sourceMap: true
 	})
-	
+
 ];
 if (process.env.WEBPACK_ENV === "build") {
 	plugins = [
@@ -38,7 +38,7 @@ module.exports = {
 				exclude: /node_modules/,
 				query: {
 					presets: [
-						["es2015", { "modules": false }]
+						["env", { "modules": false }]
 					]
 				}
 			}

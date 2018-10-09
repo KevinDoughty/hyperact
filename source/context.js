@@ -1,14 +1,16 @@
-const rAF = typeof window !== "undefined" && (
-		window.requestAnimationFrame ||
-		window.webkitRequestAnimationFrame ||
-		window.mozRequestAnimationFrame ||
-		window.msRequestAnimationFrame ||
-		window.oRequestAnimationFrame
-	) || function(callback) { setTimeout(callback, 0); };
+import { FAKE_SET_BUG_FIX } from "./core.js";
 
-function isFunction(w) { // WET
-	return w && {}.toString.call(w) === "[object Function]";
-}
+const rAF = typeof window !== "undefined" && (
+	window.requestAnimationFrame ||
+	window.webkitRequestAnimationFrame ||
+	window.mozRequestAnimationFrame ||
+	window.msRequestAnimationFrame ||
+	window.oRequestAnimationFrame
+) || function(callback) { setTimeout(callback, 0); };
+
+// function isFunction(w) { // WET
+// 	return w && {}.toString.call(w) === "[object Function]";
+// }
 
 let now = Date.getTime;
 if (Date.now) now = Date.now;
@@ -36,10 +38,11 @@ export function HyperContext() {
 	this.displayFunctions = []; // strange new implementation // I don"t want to expose delegate accessor on the controller, so I pass a bound function, easier to make changes to public interface.
 	this.cleanupFunctions = [];
 	this.invalidateFunctions = [];
+	this.force = [];
 }
 
 HyperContext.prototype = {
-	createTransaction: function(settings,automaticallyCommit) {
+	createTransaction: function(settings,automaticallyCommit) { // private
 		const transaction = new HyperTransaction(settings);
 		const length = this.transactions.length;
 		let time = now() / 1000;
@@ -51,26 +54,77 @@ HyperContext.prototype = {
 			enumerable: true,
 			configurable: false
 		});
-		this.transactions.push({ representedObject:transaction, automaticallyCommit:automaticallyCommit });
+		this.transactions.push({ representedObject:transaction, automaticallyCommit:automaticallyCommit, flushers:[] });
 		if (automaticallyCommit) this.startTicking(); // Automatic transactions will otherwise not be closed if there is no animation or value set.
 		return transaction;
 	},
+	createTransactionWrapper: function(settings,automaticallyCommit) { // private
+
+		const targets = this.targets;
+		let i = targets.length;
+		while (i--) {
+			this.invalidateFunctions[i]();
+		}
+
+		const transaction = new HyperTransaction(settings);
+		const length = this.transactions.length;
+		let time = now() / 1000;
+		if (length) time = this.transactions[length-1].representedObject.time; // Clock stops in the outermost transaction.
+		Object.defineProperty(transaction, "time", { // Manually set time of transaction here to be not configurable
+			get: function() {
+				return time;
+			},
+			enumerable: true,
+			configurable: false
+		});
+		const wrapper = { representedObject:transaction, automaticallyCommit:automaticallyCommit, flushers:[] };
+		this.transactions.push(wrapper);
+		if (automaticallyCommit) this.startTicking(); // Automatic transactions will otherwise not be closed if there is no animation or value set.
+		return wrapper;
+	},
+
 	currentTransaction: function() {
 		const length = this.transactions.length;
 		if (length) return this.transactions[length-1].representedObject;
+		if (FAKE_SET_BUG_FIX) return this.createTransactionWrapper({},true).representedObject;
 		return this.createTransaction({},true);
 	},
 	beginTransaction: function(settings) { // TODO: throw on unclosed (user created) transaction
+		if (FAKE_SET_BUG_FIX) return this.createTransactionWrapper(settings,false).representedObject;
 		return this.createTransaction(settings,false);
 	},
 	commitTransaction: function() {
+		if (FAKE_SET_BUG_FIX) this.clearFlushers();
 		this.transactions.pop();
 	},
-	flushTransaction: function() { // TODO: prevent unterminated when called within display
-		this.invalidateFunctions.forEach( function(invalidate) { // this won"t work if there are no animations thus not registered
+	clearFlushers: function() {
+		const wrapper = this.currentTransactionWrapper();
+		wrapper.flushers.forEach( flusher => {
+			flusher();
+		});
+		wrapper.flushers.length = 0;
+
+		const targets = this.targets;
+		let i = targets.length;
+		while (i--) {
+			this.invalidateFunctions[i]();
+		}
+	},
+	flushTransaction: function() { // TODO: prevent unterminated when called within display // TODO: better yet, completely remove
+		if (FAKE_SET_BUG_FIX) this.clearFlushers();
+		else this.invalidateFunctions.forEach( function(invalidate) { // this won"t work if there are no animations thus not registered
 			invalidate();
 		});
 	},
+	currentTransactionWrapper: function() { // private // for FAKE_SET_BUG_FIX and unregistered controllers.
+		const length = this.transactions.length;
+		if (!length) return this.createTransactionWrapper({},true);
+		return this.transactions[length-1]; // Hope the transaction was created sucessfully, I guess, for now.
+	},
+	registerFlusher: function(flusher) {
+		this.currentTransactionWrapper().flushers.push(flusher);
+	},
+
 	disableAnimation: function(disable) { // If this is false, it enables animation
 		if (disable !== false) disable = true; // because the function name is misleading
 		const transaction = this.currentTransaction();
@@ -78,9 +132,9 @@ HyperContext.prototype = {
 		this.startTicking();
 	},
 
-	registerTarget: function(target,getPresentation,getAnimationCount,display,invalidate,cleanup,layer = null) {
+	registerTarget: function(target,getPresentation,getAnimationCount,display,invalidate,cleanup,force,layer = null) {
 		this.startTicking();
-		const index = this.targets.indexOf(target);
+		const index = this.targets.indexOf(target); // optimize me with a unique number for each target and storing in a dict.
 		if (index < 0) {
 			this.targets.push(target);
 			this.getPresentations.push(getPresentation);
@@ -89,6 +143,9 @@ HyperContext.prototype = {
 			this.displayFunctions.push(display);
 			this.cleanupFunctions.push(cleanup);
 			this.invalidateFunctions.push(invalidate);
+			this.force.push(force);
+		} else {
+			this.force[index] = force;
 		}
 	},
 
@@ -102,6 +159,7 @@ HyperContext.prototype = {
 			this.displayFunctions.splice(index, 1);
 			this.cleanupFunctions.splice(index, 1);
 			this.invalidateFunctions.splice(index,1);
+			this.force.splice(index,1);
 		}
 	},
 
@@ -110,29 +168,31 @@ HyperContext.prototype = {
 	},
 	ticker: function() { // Need to manually cancel animation frame if calling directly.
 		this.animationFrame = undefined;
-		const targets = this.targets; // experimental optimization, traverse backwards so you can remove. This has caused problems for me before, but I don"t think I was traversing backwards.
+		const targets = this.targets; // traverse backwards so you can remove.
 		let i = targets.length;
 		while (i--) {
 			const target = targets[i];
-			const display = this.displayFunctions[i]; // this may not exist
+			const display = this.displayFunctions[i]; // this DOES exist
 			const animationCount = this.getAnimationCounts[i](); // should exist
 			const getPresentation = this.getPresentations[i]; // should exist
 			if (!animationCount) { // Deregister from inside ticker is redundant (removalCallback & removeAnimationInstance), but is still needed when needsDisplay()
-				if (isFunction(display)) {
-					const presentationLayer = getPresentation();
-					display(presentationLayer);
-				}
 				this.invalidateFunctions[i]();
+				//if (isFunction(display)) { // does exist
+				const presentationLayer = getPresentation();
+				display(presentationLayer);
+				//}
 				this.deregisterTarget(target); // Deregister here to ensure one more tick after last animation has been removed. Different behavior than removalCallback & removeAnimationInstance, for example needsDisplay()
 			} else {
+				//this.invalidateFunctions[i](); // this will rerender every time
 				const presentationLayer = getPresentation();
-				if (this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
+				if (this.force[i] || this.displayLayers[i] !== presentationLayer) { // suppress unnecessary displays
 					this.displayLayers[i] = presentationLayer;
-					display(presentationLayer);
-					this.invalidateFunctions[i]();
+					display(presentationLayer); // does exist
+					//this.invalidateFunctions[i]();
 				}
 				this.cleanupFunctions[i](); // New style cleanup in ticker.
 			}
+			this.force[i] = false;
 		}
 		const length = this.transactions.length;
 		if (length) {

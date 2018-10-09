@@ -5,7 +5,7 @@ function isFunction(w) {
 	return w && {}.toString.call(w) === "[object Function]";
 }
 
-describe("actions", function() {
+describe("ACTIONS", function() {
 	describe("zero", function() {
 		it("function", function() {
 			assert(isFunction(function() {}));
@@ -27,8 +27,6 @@ describe("actions", function() {
 	});
 
 	describe("one", function() {
-		beforeEach( function() {
-		});
 		it("group length", function() {
 			const children = [1,2,3,4];
 			const group = new HyperGroup(children);
@@ -37,8 +35,6 @@ describe("actions", function() {
 	});
 
 	describe("two", function() {
-		beforeEach( function() {
-		});
 		it("chain length", function() {
 			const children = [1,2,3,4];
 			const chain = new HyperChain(children);
@@ -47,8 +43,6 @@ describe("actions", function() {
 	});
 
 	describe("three", function() {
-		beforeEach( function() {
-		});
 		it("keyframes length", function() {
 			const children = [1,2,3,4];
 			const keyframes = new HyperKeyframes({keyframes:children});

@@ -1,21 +1,9 @@
-const TRANSACTION_DURATION_ALONE_IS_ENOUGH = true;
+import { HyperNumber } from "./types.js";
+
 
 let animationNumber = 0;
 
-const wetNumberType = { // WET
-	zero: function() {
-		return 0;
-	},
-	add: function(a, b) {
-		return a + b;
-	},
-	subtract: function(a, b) {
-		return a - b;
-	},
-	interpolate: function(a, b, progress) {
-		return a + (b - a) * progress;
-	}
-};
+const hyperNumber = new HyperNumber();
 
 function isFunction(w) { // WET
 	return w && {}.toString.call(w) === "[object Function]";
@@ -38,9 +26,9 @@ export function HyperChain(childrenOrSettings) {
 	this.chain = children.map( function(animation) {
 		return animationFromDescription(animation);
 	});
-// 	this.sortIndex;
-// 	this.startTime;
-// 	this.onend;
+	// 	this.sortIndex;
+	// 	this.startTime;
+	// 	this.onend;
 	Object.defineProperty(this, "finished", {
 		get: function() {
 			if (!this.chain.length) return true;
@@ -98,13 +86,13 @@ export function HyperGroup(childrenOrSettings) {
 	let children = [];
 	if (Array.isArray(childrenOrSettings)) children = childrenOrSettings;
 	else if (childrenOrSettings && childrenOrSettings.group) children = childrenOrSettings.group;
-	
+
 	this.group = children.map( function(animation) {
 		return animationFromDescription(animation);
 	});
-// 	this.sortIndex;
-// 	this.startTime;
-// 	this.onend;
+	// 	this.sortIndex;
+	// 	this.startTime;
+	// 	this.onend;
 	Object.defineProperty(this, "finished", {
 		get: function() {
 			let result = true;
@@ -160,7 +148,8 @@ export function hyperActionIsFilling(action) {
 
 function HyperAction() {
 	this.property; // string, property name
-	this.type = wetNumberType; // Default
+	this.type;
+	//if (!VAGUE_TYPE_SPAGHETTI_HACK) this.type = hyperNumber; // Default
 	this.duration; // float. In seconds. Need to validate/ensure >= 0. Initialized in runAnimation
 	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear. Initialized in runAnimation
 	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation
@@ -182,17 +171,10 @@ function HyperAction() {
 HyperAction.prototype = {
 	copy: function() { // TODO: "Not Optimized. Reference to a variable that requires dynamic lookup" !!! // https://github.com/GoogleChrome/devtools-docs/issues/53
 		return new this.constructor(this);
-// 		const copy = new this.constructor(this.settings);
-// 		const keys = Object.getOwnPropertyNames(this);
-// 		const length = keys.length;
-// 		for (let i = 0; i < length; i++) {
-// 			Object.defineProperty(copy, keys[i], Object.getOwnPropertyDescriptor(this, keys[i]));
-// 		}
-// 		return copy;
 	},
 	composite: function(onto,now) {
 		if (this.startTime === null || this.startTime === undefined) throw new Error("Cannot composite an animation that has not been started."); // return this.type.zero();
-		if (this.startTime > now && this.fillMode !== "backwards" && this.fillMode !== "both") return false;
+		if (this.startTime + this.delay > now && this.fillMode !== "backwards" && this.fillMode !== "both") return false;
 		if (this.finished && this.fillMode !== "forwards" && this.fillMode !== "both") return false;
 		const elapsed = Math.max(0, now - (this.startTime + this.delay));
 		const speed = this.speed; // might make speed a property of layer, not animation, might not because no sublayers / layer hierarcy
@@ -237,7 +219,7 @@ HyperAction.prototype = {
 			} else iterationProgress = rounded;
 		}
 		let value;
-		if (this instanceof HyperKeyframes) { // TODO: This is just wrong
+		if (this instanceof HyperKeyframes) { // TODO: This check is just wrong
 			const length = this.keyframes.length;
 			if (!length) throw new Error("HyperAction composite need to be able to handle zero keyframes");
 			if (length === 1) throw new Error("HyperAction composite need to be able to handle one keyframe");
@@ -258,13 +240,16 @@ HyperAction.prototype = {
 			else value = this.type.interpolate(this.delta,this.type.zero(this.to),iterationProgress); // sending argument to zero() for css transforms (or custom types)
 		}
 		const property = this.property;
-		if (typeof property !== "undefined" && property !== null) { // allow animating without declaring property
+		if (typeof property !== "undefined" && property !== null) { // it is possible to animate without declaring property
 			let result = value;
 			let underlying = onto[property];
 			if (typeof underlying === "undefined" || underlying === null) underlying = this.type.zero(this.to); // ORIGINAL // TODO: assess this // FIXME: transform functions? Underlying will never be undefined as it is a registered property, added to modelLayer. Unless you can animate properties that have not been registered, which is what I want
 			if (this.additive) result = this.type.add(underlying,value);
 			if (this.sort && Array.isArray(result)) result.sort(this.sort);
 			onto[property] = result;
+		}
+		if (onto[property] && onto[property].px && onto[property].px.length && onto[property].px.substring && onto[property].px.substring(onto[property].px.length-3) === "NaN") {
+			throw new Error("hyperact NaN composite onto:"+JSON.stringify(onto)+"; now:"+now+";");
 		}
 		const changed = (iterationProgress !== this.progress || this.finished); // Animations with a fill will be very inefficient.
 		this.progress = iterationProgress;
@@ -284,10 +269,10 @@ export function HyperKeyframes(settings) {
 	if (settings) Object.keys(settings).forEach( function(key) {
 		if (key !== "keyframes") this[key] = settings[key];
 	}.bind(this));
-	
+
 	// TODO: lots of validation
 	// TODO: composite assumes offsets are in order, and not equal (need to prevent dividing by zero)
-	
+
 	if (!Array.isArray(this.offsets) || this.offsets.length !== length) { // TODO: handle zero or one frames
 		if (length < 2) this.offsets = [];
 		else this.offsets = this.keyframes.map( function(item,index) {
@@ -305,8 +290,10 @@ HyperKeyframes.prototype.copy = function() {
 	return new this.constructor(this);
 };
 HyperKeyframes.prototype.runAnimation = function(layer,key,transaction) {
-	if (isFunction(this.type)) this.type = new this.type();
-	if (this.type && isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
+	if (!this.type) this.type = hyperNumber; // questionable if I should do this here
+	else if (isFunction(this.type)) this.type = new this.type();
+	//if (!this.type) this.type = this;
+	if (isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
 		if (this.blend !== "absolute" && this.keyframes.length) {
 			const last = this.keyframes.length-1;
 			const array = [];
@@ -359,11 +346,10 @@ export function HyperAnimation(settings) {
 HyperAnimation.prototype = Object.create(HyperAction.prototype);
 HyperAnimation.prototype.constructor = HyperAnimation;
 HyperAnimation.prototype.runAnimation = function(layer,key,transaction) {
-	if (!this.type) {
-		this.type = wetNumberType; // questionable if I should do this here
-	}
-	if (isFunction(this.type)) this.type = new this.type();
-	if (this.type && isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
+	if (!this.type) this.type = hyperNumber; // questionable if I should do this here
+	else if (isFunction(this.type)) this.type = new this.type();
+	//if (!this.type) this.type = this;
+	if (isFunction(this.type.zero) && isFunction(this.type.add) && isFunction(this.type.subtract) && isFunction(this.type.interpolate)) {
 		if (!this.from) this.from = this.type.zero(this.to);
 		if (!this.to) this.to = this.type.zero(this.from);
 		if (this.blend !== "absolute") this.delta = this.type.subtract(this.from,this.to);
@@ -391,16 +377,23 @@ HyperAnimation.prototype.description = function(delegate) {
 	return copy;
 };
 
+export function isDuckType(description) {
+	return (description && isFunction(description.add) && isFunction(description.subtract) && isFunction(description.zero) && isFunction(description.interpolate));
+}
 
-export function animationFromDescription(description) {
+export function animationFromDescription(description) { // description might be a type, an animation object, an animation description, or a duration.
+	// FIXME: Must convert !!!
+	// TODO: Must convert. Animation objects use ugly keys, animation descriptions use pretty keys.
+	// I need the delegate or type
+	// I might want to remove input and output from the delegate API, and only allow input and output in the type.
 	let animation;
-	if (!description && (TRANSACTION_DURATION_ALONE_IS_ENOUGH || description !== 0)) return description; // TODO: if animationForKey returns null, stops. But defaultAnimation does not behave like CA animation dict and should
+	if (!description && description !== 0) return description; // TODO: if animationForKey returns null, stops. But defaultAnimation does not behave like CA animation dict and should
 	if (description instanceof HyperAction || description instanceof HyperKeyframes || description instanceof HyperGroup || description instanceof HyperChain) {
 		animation = description.copy.call(description);
 	} else if (Array.isArray(description)) {
 		animation = new HyperGroup(description);
 	} else if (isObject(description)) { // TODO: if has both keyframes and from/to, descriptions could return a group of both. But why?
-		if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && isFunction(description.add) && isFunction(description.subtract) && isFunction(description.zero) && isFunction(description.interpolate)) { // quack
+		if (isDuckType(description)) {
 			animation = new HyperAnimation({ type:description });// for registerAnimatableProperty and implicit animation from transaction duration alone
 		} else if (Array.isArray(description.keyframes)) animation = new HyperKeyframes(description);
 		else if (Array.isArray(description.group)) animation = new HyperGroup(description);

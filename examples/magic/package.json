@@ -1,27 +1,28 @@
 {
-  "name": "magic",
-  "version": "0.0.1",
-  "private": true,
-  "description": "It's magic",
-  "main": "bundle.js",
-  "scripts": {
-    "build": "WEBPACK_ENV=build webpack -p",
-    "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Kevin Doughty",
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "babel-core": "^6.18.2",
-    "babel-loader": "^6.2.8",
-    "babel-preset-es2015": "^6.18.0",
-    "babel-preset-es2015-native-modules": "^6.9.4",
-    "webpack": "^2.2.1",
-    "webpack-dev-server": "^2.4.1"
-  },
-  "dependencies": {
-    "gl-matrix": "^2.4.0",
-    "history": "^4.7.2",
-    "query-string": "^5.0.1"
-  }
+	"name": "magic",
+	"version": "0.0.2",
+	"private": true,
+	"description": "It's like magic",
+	"main": "bundle.js",
+	"scripts": {
+		"build": "webpack --mode=production --progress --colors",
+		"dev": "webpack --mode=development --progress --colors",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Kevin Doughty",
+	"license": "Apache-2.0",
+	"dependencies": {
+		"gl-matrix": "^2.4.0",
+		"history": "^4.7.2",
+		"query-string": "^5.0.1",
+		"hyperact": "^0.0.16"
+	},
+	"devDependencies": {
+		"babel-core": "^6.26.3",
+		"babel-loader": "^7.1.5",
+		"babel-preset-env": "^1.7.0",
+		"webpack": "^4.16.2",
+		"webpack-cli": "^3.1.0",
+		"webpack-dev-server": "^3.1.5"
+	}
 }

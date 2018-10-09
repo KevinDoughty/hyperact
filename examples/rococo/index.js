@@ -1,4 +1,4 @@
-import { activate, disableAnimation, HyperArray, HyperNumber } from "../../hyperact.mjs";
+import { activate, disableAnimation, HyperArray, HyperNumber } from "hyperact";
 
 function elastic(progress,omega,zeta) {
 	const beta = Math.sqrt(1.0 - zeta * zeta);

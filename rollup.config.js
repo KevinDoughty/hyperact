@@ -1,7 +1,5 @@
 import babel from "rollup-plugin-babel";
-import eslint from "rollup-plugin-eslint";
-
-// This does not update in dev mode because webpack is set to watch, not this.
+import { eslint } from "rollup-plugin-eslint";
 
 function debug(options) {
 	var plugin = {};
@@ -12,34 +10,25 @@ function debug(options) {
 		if (options && options.sourceMap) console.log("sourceMap:%s;",options.sourceMap);
 		if (options && options.inSourceMap) console.log("inSourceMap:%s;",options.inSourceMap);
 		if (options && options.outSourceMap) console.log("outSourceMap:%s;",options.outSourceMap);
-		
+
 		return code;
 	}
 	return plugin;
 }
 
-var plugins = [
-	eslint(), // redundant with pkg.scripts.test
-	babel({
-		exclude: "node_modules/**",
-		babelrc: false,
-		presets: ["es2015-rollup"] // .babelrc is required for pkg.scripts.test, override here // https://github.com/rollup/rollup-plugin-babel/issues/14#issuecomment-157445431
-	})//,
-	//debug({debug:"DEBUG:"})
-]
-
 export default {
-	entry: "source/hyperact.js",
-	plugins: plugins,
-// 	targets: [
-// 		{
-			dest: "hyperact.mjs",
-			format: "es"
-// 		},
-// 		{
-// 			dest: "hyperact.js",
-// 			format: "umd",
-// 			moduleName: "Hyperact"
-// 		}
-// 	]
+	input: "source/hyperact.js",
+	plugins: [
+		eslint(), // redundant with pkg.scripts.test
+		babel({
+			exclude: "node_modules/**"
+			//,babelrc: false, // Ignore below comment. babelrc is used to include babel-plugin-external-helpers as per https://github.com/rollup/rollup-plugin-babel
+			//presets: ["es2015-rollup"] // This was deprecated. Previously used because: .babelrc is required for pkg.scripts.test, override here // https://github.com/rollup/rollup-plugin-babel/issues/14#issuecomment-157445431
+		})
+		//,debug({debug:"DEBUG:"})
+	],
+	output: {
+		file: "module/hyperact.js",
+		format: "es"
+	}
 };

@@ -17,6 +17,12 @@ HyperNumber.prototype = {
 	interpolate: function(a,b,progress) {
 		return a + (b-a) * progress;
 	},
+	input: function(key,value) {
+		return value;
+	},
+	output: function(key,value) {
+		return value;
+	},
 	toString: function() {
 		return "HyperNumber";
 	},
@@ -49,9 +55,9 @@ HyperScale.prototype = {
 	}
 };
 
-export function HyperArray(type,length,settings) {
-	this.type = type;
-	if (isFunction(type)) this.type = new type(settings);
+export function HyperArray(subtype,length,settings) {
+	this.subtype = subtype;
+	if (isFunction(subtype)) this.subtype = new subtype(settings);
 	this.length = length;
 }
 HyperArray.prototype = {
@@ -59,27 +65,27 @@ HyperArray.prototype = {
 	zero: function() {
 		const array = [];
 		let i = this.length;
-		while (i--) array.push(this.type.zero());
+		while (i--) array.push(this.subtype.zero());
 		return array;
 	},
 	add: function(a,b) {
 		const array = [];
 		for (let i = 0; i < this.length; i++) {
-			array.push(this.type.add(a[i],b[i]));
+			array.push(this.subtype.add(a[i],b[i]));
 		}
 		return array;
 	},
 	subtract: function(a,b) { // subtract b from a
 		const array = [];
 		for (let i = 0; i < this.length; i++) {
-			array.push(this.type.subtract(a[i],b[i]));
+			array.push(this.subtype.subtract(a[i],b[i]));
 		}
 		return array;
 	},
 	interpolate: function(a,b,progress) {
 		const array = [];
 		for (let i = 0; i < this.length; i++) {
-			array.push(this.type.interpolate(a[i],b[i],progress));
+			array.push(this.subtype.interpolate(a[i],b[i],progress));
 		}
 		return array;
 	},

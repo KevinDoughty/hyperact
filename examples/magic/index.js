@@ -1,28 +1,56 @@
-import { activate, disableAnimation, HyperArray, HyperNumber, currentTransaction } from "../../hyperact.mjs";
+import { activate, disableAnimation, HyperArray, HyperNumber, currentTransaction } from "hyperact";
 import { work } from "./worker.js";
-
 const glMatrix = require("gl-matrix");
 const vec3 = glMatrix.vec3;
 const mat3 = glMatrix.mat3;
 const mat4 = glMatrix.mat4;
-
+const tau = Math.PI * 2;
 import createHistory from "history/createBrowserHistory";
 const history = createHistory();
 
+
+const drawLines = false;
+
 const numberOfWorkers = 4;
 
-const iterations = 50;
+const iterations = 25;
+const iterationDiff = 50;
+let plotIterations = iterations;
 
-const vertices = 2500;
+const vertices = 1000;
 
-const duration = 5.0;
+const duration = 2.5;
 const interval = 1.0;
 const omega = 20;
 const zeta = 0.75;
 
+const lissajous = true;
+const lissajousMax = 5;//5;//3;
+const lissajousMin = 1;//3;//1;
+const lissajousBase = 3;
+
+const detailLevel = 10;
+
+const radius = 1.0;
+
+const thetaThreshold = tau/vertices / detailLevel;
+const thickness = 0.0025;
+let plotThickness = thickness;
+const additional = 0.0001;
+const messy = false;
+
+const barely = false;
+const barelyStart = 0.25 * tau;
+const barelyAmount = 0.001;
+
+const stretchOnHold = false;
+let toggling = false;
+
+
+
 const beginning = currentTransaction().time;
 let state = {
-	asymmetry:0,
+	symmetry:0,
 	leadingEdge:0,
 	trailingEdge:0,
 	a:1,
@@ -60,24 +88,6 @@ window.onpopstate = function(event) {
 	state = event.state;
 };
 
-const lissajous = true;
-const lissajousMax = 3;
-const lissajousMin = 1;
-
-
-const radius = 1.0;
-
-
-let toggling = false;
-
-const tau = Math.PI * 2;
-const thetaThreshold = tau/vertices;
-const thickness = 0.002;
-const additional = 0;
-const base = 25;
-const messy = false;
-
-const stretchOnHold = false;
 
 let running = true;
 
@@ -110,7 +120,7 @@ for (let i=0; i<numberOfWorkers; i++) {
 const canvas = document.createElement("canvas");
 document.body.appendChild(canvas);
 
-const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl"); 
+const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 if (!gl) throw new Error("no web gl");
 
 function onend() {
@@ -143,8 +153,7 @@ const delegate = {
 			 const animation = {
 				type: new HyperArray( new HyperNumber, value.length),
 				duration: duration,
-				easing: easing,
-				//onend: onend
+				easing: easing
 			};
 			//if (key === "positionArray") animation.onend = onend;
 			if (!previous || !previous.length) animation.from = value.map( function() {
@@ -155,8 +164,7 @@ const delegate = {
 			 const animation = {
 				type: new HyperArray( new HyperNumber, 3),
 				duration: duration,
-				easing: easing,
-				//onend: onend
+				easing: easing
 			};
 			if (!previous || !previous.length) animation.from = value.map( function() {
 				return 0;
@@ -180,6 +188,8 @@ gl.enable(gl.BLEND);
 gl.blendEquation(gl.FUNC_ADD);
 gl.blendFunc(gl.SRC_COLOR, gl.ONE); // http://delphic.me.uk/webglalpha.html // http://mrdoob.github.io/webgl-blendfunctions/blendfunc.html
 
+
+
 randomize();
 resize();
 layout();
@@ -187,6 +197,12 @@ layout();
 document.addEventListener("mousedown",mouseDown);
 document.addEventListener("mouseup",mouseUp);
 window.addEventListener("resize", resize);
+window.addEventListener("keydown",keyDown);
+window.addEventListener("keypress",keyPress);
+
+
+
+
 
 
 function getShader(gl, id) { // http://learningwebgl.com/blog/?page_id=1217
@@ -214,19 +230,19 @@ function getShader(gl, id) { // http://learningwebgl.com/blog/?page_id=1217
 function initShaders() { // http://learningwebgl.com/blog/?p=1253
 	const fragmentShader = getShader(gl, "shader-fs");
 	const vertexShader = getShader(gl, "shader-vs");
-	
+
 	const shaderProgram = gl.createProgram();
 
 	gl.attachShader(shaderProgram, vertexShader);
 	gl.attachShader(shaderProgram, fragmentShader);
 	gl.linkProgram(shaderProgram);
-	
+
 	if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
 		console.log("Could not initialise shaders");
 	}
-	
+
 	gl.useProgram(shaderProgram);
-	
+
 	shaderProgram.vertexPosition = gl.getAttribLocation(shaderProgram, "vertexPosition");
 	gl.enableVertexAttribArray(shaderProgram.vertexPosition);
 
@@ -245,7 +261,7 @@ function initShaders() { // http://learningwebgl.com/blog/?p=1253
 	shaderProgram.directionalColor = gl.getUniformLocation(shaderProgram, "directionalColor");
 
 	shaderProgram.progress = gl.getUniformLocation(shaderProgram, "progress");
-	
+
 	return shaderProgram;
 }
 
@@ -280,11 +296,11 @@ function lightScene() {
 	const light = presentation.light;
 	const ambient = presentation.ambient;
 	const directional = presentation.directional;
-	
+
 	const adjusted = vec3.create();
 	vec3.normalize(adjusted, light, adjusted);
 	vec3.scale(adjusted, adjusted, -1);
-	
+
 	gl.uniform3f(shaderProgram.ambientColor, ambient[0], ambient[1], ambient[2]);
 	gl.uniform3fv(shaderProgram.lightingDirection, adjusted);
 	gl.uniform3f(shaderProgram.directionalColor, directional[0], directional[1], directional[2]);
@@ -300,15 +316,15 @@ function drawScene(deltaTime) {
 
 	colorScene();
 	lightScene();
-	
+
 	const normalMatrix = mat3.create();
 	const perspectiveMatrix = mat4.create();
 	mat4.perspective(perspectiveMatrix, 50, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
-	
+
 	const modelMatrix = mat4.create();
-	
+
 	mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, 0, -10));
-	
+
 	rotateMatrix(modelMatrix,deltaTime);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -319,12 +335,14 @@ function drawScene(deltaTime) {
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
 	gl.vertexAttribPointer(shaderProgram.vertexNormal, normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-	
+
 	gl.uniformMatrix3fv(shaderProgram.normalMatrix, false, normalMatrix);
 	gl.uniformMatrix4fv(shaderProgram.perspectiveMatrix, false, perspectiveMatrix);
 	gl.uniformMatrix4fv(shaderProgram.modelMatrix, false, modelMatrix);
-	
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, positionBuffer.numItems);
+
+	if (drawLines) gl.drawArrays(gl.LINES, 0, positionBuffer.numItems);
+	else gl.drawArrays(gl.TRIANGLE_STRIP, 0, positionBuffer.numItems);
+
 }
 
 function mouseDown(e) {
@@ -339,6 +357,20 @@ function mouseUp(e) {
 		layout();
 	}
 }
+function keyPress(e) {
+	//console.log("keypress =====>",e.keyCode);
+	if (e.keyCode < 20 && e.keyCode > 15) return;
+	running = !running && toggling;
+	randomize();
+	layout();
+}
+function keyDown(e) {
+	// console.log("keydown =====>",e.keyCode);
+	// if (e.keyCode > 19 || e.keyCode < 16) return;
+	// running = !running && toggling;
+	// randomize();
+	// layout();
+}
 
 function manual() {
 	const result = {};
@@ -347,7 +379,7 @@ function manual() {
 	let nextCoordArray = [];
 	const count = Math.max(1,numberOfWorkers);
 	for (let index=0; index<count; index++) {
-		const nextLayer = plot({iterations,radiusA:state.radiusA,radiusB:state.radiusB,a:state.a,b:state.b,d:state.d,thetaThreshold,divisions:count,index,leadingEdge:state.leadingEdge,trailingEdge:state.trailingEdge,ribbon:state.ribbon});
+		const nextLayer = plot({iterations:plotIterations,radiusA:state.radiusA,radiusB:state.radiusB,a:state.a,b:state.b,d:state.d,thetaThreshold,divisions:count,index,leadingEdge:state.leadingEdge,trailingEdge:state.trailingEdge,ribbon:state.ribbon});
 		nextPositionArray = nextPositionArray.concat(nextLayer.positionArray);
 		nextNormalArray = nextNormalArray.concat(nextLayer.normalArray);
 		nextCoordArray = nextCoordArray.concat(nextLayer.coordArray);
@@ -360,7 +392,11 @@ function manual() {
 }
 
 function randomize() {
-	let asymmetry,leadingEdge,trailingEdge,a,b,d,ribbon;
+
+	plotIterations = Math.max(iterations, iterations + Math.floor(iterationDiff * Math.random()) * (Math.round(Math.random()) ? 1 : -1));
+	plotThickness = Math.max(thickness, thickness + (iterations - plotIterations));
+
+	let symmetry,leadingEdge,trailingEdge,a,b,d,ribbon;
 
 	const scale = 1.0;
 	const x = Math.random() * 2 * scale - 1 * scale;
@@ -373,27 +409,30 @@ function randomize() {
 	const Y = Math.random() * 1;
 	const Z = Math.random() * 1;
 	const directional = [X,Y,Z];
-	layer.directional = directional;//
+	layer.directional = directional;
 
 	const progress = Math.random();
 	layer.progress = [progress,0,0];
 
-	const numerator = Math.ceil(Math.random() * base);
-	const denominator = numerator + Math.ceil(Math.random() * base);
+	const numerator = Math.ceil(Math.random() * lissajousBase);
+	const denominator = numerator + Math.ceil(Math.random() * lissajousBase);
 
-	if (messy) asymmetry = Math.random() * tau;
-	else asymmetry = numerator/denominator * tau;
+	if (messy) symmetry = Math.random() * tau;
+	else symmetry = numerator/denominator * tau;
+	if (barely && Math.round(Math.random())) symmetry = barelyStart + ((numerator/denominator * tau) * barelyAmount);
 	if (Math.round(Math.random())) {
-		asymmetry += Math.random() * additional;
+		symmetry += Math.random() * additional;
 	}
-	leadingEdge = asymmetry;
-	if (!stretchOnHold || running) trailingEdge = asymmetry;
+	leadingEdge = symmetry;
+	if (!stretchOnHold || running) trailingEdge = symmetry;
 
 	a = lissajousMin + Math.ceil(Math.random() * lissajousMax);
 	b = a + 1;
-	d = Math.random() * tau;
+	//d = Math.random() * tau;
+	const dd = Math.floor(Math.random() * 255);
+	d = dd * tau;
 
-	ribbon = thickness * tau / a;
+	ribbon = plotThickness * tau / a;
 
 	//const animations = controller.animations; // this is incredibly expensive
 	const animations = [];
@@ -405,7 +444,7 @@ function randomize() {
 	});
 	//console.log("animations",animations);
 	state = {
-		asymmetry,
+		symmetry,
 		leadingEdge,
 		trailingEdge,
 		a,
@@ -421,6 +460,7 @@ function randomize() {
 		time:beginning
 	};
 	history.replace({state});
+	//console.log({iterations:plotIterations,numerator,denominator,a,b,d:dd});
 }
 
 function layout() {
@@ -442,7 +482,7 @@ function layout() {
 
 	for (let index=0; index<numberOfWorkers; index++) {
 		working++;
-		workers[index].postMessage({iterations,radiusA:state.radiusA,radiusB:state.radiusB,a:state.a,b:state.b,d:state.d,thetaThreshold,divisions:numberOfWorkers,index,leadingEdge:state.leadingEdge,trailingEdge:state.trailingEdge,ribbon:state.ribbon});
+		workers[index].postMessage({iterations:plotIterations,radiusA:state.radiusA,radiusB:state.radiusB,a:state.a,b:state.b,d:state.d,thetaThreshold,divisions:numberOfWorkers,index,leadingEdge:state.leadingEdge,trailingEdge:state.trailingEdge,ribbon:state.ribbon});
 	}
 	if (!numberOfWorkers) respond(0, manual());
 }

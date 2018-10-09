@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<meta charset="UTF-8">
 <html>
 <head>
+<meta charset="utf-8">
 <title>✨Magic✨</title>
 <style>
 html, body {
@@ -52,7 +52,7 @@ void main(void) {
 	vec3 transformedNormal = normalMatrix * vertexNormal;
 	float directionalLightWeighting = max(dot(transformedNormal, lightingDirection), 0.0);
 	varyingLightWeighting = ambientColor + directionalColor * directionalLightWeighting;
-	
+
 	varyingProgress = progress;
 }
 </script>
