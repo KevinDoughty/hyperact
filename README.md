@@ -1,7 +1,7 @@
 # Hyperact
 
-This is a work in progress, still poorly defined in many areas. 
-Documentation does not mean implementation. 
+This is a work in progress, still poorly defined in many areas.
+Documentation does not mean implementation.
 Beware changes like renaming, with semver violations, for just a little while longer.
 
 ```javascript
@@ -22,12 +22,10 @@ view.x = 1;
 
 
 - [magic](https://kevindoughty.github.io/hyperact/examples/magic/) Fractal lissajous curves in WebGL
-- [rocketship](https://kevindoughty.github.io/hyperact/examples/rocketship/) Blending a keyframe path and more
-- [transaction](https://kevindoughty.github.io/hyperact/examples/transaction/) Implicit, like ReactNative LayoutAnimation
+- [rocketship](https://kevindoughty.github.io/hyperstyle/examples/rocketship/) Moved to [Hyperstyle](https://github.com/kevindoughty/hyperstyle)
+- [transaction](https://kevindoughty.github.io/hyperstyle/examples/transaction/) Moved to [Hyperstyle](https://github.com/kevindoughty/hyperstyle)
 - [rococo](https://kevindoughty.github.io/hyperact/examples/rococo/) Canvas drawing example
 - [bohr](https://kevindoughty.github.io/hyperact/examples/bohr/) The not quite Bohr model of the atom
-- tree-shaking (a failed attempt)
-- chunks (nothing to see here)
 - [tags](https://kevindoughty.github.io/hyperact/examples/tags/) Hello world using script tags
 - [basic](https://kevindoughty.github.io/hyperact/examples/basic/) Hello world using ES6 import
 
@@ -39,7 +37,7 @@ view.x = 1;
   Provides `receiver` with methods and property accessors for animation management.
 
 *Parameters*  
-  - `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate. 
+  - `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate.
   - `delegate {object}` Optional. The object that implements also optional delegate methods. Default is `receiver`.  
   - `layer {object}` Optional. The object upon which property value change triggers implicit animation. Default is `receiver`.  
 
@@ -47,25 +45,25 @@ view.x = 1;
   `{object}` The same `receiver` with animation management methods and property accessors.
 
 *Discussion*  
-  Currently, behavior is undefined if there are any naming collisions. 
-  This includes calling activate on the same object more than once. 
-  The provided receiver methods are 
-  `registerAnimatableProperty`, 
-  `needsDisplay`, 
-  `addAnimation`, 
-  `removeAnimation`, 
-  `animationNamed`, 
-  `allAnimations`, and 
+  Currently, behavior is undefined if there are any naming collisions.
+  This includes calling activate on the same object more than once.
+  The provided receiver methods are
+  `registerAnimatableProperty`,
+  `needsDisplay`,
+  `addAnimation`,
+  `removeAnimation`,
+  `animationNamed`,
+  `allAnimations`, and
   `removeAllAnimations`.
-  The provided receiver property accessors are 
+  The provided receiver property accessors are
   `layer`,
   `model`,
-  `presentation`, and 
+  `presentation`, and
   `previous`.
-  The optional delegate methods are 
-  `animationForKey`, 
-  `display`, 
-  `input`, and 
+  The optional delegate methods are
+  `animationForKey`,
+  `display`,
+  `input`, and
   `output`.
 
 
@@ -147,12 +145,12 @@ view.x = 1;
 
 *Returns*  
   `{object}` The object upon which changes to property values can be made to trigger implicit animation.
-  
+
 
 #### `set layer`
-  Perform a merge of properties like React’s `setState` but synchronous. 
-  Properties are automatically registered to animate, 
-  no call to `registerAnimatableProperty` is needed, 
+  Perform a merge of properties like React’s `setState` but synchronous.
+  Properties are automatically registered to animate,
+  no call to `registerAnimatableProperty` is needed,
   unless to specify a default animation.
   Delegate `animationForKey` calls are triggered on value change of respective properties.
 
@@ -187,9 +185,9 @@ view.x = 1;
 
 
 #### `display`
-  Optional. 
+  Optional.
   This will be called at every animation frame of a `receiver` with running animations.
-  Properties will reflect current animated values. 
+  Properties will reflect current animated values.
   An implementation should apply those values here to produce animated results.
 
 *Returns*  
@@ -209,8 +207,8 @@ view.x = 1;
   - `presentation {any}` The current animated value.  
 
 *Returns*  
-  `{object|number|null|undefined}` Expects an animation description or duration to animate. 
-  Returning undefined is equivalent to returning the default animation registered by `registerAnimatableProperty`. 
+  `{object|number|null|undefined}` Expects an animation description or duration to animate.
+  Returning undefined is equivalent to returning the default animation registered by `registerAnimatableProperty`.
   Returning null will result in no animation, regardless if a default is registered.
 
 
@@ -238,9 +236,9 @@ view.x = 1;
 
 ## Animation Descriptions
   Currently there are no exposed animation classes but this might change.
-  A number or object literal is returned by `animationForKey`, 
+  A number or object literal is returned by `animationForKey`,
   or passed to `addAnimation` and `registerAnimatableProperty`.
-  
+
 
 ### Basic Animation
   This is the primary animation class for interpolating between property values.
@@ -289,8 +287,8 @@ view.x = 1;
 
 
 ## Transactions
-  Currently the only use of transactions is to disable animation. 
-  All animations run on the main thread, 
+  Currently the only use of transactions is to disable animation.
+  All animations run on the main thread,
   so these are basically faked to provide a similar API to Core Animation.
 
 
@@ -300,7 +298,7 @@ view.x = 1;
 The API design is heavily influenced by [Core Animation](https://www.google.com/search?q=Core+Animation+Reference).
 
 
-Files in the [source/style directory](https://github.com/KevinDoughty/hyperact/tree/master/source/style) are 
+Files in the [source/style directory](https://github.com/KevinDoughty/hyperact/tree/master/source/style) are
 highly modified derivative works of [web-animations-js-legacy](https://github.com/web-animations/web-animations-js-legacy),
 which is released under the same license.
 
@@ -308,4 +306,3 @@ which is released under the same license.
 ## License
 
 Apache-2.0
-
