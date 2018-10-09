@@ -95,11 +95,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 		const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyOutput,delegate) : prettyKey;
 		if (FASTER_RENDER_LAYER) {
 			if (activeBacking === null) {
-				// wouldn't know if model or presentation
-				// prettyBacking should be derived and cached
-				// uglyBacking is single source of truth
-				// that means not using activeBacking... or does it?
-				// not nullifying it.
 				console.log("activeBacking === null doesn't happen");
 				return getModel()[uglyKey];
 
@@ -126,14 +121,12 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			if (FASTER_RENDER_LAYER) { // setValuesOfLayer
 				cachedPreviousLayer = cachedModelLayer;
 				cachedModelLayer = null;
-				//invalidate();
 			} else {
 				cachedPreviousLayer = null;
 				cachedPreviousLayer = getPrevious();
 				cachedModelLayer = null;
 			}
 		}
-		//var animatable = {};
 		keys.forEach( function(prettyKey) {
 			const prettyValue = layer[prettyKey];
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
@@ -149,7 +142,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			}
 		});
 
-		//if (!transaction.disableAnimation) { // setValuesOfLayer
 		Object.keys(layer).forEach( function(prettyKey) { // using result not layer because key might be different
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
 			const prettyValue = FASTER_RENDER_LAYER ? getModel()[prettyKey] : layer[prettyKey];
@@ -158,22 +150,13 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 
 			if (prettyValue !== prettyPrevious) {
 				const prettyPresentation = AVOID_CREATING_PRESENTATION_LAYER ? getPresentation()[prettyKey] : presentationLayer[prettyKey]; // pretty key.
-				//const prettyPresentation = presentationLayer[prettyKey]; // pretty key.
 				if (!transaction.disableAnimation) {
 					const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[uglyKey],defaultTypes[uglyKey],transaction);
 					if (animation) addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-					//else needsDisplay(); // breaks transactions and unflushed and doesn't fix flicker
 					else registerWithContext(); // but it might be a step-end which would not update!
-				//} else needsDisplay(); // breaks transactions and unflushed and doesn't fix flicker
 				} else registerWithContext(); // but it might be a step-end which would not update!
-				//else if (!DESPERATE_TIMES_CALL_FOR_DESPERATE_ACTION) needsDisplay();
 			}
 		});
-		//} //else needsDisplay();
-		//needsDisplay();
-		// if animation is disabled, changing a property value will not result in a call to display!
-
-		//if (DESPERATE_TIMES_CALL_FOR_DESPERATE_ACTION) invalidate();
 	}
 
 	function cleanupAndRemoveAnimationAtIndex(animation, index) {
@@ -248,7 +231,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 		let firstTime = false;
 		const registeredIndex = registeredProperties.indexOf(uglyKey);
 		if (registeredIndex === -1) firstTime = true;
-		//const prettyValue = firstTime ? layerInstance[prettyKey] : convertedOutputOfProperty(modelBacking[uglyKey], uglyKey, delegate, defaultAnimations); // The "specific bug fix" // if not first time registered (for instance if activate was called first then properties registered) you need
 		const prettyValue = layerInstance[prettyKey];
 		if (firstTime) registeredProperties.push(uglyKey);
 
@@ -291,15 +273,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 
 
 		if (!descriptor || descriptor.configurable === true) {//} || !firstTime) { // !firstTime is the second part of the specific bug fix of calling activate first then registering properties.
-			// it does matter,
-			// the first time there is no type,
-			// the second time there is a type but it doesn't make it here.
-			// so modelBacking is populated with a pretty value!
-			// if (typeof prettyValue !== "undefined" && prettyValue !== null) {
-			// 	const uglyValue = convertedInputOfProperty(prettyValue, uglyKey, delegate,defaultAnimations); // layerInstance never uses uglyKey
-			// 	modelBacking[uglyKey] = uglyValue; // need to populate but can't use setValueForKey. No mount animations here, this function registers
-			// 	previousBacking[uglyKey] = uglyValue; // This is new but needed, might break mount behavior if expecting null or undefined as previous value
-			// }
 			Object.defineProperty(layerInstance, prettyKey, { // ACCESSORS
 				get: function() {
 					return valueForKey(prettyKey);
@@ -340,21 +313,13 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 		cachedPresentationLayer = null;
 		cachedRenderLayer = null;
 	}
-	function invalidate() {
-		// Does not invalidate if there are no animations
-		// Should not invalidate at every tick but does.
-		// Commenting out causes unterminated.
+	function invalidate() { // Does not invalidate if there are no animations // Should not invalidate at every tick but does.
 		cachedPresentationLayer = null;
 		if (!NEWER_RENDER_CACHING) cachedRenderLayer = null;
 		cachedCachedRenderLayer = null;
-		// cachedModelLayer = null;
-		// cachedPreviousLayer = null;
 	}
-
 	// FIXME:
 	// TODO: animation objects use ugly keys, animation descriptions use pretty keys
-
-
 	function getRender() { // FASTER_RENDER_LAYER // pretty values // the new version causes 5 failures in "DEPRECATED input output delegate value transforms"
 		const debugThrowing = false;
 		if (NEWER_RENDER_CACHING) {
@@ -383,31 +348,21 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			}
 			cachedCachedRenderLayer = cachedRenderLayer;
 			if (FAKE_SET_BUG_FIX) cachedPresentationLayer = null;
-			//cachedRenderLayer = nextRenderLayer;
 			return cachedRenderLayer;
 		} else { // original
-
 			const transactionTime = hyperContext.currentTransaction().time; // has side effects
-
 			if (cachedRenderLayer !== null) return cachedRenderLayer;
-
-			//const nextRenderLayer = Object.assign({},modelBacking);//Object.assign(baseLayer(), modelBacking);
 			const nextRenderLayer = Object.assign({},uglyBacking);//Object.assign(baseLayer(), modelBacking);
 			let changed = true; // true is needed to ensure last frame. But you don't want this to default to true any other time with no animations. Need some other way to detect if last frame
 			const length = allAnimations.length;
 			if (length) changed = presentationTransform(nextRenderLayer,allAnimations,transactionTime,shouldSortAnimations);
 			shouldSortAnimations = false;
 			if (changed || cachedRenderLayer === null) { // cachedRenderLayer is always null here
-				//convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
-				//Object.keys(nextPresentationLayer).forEach( function(prettyKey) {
 				registeredProperties.forEach( function(prettyKey) {
 					const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyOutput,delegate) : prettyKey;
 					const uglyValue = nextRenderLayer[prettyKey]; // ????? PRETTY OR UGLY KEY ?????
 					nextRenderLayer[prettyKey] = convertedOutputOfProperty(uglyValue,uglyKey,delegate,defaultTypes);  // requires vague type spaghetti hack
-					//convertPropertyOfLayerWithFunction(prettyKey,nextPresentationLayer,delegate.output,delegate);
-					//const prettyValue = convertedOutputOfProperty(activeBacking[uglyKey],uglyKey,getOutputDelegate(uglyKey));
 				});
-				//Object.freeze(nextPresentationLayer);
 				if (length) cachedRenderLayer = nextRenderLayer;
 				else cachedRenderLayer = null;
 				return nextRenderLayer;
@@ -418,7 +373,6 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	}
 	function getPresentation() { // pretty values including animations // This should be created in a very similar manner as getModel and getPrevious but is not
 		if (FASTER_RENDER_LAYER) {
-			//const transactionTime = hyperContext.currentTransaction().time; // has side effects
 			if (cachedPresentationLayer !== null && (!FAKE_SET_BUG_FIX || cachedRenderLayer !== null)) return cachedPresentationLayer;
 			const renderLayer = getRender();
 			const nextPresentationLayer = baseLayer();
@@ -444,13 +398,10 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			if (length) changed = presentationTransform(nextPresentationLayer,allAnimations,transactionTime,shouldSortAnimations);
 			shouldSortAnimations = false;
 			if (changed || cachedPresentationLayer === null) {
-				//convertPropertiesOfLayerWithFunction(Object.keys(presentationLayer),presentationLayer,delegate.output,delegate);
 				Object.keys(nextPresentationLayer).forEach( function(prettyKey) {
 					const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyOutput,delegate) : prettyKey;
 					const uglyValue = nextPresentationLayer[prettyKey]; // ????? PRETTY OR UGLY KEY ?????
 					nextPresentationLayer[prettyKey] = convertedOutputOfProperty(uglyValue,uglyKey,delegate,defaultTypes);  // requires vague type spaghetti hack
-					//convertPropertyOfLayerWithFunction(prettyKey,nextPresentationLayer,delegate.output,delegate);
-					//const prettyValue = convertedOutputOfProperty(activeBacking[uglyKey],uglyKey,getOutputDelegate(uglyKey));
 				});
 				Object.freeze(nextPresentationLayer);
 				if (length) cachedPresentationLayer = nextPresentationLayer;
@@ -489,43 +440,16 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	function getPrevious() { // previous pretty values without animations
 		if (cachedPreviousLayer !== null) return cachedPreviousLayer;
 		return getModel();
-		// const nextPreviousLayer = baseLayer();//Object.assign({},layerInstance);
-		// registeredProperties.forEach( function(uglyKey) {
-		// 	const prettyValue = convertedOutputOfProperty(previousBacking[uglyKey], uglyKey, getOutputDelegate(uglyKey));
-		// 	const prettyKey = convertedKey(uglyKey,delegate.keyInput,delegate);
-		// 	Object.defineProperty(nextPreviousLayer, prettyKey, {
-		// 		value: prettyValue,
-		// 		enumerable: true,
-		// 		configurable: false
-		// 	});
-		// 	previousBacking[uglyKey] = modelBacking[uglyKey]; // TODO: !!! move this out of here, should happen on value change. This should not have side effects. Won't have to if you return a cached layer!
-		// });
-		// Object.freeze(nextPreviousLayer);
-		// return nextPreviousLayer;
 	}
 	function needsDisplay() { // This should be used instead of directly calling display
-		// cachedPresentationLayer = null;
-		// cachedRenderLayer = null;
 		invalidate();
-		//if (false) cachedModelLayer = null;
-		//if (false) cachedPreviousLayer = null; // what about previous ?
-		//if (!allAnimations.length)
 		registerWithContext(); // This might not be sufficient to produce a new presentationLayer
 	}
 	function addAnimation(description,name) { // does not register. // should be able to pass a description if type is registered
-		//if (delegate && isFunction(delegate.animationFromDescription)) description = delegate.animationFromDescription(description); // deprecate this
-
 		const transaction = hyperContext.currentTransaction();
 		getPresentation(); // cached layers are deleted at the beginning of a transaction, this ensures presentation is generated before animations added, else new animations contribute to presentation before flushing and you might get flicker. Must be presentationLayer, not renderLayer for some reason.
-
-
 		const copy = animationFromDescription(description);
 		if (!(copy instanceof HyperAnimation) && !(copy instanceof HyperKeyframes) && !(copy instanceof HyperGroup) && !(copy instanceof HyperChain)) throw new Error("Not a valid animation:"+JSON.stringify(copy));
-		// if (FASTER_RENDER_LAYER || ADD_ANIMATION_AUTO_REGISTER) { // does register! // passes tests for no registered type or description
-		// 	//if (description.property) registerAnimatableProperty(description.property,description.type);
-		// 	if (description.property && description.type) registerAnimatable(description.property, description.type, true);
-		// }
-		//copy.convert.call(copy, delegate.input, delegate); // delta is calculated from ugly values in runAnimation
 		prepAnimationObjectFromAddAnimation(copy, delegate, defaultAnimations, defaultTypes, registerAnimatable);
 		if (!allAnimations.length) registerWithContext();
 		allAnimations.push(copy);
@@ -582,13 +506,7 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 
 	}
 
-	// Object.keys(layerInstance).forEach( function(key) { // more initialization
-	// 	if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) registerAnimatableProperty(key,true); // second argument true because you should animate every property if transaction has a duration. TODO: ensure this does not interfere with automatic registration when setting values
-	// 	else registerAnimatableProperty(key);
-	// });
-
 	function defaultPropertyDescription(prettyKey) {
-		//const prettyValue = layerInstance[prettyKey];
 		const type = descriptions ? descriptions[prettyKey] : undefined;
 		return type && isDuckType(type) ? { type: type } : type;
 	}
@@ -596,16 +514,12 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	Object.keys(layerInstance).filter(isAllowablePrettyKey).forEach( function(prettyKey) { // redundancy with setValuesOfLayer (and baseLayer), maybe I could call that instead with transaction disabled
 		const prettyValue = layerInstance[prettyKey];
 		const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
-		//if (TRANSACTION_DURATION_ALONE_IS_ENOUGH && VAGUE_TYPE_SPAGHETTI_HACK) registerAnimatableProperty(uglyKey, new HyperNumber()); // automatic registration
-		//else
-		//if (TRANSACTION_DURATION_ALONE_IS_ENOUGH) registerAnimatableProperty(uglyKey,true); // automatic registration
 		const description = defaultPropertyDescription(prettyKey) || { type: new HyperNumber() };
 		registerAnimatableProperty(uglyKey, description); // automatic registration
 
 		const uglyValue = convertedInputOfProperty(prettyValue,uglyKey,delegate,defaultTypes);
 
 		if (FASTER_RENDER_LAYER) { // init
-			//uglyBacking[uglyKey] = uglyValue;
 			prettyBacking[uglyKey] = prettyValue;
 		} else {
 			previousBacking[uglyKey] = uglyValue;
