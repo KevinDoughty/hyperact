@@ -104,35 +104,7 @@ describe("ANIMATIONS", function() {
 			assert(view.animations.length === 0);
 
 		});
-		it("animation classes are not exposed", function(done) {
-			const view = {
-				x:0,
-				y:0
-			};
-			core.activate(view);
-			view.addAnimation({
-				duration:duration,
-				property:"y",
-				from: 1,
-				to: 1,
-				blend:"absolute"
-			});
-			view.addAnimation({
-				duration:duration/2,
-				property:"x",
-				from: 1,
-				to: 1,
-				blend:"absolute",
-				onend: function(finished) {
-					const animations = view.animations;
-					const length = animations.length;
-					//const error = (length && !(animations[0] instanceof HyperAnimation)) ? null : new Error("animation instanceof HyperAnimation should be false, result: " + (animations[0] instanceof HyperAnimation));
-					const error = (length && (typeof animations[0] !== "HyperAnimation")) ? null : new Error("typeof animation should not be HyperAnimation, result: " + typeof animations[0]);
-					done(error);
-				}
-			});
-			core.flushTransaction();
-		});
+		
 	});
 
 	describe("group animations", function() {
@@ -610,7 +582,7 @@ describe("ANIMATIONS", function() {
 				duration:duration,
 				from:1,
 				to:1,
-				startTime: time + duration,
+				startTime: time + duration
 				fillMode: "backwards",
 				blend:"absolute"
 			});

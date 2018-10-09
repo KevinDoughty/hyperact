@@ -97,6 +97,37 @@ describe("ZZZ", function() { // should be called "next" but tests are run in alp
 		it("check Core Animation animationDidStop:finished: presentation value. Is the animation in question still applied to the presentation layer?", function() {
 			assert(false); // I think no.
 		});
+
+		// it("animation classes are not exposed", function(done) { // invalid typeof comparison
+		// 	const view = {
+		// 		x:0,
+		// 		y:0
+		// 	};
+		// 	core.activate(view);
+		// 	view.addAnimation({
+		// 		duration:duration,
+		// 		property:"y",
+		// 		from: 1,
+		// 		to: 1,
+		// 		blend:"absolute"
+		// 	});
+		// 	view.addAnimation({
+		// 		duration:duration/2,
+		// 		property:"x",
+		// 		from: 1,
+		// 		to: 1,
+		// 		blend:"absolute",
+		// 		onend: function(finished) {
+		// 			const animations = view.animations;
+		// 			const length = animations.length;
+		// 			//const error = (length && !(animations[0] instanceof HyperAnimation)) ? null : new Error("animation instanceof HyperAnimation should be false, result: " + (animations[0] instanceof HyperAnimation));
+		// 			const error = (length && (typeof animations[0] !== "HyperAnimation")) ? null : new Error("typeof animation should not be HyperAnimation, result: " + typeof animations[0]);
+		// 			done(error);
+		// 		}
+		// 	});
+		// 	core.flushTransaction();
+		// });
+
 	});
 
 

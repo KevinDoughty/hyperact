@@ -2,7 +2,6 @@ import { HyperContext } from "./context.js";
 import { HyperAnimation, HyperKeyframes, HyperGroup, HyperChain, animationFromDescription, hyperActionIsFilling, isDuckType } from "./actions.js";
 import { HyperNumber } from "./types.js";
 import { isFunction, prepAnimationObjectFromAddAnimation, convertedKey, convertedInputOfProperty, convertedOutputOfProperty, implicitAnimation } from "./utils.js";
-const verbose = false;
 
 
 export const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
