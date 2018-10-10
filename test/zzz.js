@@ -91,6 +91,14 @@ describe("ZZZ", function() { // should be called "next" but tests are run in alp
 			assert(false);
 			// Won't be converted to ugly value, it will be a string like "20px", but then HyperNumber add will append the string "NaN" making "20pxNaN"
 		});
+		it("hyperstyle bug, transaction example and hold down 9 key. Only eight, thirteen, and fifteen do not jump around. They are the only ones that are animated explicitly.", function() {
+			assert(false);
+			// Implicit animation failure. Only if you hold down key. Not if you rapidly press it.
+			// You need to prevent multiple calls to animationForKey within the same rAF frame.
+			// If a value is set twice in one frame, two animations will get added
+			// This should be easy to test and fix.
+			// Very important.
+		});
 		it("check Core Animation animationDidStop:finished: animation count. Is the animation in question still in the layer's animations? (recalled by key)", function() {
 			assert(false); // I think no.
 		});

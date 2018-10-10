@@ -2,8 +2,6 @@ import * as hyperact from "../source/hyperact.js";
 
 const assert = require("assert");
 
-const DISABLE_DEPRECATED = true;
-
 const duration = 0.05; // mocha timeout is 2 seconds
 
 
@@ -101,8 +99,8 @@ describe("IMPLICIT", function() {
 
 	});
 
-	if (!DISABLE_DEPRECATED) describe("DEPRECATED animationForKey with delegate input output", function() {
-		it("DEPRECATED animationForKey with input output when flushed is applied", function() {
+	describe("not deprecated animationForKey with delegate input output", function() {
+		it("not deprecated animationForKey with input output when flushed is applied", function() {
 			const view = {
 				x:0,
 				input: function(property,value) {
@@ -127,7 +125,7 @@ describe("IMPLICIT", function() {
 			hyperact.flushTransaction();
 			assert.equal(view.presentation.x,2);
 		});
-		it("DEPRECATED animationForKey with input output property argument is correct", function() {
+		it("not deprecated animationForKey with input output property argument is correct", function() {
 			const view = {
 				x:0,
 				input: function(property,value) {
@@ -143,7 +141,7 @@ describe("IMPLICIT", function() {
 			hyperact.activate(view);
 			view.x = 1;
 		});
-		it("DEPRECATED animationForKey with input output value argument is correct", function() {
+		it("not deprecated animationForKey with input output value argument is correct", function() {
 			const view = {
 				x:0,
 				input: function(property,value) {
@@ -159,7 +157,7 @@ describe("IMPLICIT", function() {
 			hyperact.activate(view);
 			view.x = 1;
 		});
-		it("DEPRECATED animationForKey with input output previous argument is correct", function() {
+		it("not deprecated animationForKey with input output previous argument is correct", function() {
 			const view = {
 				x:0,
 				input: function(property,value) {
@@ -175,7 +173,7 @@ describe("IMPLICIT", function() {
 			hyperact.activate(view);
 			view.x = 1;
 		});
-		it("DEPRECATED animationForKey with input output presentation argument is correct", function(done) {
+		it("not deprecated animationForKey with input output presentation argument is correct", function(done) {
 			const type = {
 				add: function(a,b) {
 					return [a[0] + b[0]];

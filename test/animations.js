@@ -104,7 +104,7 @@ describe("ANIMATIONS", function() {
 			assert(view.animations.length === 0);
 
 		});
-		
+
 	});
 
 	describe("group animations", function() {
@@ -582,7 +582,7 @@ describe("ANIMATIONS", function() {
 				duration:duration,
 				from:1,
 				to:1,
-				startTime: time + duration
+				startTime: time + duration,
 				fillMode: "backwards",
 				blend:"absolute"
 			});
