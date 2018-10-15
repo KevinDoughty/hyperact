@@ -23,6 +23,7 @@ export const FAKE_SET_BUG_FIX = true;
 
 const DOUBLE_CACHED_RENDER = false; // must be false // all animation tests time out
 
+export const TT_BUG_FIX = true; // changes modelLayer behavior. Values only reflected after flush, not before. But also breaks layer values...
 
 //const ADD_ANIMATION_AUTO_REGISTER = true; // animations with temporary properties and values, which are otherwise undefined
 
@@ -89,6 +90,7 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	let cachedPreviousLayer = null;
 	const registeredProperties = [];
 	let activeBacking = modelBacking;
+	let changeStorage = null;
 
 	function valueForKey(prettyKey) { // don't let this become re-entrant (do not animate delegate.output)
 		const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyOutput,delegate) : prettyKey;
@@ -111,12 +113,14 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	}
 
 	function setValuesOfLayer(layer) {
+
 		if (FAKE_SET_BUG_FIX) hyperContext.registerFlusher(flusher); // don't need to bind
 		const transaction = hyperContext.currentTransaction();
 		const presentationLayer = AVOID_CREATING_PRESENTATION_LAYER ? null : getPresentation();
 
 		const keys = Object.keys(layer);
-		if (keys.length) {
+
+		if (!TT_BUG_FIX && keys.length) {
 			if (FASTER_RENDER_LAYER) { // setValuesOfLayer
 				cachedPreviousLayer = cachedModelLayer;
 				cachedModelLayer = null;
@@ -126,6 +130,8 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 				cachedModelLayer = null;
 			}
 		}
+
+		//if (!TT_BUG_FIX)
 		keys.forEach( function(prettyKey) {
 			const prettyValue = layer[prettyKey];
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
@@ -141,19 +147,48 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			}
 		});
 
-		Object.keys(layer).forEach( function(prettyKey) { // using result not layer because key might be different
+		if (TT_BUG_FIX) {
+			if (!changeStorage) {
+				registerWithContext();
+				changeStorage = {};
+				hyperContext.registerChanger(changer);
+				cachedPreviousLayer = cachedModelLayer;
+			}
+			cachedModelLayer = null;
+			if (!transaction.disableAnimation) Object.assign(changeStorage,layer);
+		} else initiateImplicitAnimation(layer);
+	}
+
+	function initiateImplicitAnimation(layer) {
+		const keys = Object.keys(layer);
+
+		// if (TT_BUG_FIX) keys.forEach( function(prettyKey) {
+		// 	const prettyValue = layer[prettyKey];
+		// 	const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
+		// 	registerAnimatableProperty(uglyKey); // automatic registration
+		// 	const uglyValue = convertedInputOfProperty(prettyValue,uglyKey,delegate,defaultTypes);
+		// 	if (FASTER_RENDER_LAYER) { // setValuesOfLayer
+		// 		uglyBacking[uglyKey] = uglyValue;
+		// 		prettyBacking[uglyKey] = prettyValue;
+		// 	} else {
+		// 		const uglyPrevious = modelBacking[uglyKey];
+		// 		previousBacking[uglyKey] = uglyPrevious;
+		// 		modelBacking[uglyKey] = uglyValue;
+		// 	}
+		// });
+
+		const transaction = hyperContext.currentTransaction();
+		const presentationLayer = AVOID_CREATING_PRESENTATION_LAYER ? null : getPresentation();
+		keys.forEach( function(prettyKey) { // using result not layer because key might be different
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
 			const prettyValue = FASTER_RENDER_LAYER ? getModel()[prettyKey] : layer[prettyKey];
 			const uglyPrevious = previousBacking[uglyKey];
 			const prettyPrevious = FASTER_RENDER_LAYER ? getPrevious()[prettyKey] : convertedOutputOfProperty(uglyPrevious,uglyKey, delegate, defaultTypes);
-
 			if (prettyValue !== prettyPrevious) {
 				const prettyPresentation = AVOID_CREATING_PRESENTATION_LAYER ? getPresentation()[prettyKey] : presentationLayer[prettyKey]; // pretty key.
-				if (!transaction.disableAnimation) {
-					const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[uglyKey],defaultTypes[uglyKey],transaction);
-					if (animation) addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
-					else registerWithContext(); // but it might be a step-end which would not update!
-				} else registerWithContext(); // but it might be a step-end which would not update!
+				const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[uglyKey],defaultTypes[uglyKey],transaction);
+				if (animation) addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
+				else registerWithContext(); // but it might be a step-end which would not update!
 			}
 		});
 	}
@@ -306,6 +341,11 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			accumulator[current] = layerInstance[current];
 			return accumulator;
 		}, {});
+	}
+
+	function changer() {
+		initiateImplicitAnimation(changeStorage);
+		changeStorage = null;
 	}
 
 	function flusher() {
@@ -488,6 +528,7 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 	}
 
 	function registerWithContext() {
+		if (TT_BUG_FIX && changeStorage) return; // if changeStorage exists, it has already registered
 		const display = (!isFunction(delegate.display)) ? function() {} : function(presentation) { // layer returns calculated values during display
 			if (FASTER_RENDER_LAYER) {
 				activeBacking = getRender();

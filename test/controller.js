@@ -21,6 +21,21 @@ describe("CONTROLLER", function() {
 			assert(true);
 		});
 
+		it("dispays", function(done) {
+			const layer = {
+				a: 0,
+				b: 0
+			};
+			const delegate = {
+				display: function() {
+					done();
+				}
+			};
+			core.activate(null,delegate,layer);
+			layer.a = 1;
+			layer.b = 1;
+		});
+
 		it("basic function", function(done) {
 			const layer = {
 				a: 0,
@@ -49,8 +64,6 @@ describe("CONTROLLER", function() {
 			layer.a = 1;
 			layer.b = 1;
 		});
-
-
 
 	});
 

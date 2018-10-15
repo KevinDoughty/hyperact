@@ -99,6 +99,145 @@ describe("IMPLICIT", function() {
 
 	});
 
+	describe("Twice", function() {
+		it("animationForKey should not get called twice in one transaction", function() {
+			const view = {
+				a:0,
+				animationForKey: function(key,value) {
+					return {
+						duration: 1.0,
+						from: value,
+						to: value,
+						blend: "absolute"
+						// a naming or key property would allow this to match similar case in gcc test
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = 1;
+			view.a = 2;
+			view.a = 3;
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a,6);
+		});
+		it("animationForKey should not get called twice in one transaction part two", function() {
+			let count = 0;
+			const view = {
+				a:0,
+				animationForKey: function(key,value) {
+					count++;
+					return {
+						duration: 1.0,
+						from: value,
+						to: value,
+						blend: "absolute"
+						// a naming or key property would allow this to match similar case in gcc test
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = 1;
+			view.a = 2;
+			view.a = 3;
+			hyperact.flushTransaction();
+			assert.equal(count,1);
+		});
+		it("disableAnimation does not disable anything before it is called, different properties, flushed once", function() {
+			let count = 0;
+			const view = {
+				a:0,
+				b:0,
+				animationForKey: function(key,value) {
+					count++;
+					return {
+						duration: duration,
+						from: value,
+						to: value,
+						blend: "absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = 1;
+			hyperact.disableAnimation();
+			view.b = 2;
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a,2);
+			assert.equal(view.presentation.b,2);
+			assert.equal(count,1);
+		});
+		it("disableAnimation does not disable anything before it is called, different properties, flushed twice", function() {
+			let count = 0;
+			const view = {
+				a:0,
+				b:0,
+				animationForKey: function(key,value) {
+					count++;
+					return {
+						duration: duration,
+						from: value,
+						to: value,
+						blend: "absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = 1;
+			hyperact.flushTransaction();
+			hyperact.disableAnimation();
+			view.b = 2;
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a,2);
+			assert.equal(view.presentation.b,2);
+			assert.equal(count,1);
+		});
+		it("disableAnimation does not disable anything before it is called, same property, flushed once", function() { // this one is hard
+			let count = 0;
+			const view = {
+				a:0,
+				animationForKey: function(key,value) {
+					count++;
+					return {
+						duration: duration,
+						from: value,
+						to: value,
+						blend: "absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = 1;
+			hyperact.disableAnimation();
+			view.a = 2;
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a,3);
+			assert.equal(count,1);
+		});
+		it("disableAnimation does not disable anything before it is called, same property, flushed twice", function() { // this one is easy
+			let count = 0;
+			const view = {
+				a:0,
+				animationForKey: function(key,value) {
+					count++;
+					return {
+						duration: duration,
+						from: value,
+						to: value,
+						blend: "absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = 1;
+			hyperact.flushTransaction();
+			hyperact.disableAnimation();
+			view.a = 2;
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a,3);
+			assert.equal(count,1);
+		});
+	});
+
 	describe("not deprecated animationForKey with delegate input output", function() {
 		it("not deprecated animationForKey with input output when flushed is applied", function() {
 			const view = {

@@ -177,12 +177,12 @@ describe("PROPERTY", function() {
 			core.flushTransaction();
 			assert.equal(view.zxcv,1); // fail: undefined == 1
 		});
-		it("registered, unflushed", function() {
+		it("registered, unflushed (TWICE 14)", function() { // TT_BUG_FIX // direct // should not fail
 			one.registerAnimatableProperty("zxcv");
 			one.zxcv = 1;
 			assert.equal(one.zxcv,1); // fail: undefined == 1
 		});
-		it("registered, unflushed, view", function() {
+		it("registered, unflushed, view (TWICE 15)", function() { // TT_BUG_FIX // direct // should not fail
 			const view = {};
 			core.activate(view);
 			view.registerAnimatableProperty("zxcv");
@@ -194,7 +194,7 @@ describe("PROPERTY", function() {
 			core.activate(view);
 			assert.equal(view.zxcv,1);
 		});
-		it("auto registered view set", function() {
+		it("auto registered view set (TWICE 16)", function() { // TT_BUG_FIX // direct // should not fail
 			const view = { zxcv:1 };
 			core.activate(view);
 			view.zxcv = 2;
@@ -289,7 +289,7 @@ describe("PROPERTY", function() {
 			assert.equal(one.uiop, 2); // fail: undefined == 2
 		});
 
-		it("register property then assign value", function() {
+		it("register property then assign value (TWICE 17)", function() { // TT_BUG_FIX // direct // should not fail
 			one.registerAnimatableProperty("uiop");
 			one.uiop = 2;
 			assert.equal(one.uiop, 2); // fail: undefined == 2

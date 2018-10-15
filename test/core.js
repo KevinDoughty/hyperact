@@ -49,7 +49,28 @@ describe("CORE", function() {
 
 	describe("three", function() {
 
-		it("implicit duration only, model, unflushed", function() {
+		it("unflushed model value is correct (TWICE 5)", function() { // TT_BUG_FIX // Model
+			const view = {
+				a:1,
+				b:2,
+				c:3
+			};
+			core.activate(view);
+			view.layer = {a:4, b:5, c:6};
+			assert.deepEqual(view.model, { a:4, b:5, c:6 });
+		});
+		it("flushed model value is correct", function() {
+			const view = {
+				a:1,
+				b:2,
+				c:3
+			};
+			core.activate(view);
+			view.layer = {a:4, b:5, c:6};
+			core.flushTransaction();
+			assert.deepEqual(view.model, { a:4, b:5, c:6 });
+		});
+		it("implicit duration only, model, unflushed (TWICE 6)", function() { // TT_BUG_FIX // Model
 			const animationForKey = function(key,value,previous) {
 				return duration;
 			};
@@ -63,7 +84,7 @@ describe("CORE", function() {
 			view.layer = {a:4, b:5, c:6};
 			assert.deepEqual(view.model, { a:4, b:5, c:6 });
 		});
-		it("implicit constant, model", function() {
+		it("implicit constant, model (TWICE 7)", function() { // TT_BUG_FIX // Model
 			const animationForKey = function(key,value,previous) {
 				return {
 					duration:duration,

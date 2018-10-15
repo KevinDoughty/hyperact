@@ -28,7 +28,7 @@ describe("FLUSH", function() { // should be called "next" but tests are run in a
 
 
 		it("added animations not apparent in presentation until transaction flush, unflushed, implicit transaction", function() {
-			const view = {a:0};
+			const view = { a:0 };
 			core.activate(view);
 			view.addAnimation({
 				property:"a",
@@ -38,17 +38,37 @@ describe("FLUSH", function() { // should be called "next" but tests are run in a
 				blend:"absolute"
 			});
 			assert.equal(view.presentation.a,0); // fail: 1
-
-			// Invalidate at beginning of transaction.
-			// What else do i need to do?
-			// Must generate render or presentation layer before adding any animations.
-
-			// What do the flushers do?
-
-
 		});
 
+		it("unflushed layer value is correct (TWICE 8)", function() { // TT_BUG_FIX // Layer // should not fail
+			const view = { x:0 };
+			core.activate(view);
+			view.x = 1;
+			assert.equal(view.layer.x,1);
+		});
 
+		it("flushed layer value is correct", function() {
+			const view = { x:0 };
+			core.activate(view);
+			view.x = 1;
+			core.flushTransaction();
+			assert.equal(view.layer.x,1);
+		});
+
+		it("unflushed model value is correct (TWICE 9)", function() { // TT_BUG_FIX // Model
+			const view = { x:0 };
+			core.activate(view);
+			view.x = 1;
+			assert.equal(view.model.x,1);
+		});
+
+		it("flushed model value is correct", function() {
+			const view = { x:0 };
+			core.activate(view);
+			view.x = 1;
+			core.flushTransaction();
+			assert.equal(view.model.x,1);
+		});
 
 		it("animationForKey when unflushed is not applied yet", function() {
 			const view = { x:0, animationForKey: function(property,value,previous,presentation) {
@@ -65,6 +85,7 @@ describe("FLUSH", function() { // should be called "next" but tests are run in a
 			view.x = 1;
 			assert.equal(view.presentation.x,0);
 		});
+
 		it("animationForKey with input output when unflushed is not applied yet", function() {
 			const view = {
 				x:0,

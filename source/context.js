@@ -39,6 +39,7 @@ export function HyperContext() {
 	this.cleanupFunctions = [];
 	this.invalidateFunctions = [];
 	this.force = [];
+	this.changers = [];
 }
 
 HyperContext.prototype = {
@@ -94,6 +95,7 @@ HyperContext.prototype = {
 		return this.createTransaction(settings,false);
 	},
 	commitTransaction: function() {
+		this.clearChangers();
 		if (FAKE_SET_BUG_FIX) this.clearFlushers();
 		this.transactions.pop();
 	},
@@ -111,6 +113,7 @@ HyperContext.prototype = {
 		}
 	},
 	flushTransaction: function() { // TODO: prevent unterminated when called within display // TODO: better yet, completely remove
+		this.clearChangers();
 		if (FAKE_SET_BUG_FIX) this.clearFlushers();
 		else this.invalidateFunctions.forEach( function(invalidate) { // this won"t work if there are no animations thus not registered
 			invalidate();
@@ -124,17 +127,27 @@ HyperContext.prototype = {
 	registerFlusher: function(flusher) {
 		this.currentTransactionWrapper().flushers.push(flusher);
 	},
-
+	registerChanger: function(changer) {
+		this.changers.push(changer);
+		this.startTicking();
+	},
+	clearChangers: function() {
+		const changers = this.changers;
+		let j = changers.length;
+		while (j--) {
+			changers[j]();
+		}
+		changers.length = 0;
+	},
 	disableAnimation: function(disable) { // If this is false, it enables animation
 		if (disable !== false) disable = true; // because the function name is misleading
 		const transaction = this.currentTransaction();
 		transaction.disableAnimation = disable;
 		this.startTicking();
 	},
-
 	registerTarget: function(target,getPresentation,getAnimationCount,display,invalidate,cleanup,force,layer = null) {
 		this.startTicking();
-		const index = this.targets.indexOf(target); // optimize me with a unique number for each target and storing in a dict.
+		const index = this.targets.indexOf(target); // optimize me, have controller track.
 		if (index < 0) {
 			this.targets.push(target);
 			this.getPresentations.push(getPresentation);
@@ -167,6 +180,7 @@ HyperContext.prototype = {
 		if (!this.animationFrame) this.animationFrame = rAF(this.ticker.bind(this));
 	},
 	ticker: function() { // Need to manually cancel animation frame if calling directly.
+		this.clearChangers();
 		this.animationFrame = undefined;
 		const targets = this.targets; // traverse backwards so you can remove.
 		let i = targets.length;
