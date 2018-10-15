@@ -210,7 +210,7 @@ describe("IMPLICIT", function() {
 			hyperact.disableAnimation();
 			view.a = 2;
 			hyperact.flushTransaction();
-			assert.equal(view.presentation.a,3);
+			assert.equal(view.presentation.a,3); // fail: 4 instead of 3
 			assert.equal(count,1);
 		});
 		it("disableAnimation does not disable anything before it is called, same property, flushed twice", function() { // this one is easy
