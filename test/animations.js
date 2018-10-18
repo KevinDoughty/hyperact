@@ -34,6 +34,7 @@ describe("ANIMATIONS", function() {
 							const expected = 3;
 							const actual = view.presentation.a;
 							const error = expected === actual ? null : new Error("copying fail, expected:"+expected+"; actual:"+actual+";");
+							view.removeAllAnimations();
 							done(error);
 						}
 					});
@@ -68,6 +69,8 @@ describe("ANIMATIONS", function() {
 							const second = two.presentation.a;
 							//console.log("ROCKETSHIP ONE:"+first+"; TWO:"+second+";"); // ROCKETSHIP ONE:0.5000029960562263; TWO:0.5000029960562263;
 							const error = first === second ? null : new Error("timing fail, these are not the same, first:"+first+"; second:"+second+";");
+							one.removeAllAnimations();
+							two.removeAllAnimations();
 							done(error);
 						}
 					});
@@ -142,7 +145,10 @@ describe("ANIMATIONS", function() {
 		it("group onend", function(done) {
 			let count = 0;
 			const view = { a:0, b:0, c:0, display: function() {
-				if (count === 3) done();
+				if (count === 3) {
+					view.removeAllAnimations();
+					done();
+				}
 			}};
 			core.activate(view);
 			const animation = [
@@ -214,6 +220,7 @@ describe("ANIMATIONS", function() {
 				duration: duration/2,
 				onend: function() {
 					const error = (view.presentation.a === 1) ? null : new Error("chain presentation value incorrect");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -250,6 +257,7 @@ describe("ANIMATIONS", function() {
 				duration: duration + duration/2,
 				onend: function() {
 					const error = (view.presentation.a === 2) ? null : new Error("chain presentation value incorrect");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -286,6 +294,7 @@ describe("ANIMATIONS", function() {
 				duration: duration*2 + duration/2,
 				onend: function() {
 					const error = (view.presentation.a === 3) ? null : new Error("chain presentation value incorrect");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -318,7 +327,10 @@ describe("ANIMATIONS", function() {
 		it("chain onend", function(done) {
 			let count = 0;
 			const view = { a:0, display: function() {
-				if (count === 4) done();
+				if (count === 4) {
+					view.removeAllAnimations();
+					done();
+				}
 			}};
 			core.activate(view);
 			const animation = new HyperChain({
@@ -378,6 +390,7 @@ describe("ANIMATIONS", function() {
 				duration: duration/4,
 				onend: function() {
 					const error = (view.presentation.one === 1) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.one);
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -398,6 +411,7 @@ describe("ANIMATIONS", function() {
 				duration: duration/2 + duration/4,
 				onend: function() {
 					const error = (view.presentation.two > 1 && view.presentation.two < 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.two);
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -418,6 +432,7 @@ describe("ANIMATIONS", function() {
 				duration: duration + duration/4,
 				onend: function() {
 					const error = (view.presentation.three === 2) ? null : new Error("keyframe presentation value incorrect:"+view.presentation.three);
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -439,6 +454,7 @@ describe("ANIMATIONS", function() {
 				property:"a",
 				keyframes:[1,2,3],
 				onend: function() {
+					view.removeAllAnimations();
 					done();
 				}
 			});
@@ -468,6 +484,7 @@ describe("ANIMATIONS", function() {
 					const expected = 0;
 					const actual = view.presentation.a;
 					const error = expected === actual ? null : new Error("value is not right:"+actual+"; should be:"+expected+";");
+					view.removeAllAnimations();
 					done(error); // Error: value is not right:1; should be:0;
 				}
 			});
@@ -491,6 +508,7 @@ describe("ANIMATIONS", function() {
 					const expected = 1;
 					const actual = view.presentation.a;
 					const error = expected === actual ? null : new Error("value is not right:"+actual+"; should be:"+expected+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -516,6 +534,7 @@ describe("ANIMATIONS", function() {
 					const expected = 0;
 					const actual = view.presentation.a;
 					const error = expected === actual ? null : new Error("value is not right:"+actual+"; should be:"+expected+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -541,6 +560,7 @@ describe("ANIMATIONS", function() {
 					const expected = 1;
 					const actual = view.presentation.a;
 					const error = expected === actual ? null : new Error("value is not right:"+actual+"; should be:"+expected+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -566,6 +586,7 @@ describe("ANIMATIONS", function() {
 					const expected = 1;
 					const actual = view.presentation.a;
 					const error = expected === actual ? null : new Error("value is not right:"+actual+"; should be:"+expected+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -987,6 +1008,7 @@ describe("ANIMATIONS", function() {
 					}),
 					onend: function() {
 						const error = count > 2 ? new Error("display called "+count+" times") : null;
+						view.removeAllAnimations();
 						done(error); // fail
 					}
 				}
@@ -1024,6 +1046,7 @@ describe("ANIMATIONS", function() {
 					duration:duration,
 					onend: function() {
 						const error = presentation !== view.presentation ? new Error("presentation layer was not cached") : null;
+						view.removeAllAnimations();
 						done(error); // fail
 					}
 				}
@@ -1049,6 +1072,7 @@ describe("ANIMATIONS", function() {
 					easing: "step-end",
 					onend: function() {
 						const error = count > 2 ? new Error("display called "+count+" times") : null;
+						view.removeAllAnimations();
 						done(error); // fail
 					}
 				}
@@ -1071,6 +1095,7 @@ describe("ANIMATIONS", function() {
 					easing: "step-end",
 					onend: function() {
 						const error = (presentationOne === presentationTwo) ? null : new Error("presentation layer was not cached");
+						view.removeAllAnimations();
 						done(error); // fail
 					}
 				}
@@ -1111,6 +1136,7 @@ describe("ANIMATIONS", function() {
 						const checkOne = presentationOne.value;
 						const checkTwo = presentationTwo.value;
 						const error = (checkOne === checkTwo && checkOne === 1) ? null : new Error("values were wrong");
+						view.removeAllAnimations();
 						done(error);
 					}
 				}

@@ -7,6 +7,127 @@ const duration = 0.05; // mocha timeout is 2 seconds
 
 describe("IMPLICIT", function() {
 
+	describe("initial", function() {
+		it("initial animation, automatically registered", function() {
+			const view = {
+				a:0,
+				animationForKey: function(key, value, previous) {
+					return {
+						duration: duration,
+						from: value,
+						to: value,
+						blend:"absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = 1;
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a,2);
+		});
+
+		it("initial animation, manually registered", function() {
+			const view = {
+				animationForKey: function(key, value, previous) {
+					return {
+						duration: duration,
+						from: value,
+						to: value,
+						blend:"absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.registerAnimatableProperty("a");
+			view.a = 1;
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a,2);
+		});
+
+		it("initial animation, manually registered, counting display calls", function(done) {
+			let count = 0;
+			const view = {
+				animationForKey: function(key, value, previous) {
+					view.animationForKey = function() {};
+					const error = count === 0 ? null : new Error("display should not have been called at the first invocation of animationForKey");
+					done(error);
+				},
+				display: function() {
+					count++;
+				}
+			};
+			hyperact.activate(view);
+			view.registerAnimatableProperty("a");
+			view.a = 1;
+			hyperact.flushTransaction();
+			view.a = 2;
+		});
+
+		it("initial animation, manually registered, class, counting display calls", function(done) {
+			let count = 0;
+			class View {
+				constructor() {
+					hyperact.activate(this);
+				}
+				animationForKey(key, value, previous) {
+					view.animationForKey = function() {};
+					const error = count === 0 ? null : new Error("display should not have been called at the first invocation of animationForKey");
+					done(error);
+				}
+				display() {
+					count++;
+				}
+			}
+			const view = new View();
+			view.registerAnimatableProperty("a");
+			view.a = 1;
+			hyperact.flushTransaction();
+			view.a = 2;
+		});
+
+		it("initial animation, array, automatically registered", function() {
+			const view = {
+				a:[0,0],
+				animationForKey: function(key, value, previous) {
+					return {
+						type: new hyperact.HyperArray( new hyperact.HyperNumber(), 2),
+						duration: duration,
+						from: value,
+						to: value,
+						blend:"absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.a = [1,2];
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a[0],2);
+			assert.equal(view.presentation.a[1],4);
+		});
+
+		it("initial animation, array, manually registered", function() {
+			const view = {
+				a:[0,0],
+				animationForKey: function(key, value, previous) {
+					return {
+						duration: duration,
+						from: value,
+						to: value,
+						blend:"absolute"
+					};
+				}
+			};
+			hyperact.activate(view);
+			view.registerAnimatableProperty("a", new hyperact.HyperArray( new hyperact.HyperNumber(), 2));
+			view.a = [1,2];
+			hyperact.flushTransaction();
+			assert.equal(view.presentation.a[0],2);
+			assert.equal(view.presentation.a[1],4);
+		});
+
+	});
+
+
 	describe("animationForKey", function() {
 		it("animationForKey when flushed is applied", function() {
 			const view = { x:0, animationForKey: function(property,value,previous,presentation) {
@@ -187,7 +308,7 @@ describe("IMPLICIT", function() {
 			hyperact.disableAnimation();
 			view.b = 2;
 			hyperact.flushTransaction();
-			assert.equal(view.presentation.a,2);
+			assert.equal(view.presentation.a,2); // non-deterministic? fail: 1 == 2
 			assert.equal(view.presentation.b,2);
 			assert.equal(count,1);
 		});
@@ -237,6 +358,8 @@ describe("IMPLICIT", function() {
 			assert.equal(count,1);
 		});
 	});
+
+
 
 	describe("not deprecated animationForKey with delegate input output", function() {
 		it("not deprecated animationForKey with input output when flushed is applied", function() {

@@ -13,8 +13,6 @@ export const VAGUE_TYPE_SPAGHETTI_HACK = false;
 //const NO_DELEGATE_INPUT_OUTPUT = false;
 
 const FASTER_RENDER_LAYER = true; // !!! // Original false // true causes rococo to not animate first time, failure of tests "fake set animation" // Probably not faster but was suppossed to be a step towards fewer object instantiations. Now it's slower with more state. Render layer generates less than a full presentation layer. More caching, no single source of truth, invalidation problem.
-//const MUTATE_RENDER_LAYER = true;
-const AVOID_CREATING_PRESENTATION_LAYER = false; // Original false // in setValuesOfLayer // true causes flicker in transaction example // true causes test failure of "combination register" and if RENDER_LAYER is also true then "registered implicit presentation" fails too.
 const NEWER_RENDER_CACHING = true; // original false // causes flicker in transaction example // true fixes two in "step-end easing" and one in "initial state" but fails one in "fake set animation"
 
 //const DESPERATE_TIMES_CALL_FOR_DESPERATE_ACTION = true;
@@ -24,6 +22,7 @@ export const FAKE_SET_BUG_FIX = true;
 const DOUBLE_CACHED_RENDER = false; // must be false // all animation tests time out
 
 export const TT_BUG_FIX = true; // changes modelLayer behavior. Values only reflected after flush, not before. But also breaks layer values...
+const HOW_IMPLICIT_SHOULD_BE = false; // Why can't I directly use values passed to setValuesOfLayer? I have to pass through model layer.
 
 //const ADD_ANIMATION_AUTO_REGISTER = true; // animations with temporary properties and values, which are otherwise undefined
 
@@ -116,7 +115,7 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 
 		if (FAKE_SET_BUG_FIX) hyperContext.registerFlusher(flusher); // don't need to bind
 		const transaction = hyperContext.currentTransaction();
-		const presentationLayer = AVOID_CREATING_PRESENTATION_LAYER ? null : getPresentation();
+		getPresentation(); // side effects needed, even with TT_BUG_FIX
 
 		const keys = Object.keys(layer);
 
@@ -131,7 +130,17 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			}
 		}
 
-		//if (!TT_BUG_FIX)
+		if (TT_BUG_FIX) {
+			if (!changeStorage) {
+				registerWithContext();
+				changeStorage = {};
+				hyperContext.registerChanger(changer);
+				cachedPreviousLayer = getModel();
+			}
+			if (!transaction.disableAnimation) Object.assign(changeStorage,layer);
+			cachedModelLayer = null;
+		}
+
 		keys.forEach( function(prettyKey) {
 			const prettyValue = layer[prettyKey];
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
@@ -147,45 +156,26 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 			}
 		});
 
-		if (TT_BUG_FIX) {
-			if (!changeStorage) {
-				registerWithContext();
-				changeStorage = {};
-				hyperContext.registerChanger(changer);
-				cachedPreviousLayer = cachedModelLayer;
-			}
-			cachedModelLayer = null;
-			if (!transaction.disableAnimation) Object.assign(changeStorage,layer);
-		} else initiateImplicitAnimation(layer);
+		if (!TT_BUG_FIX) initiateImplicitAnimation(layer);
 	}
 
 	function initiateImplicitAnimation(layer) {
 		const keys = Object.keys(layer);
-
-		// if (TT_BUG_FIX) keys.forEach( function(prettyKey) {
-		// 	const prettyValue = layer[prettyKey];
-		// 	const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
-		// 	registerAnimatableProperty(uglyKey); // automatic registration
-		// 	const uglyValue = convertedInputOfProperty(prettyValue,uglyKey,delegate,defaultTypes);
-		// 	if (FASTER_RENDER_LAYER) { // setValuesOfLayer
-		// 		uglyBacking[uglyKey] = uglyValue;
-		// 		prettyBacking[uglyKey] = prettyValue;
-		// 	} else {
-		// 		const uglyPrevious = modelBacking[uglyKey];
-		// 		previousBacking[uglyKey] = uglyPrevious;
-		// 		modelBacking[uglyKey] = uglyValue;
-		// 	}
-		// });
-
 		const transaction = hyperContext.currentTransaction();
-		const presentationLayer = AVOID_CREATING_PRESENTATION_LAYER ? null : getPresentation();
+		const presentationLayer = getPresentation();
+
 		keys.forEach( function(prettyKey) { // using result not layer because key might be different
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
-			const prettyValue = FASTER_RENDER_LAYER ? getModel()[prettyKey] : layer[prettyKey];
+			//const prettyValue = FASTER_RENDER_LAYER ? getModel()[prettyKey] : layer[prettyKey]; // you might want the model value even if TT_BUG_FIX for input output formatting & processing
+			const prettyValue = TT_BUG_FIX && HOW_IMPLICIT_SHOULD_BE ? layer[prettyKey] : FASTER_RENDER_LAYER ? getModel()[prettyKey] : layer[prettyKey];
+
+			// I think there is an unclosed, outer transaction that spans manually created transactions, not just rAF frames.
+
 			const uglyPrevious = previousBacking[uglyKey];
 			const prettyPrevious = FASTER_RENDER_LAYER ? getPrevious()[prettyKey] : convertedOutputOfProperty(uglyPrevious,uglyKey, delegate, defaultTypes);
+
 			if (prettyValue !== prettyPrevious) {
-				const prettyPresentation = AVOID_CREATING_PRESENTATION_LAYER ? getPresentation()[prettyKey] : presentationLayer[prettyKey]; // pretty key.
+				const prettyPresentation = presentationLayer[prettyKey]; // pretty key.
 				const animation = implicitAnimation(prettyKey,prettyValue,prettyPrevious,prettyPresentation,delegate,defaultAnimations[uglyKey],defaultTypes[uglyKey],transaction);
 				if (animation) addAnimation(animation); // There is room for optimization, reduce copying and converting between pretty and ugly
 				else registerWithContext(); // but it might be a step-end which would not update!

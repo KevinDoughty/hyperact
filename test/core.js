@@ -121,6 +121,7 @@ describe("CORE", function() {
 				blend:"absolute",
 				onend: function(finished) {
 					const error = (view.animations.length === 0) ? null : new Error("animation was not removed before call to onend");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -148,6 +149,7 @@ describe("CORE", function() {
 				blend:"absolute",
 				onend: function(finished) {
 					const error = (view.animations.length === 1) ? null : new Error("animation was not removed before call to onend");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -169,6 +171,7 @@ describe("CORE", function() {
 				blend:"absolute",
 				onend: function(finished) {
 					const error = (view.presentation.a === view.a) ? null : new Error("should have reverted to non animated value");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -190,6 +193,7 @@ describe("CORE", function() {
 				blend:"absolute",
 				onend: function(finished) {
 					const error = (view.presentation.a === view.a) ? null : new Error("should have reverted to non animated value");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -296,6 +300,7 @@ describe("CORE", function() {
 				onend: function() {
 					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -318,6 +323,7 @@ describe("CORE", function() {
 				onend: function() {
 					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -332,6 +338,7 @@ describe("CORE", function() {
 				onend: function() {
 					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -354,6 +361,7 @@ describe("CORE", function() {
 				onend: function() {
 					let error = null;
 					if (view.animations.length) error = new Error("animation did not get removed:"+view.animations.length+";");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -372,6 +380,7 @@ describe("CORE", function() {
 			view.addAnimation({ // this would be unterminated
 				duration: duration,
 				onend: function() {
+					view.removeAllAnimations();
 					done();
 				}
 			});
@@ -433,7 +442,10 @@ describe("CORE", function() {
 				b:2,
 				c:3,
 				display: function() {
-					if (completed) done();
+					if (completed) {
+						view.removeAllAnimations();
+						done();
+					}
 				}
 			};
 			core.activate(view);
@@ -469,6 +481,7 @@ describe("CORE", function() {
 				duration:duration,
 				onend: function() {
 					const error = (modelLayer === view.model) ? null : new Error("model layer was not cached");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -488,6 +501,7 @@ describe("CORE", function() {
 				duration:duration,
 				onend: function() {
 					const error = (previousLayer === view.previous) ? null : new Error("previous layer was not cached");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -500,6 +514,7 @@ describe("CORE", function() {
 				duration:duration,
 				onend: function() {
 					const error = (view.model.a === 1) ? null : new Error("model layer value is not correct");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
@@ -512,6 +527,7 @@ describe("CORE", function() {
 				duration:duration,
 				onend: function() {
 					const error = (view.previous.a === 0) ? null : new Error("previous layer value is not correct");
+					view.removeAllAnimations();
 					done(error);
 				}
 			});
