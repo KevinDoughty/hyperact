@@ -149,7 +149,6 @@ export function hyperActionIsFilling(action) {
 function HyperAction() {
 	this.property; // string, property name
 	this.type;
-	//if (!VAGUE_TYPE_SPAGHETTI_HACK) this.type = hyperNumber; // Default
 	this.duration; // float. In seconds. Need to validate/ensure >= 0. Initialized in runAnimation
 	this.easing; // NOT FINISHED. currently callback function only, need cubic bezier and presets. Defaults to linear. Initialized in runAnimation
 	this.speed; // NOT FINISHED. float. RECONSIDER. Pausing currently not possible like in Core Animation. Layers have speed, beginTime, timeOffset! Initialized in runAnimation

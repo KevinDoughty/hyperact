@@ -1,5 +1,3 @@
-import { FAKE_SET_BUG_FIX } from "./core.js";
-
 const rAF = typeof window !== "undefined" && (
 	window.requestAnimationFrame ||
 	window.webkitRequestAnimationFrame ||
@@ -87,16 +85,14 @@ HyperContext.prototype = {
 	currentTransaction: function() {
 		const length = this.transactions.length;
 		if (length) return this.transactions[length-1].representedObject;
-		if (FAKE_SET_BUG_FIX) return this.createTransactionWrapper({},true).representedObject;
-		return this.createTransaction({},true);
+		return this.createTransactionWrapper({},true).representedObject;
 	},
 	beginTransaction: function(settings) { // TODO: throw on unclosed (user created) transaction
-		if (FAKE_SET_BUG_FIX) return this.createTransactionWrapper(settings,false).representedObject;
-		return this.createTransaction(settings,false);
+		return this.createTransactionWrapper(settings,false).representedObject;
 	},
 	commitTransaction: function() {
 		this.clearChangers();
-		if (FAKE_SET_BUG_FIX) this.clearFlushers();
+		this.clearFlushers();
 		this.transactions.pop();
 	},
 	clearFlushers: function() {
@@ -114,17 +110,17 @@ HyperContext.prototype = {
 	},
 	flushTransaction: function() { // TODO: prevent unterminated when called within display // TODO: better yet, completely remove
 		this.clearChangers();
-		if (FAKE_SET_BUG_FIX) this.clearFlushers();
-		else this.invalidateFunctions.forEach( function(invalidate) { // this won"t work if there are no animations thus not registered
-			invalidate();
-		});
+		this.clearFlushers();
+		// this.invalidateFunctions.forEach( function(invalidate) { // this won"t work if there are no animations thus not registered
+		// 	invalidate();
+		// });
 	},
 	currentTransactionWrapper: function() { // private // for FAKE_SET_BUG_FIX and unregistered controllers.
 		const length = this.transactions.length;
 		if (!length) return this.createTransactionWrapper({},true);
 		return this.transactions[length-1]; // Hope the transaction was created sucessfully, I guess, for now.
 	},
-	registerFlusher: function(flusher) {
+	registerFlusher: function(flusher) { // FAKE_SET_BUG_FIX
 		this.currentTransactionWrapper().flushers.push(flusher);
 	},
 	registerChanger: function(changer) {
