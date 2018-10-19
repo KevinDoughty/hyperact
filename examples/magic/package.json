@@ -15,7 +15,7 @@
 		"gl-matrix": "^2.4.0",
 		"history": "^4.7.2",
 		"query-string": "^5.0.1",
-		"hyperact": "^0.0.18"
+		"hyperact": "^0.0.19"
 	},
 	"devDependencies": {
 		"babel-core": "^6.26.3",
