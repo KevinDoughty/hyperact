@@ -1,6 +1,6 @@
 {
 	"name": "hyperact",
-	"version": "0.0.18",
+	"version": "0.0.19",
 	"description": "Hyperactive animation layers",
 	"main": "dist/hyperact.js",
 	"module": "module/hyperact.js",
