@@ -5,15 +5,15 @@ Documentation does not mean implementation.
 Beware changes like renaming, with semver violations, for just a little while longer.
 
 ```javascript
-import { activate } from "Hyperact";
+import { activate } from "hyperact";
 
 const view = {
-	animationForKey: (key, value, previous, presentation) => 1.0,
-	display: () => console.log("x:%s;",this.x),
-	x: 0
+  animationForKey: (key, value, previous, presentation) => 1.0,
+  display: function() { console.log("x:%s;",this.x) },
+  x: 0
 }
 activate(view);
-console.log("x:zero;");
+
 view.x = 1;
 ```
 
