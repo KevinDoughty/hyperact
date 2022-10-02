@@ -9,9 +9,9 @@ import { activate } from "hyperact";
 
 const view = {
   animationForKey: (key, value, previous, presentation) => 1.0,
-  display: function() { console.log("x:%s;",this.x) },
+  display: function() { console.log("x:%s;",this.x); },
   x: 0
-}
+};
 activate(view);
 
 view.x = 1;
