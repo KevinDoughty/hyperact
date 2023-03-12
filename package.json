@@ -1,6 +1,6 @@
 {
 	"name": "hyperact",
-	"version": "0.0.19",
+	"version": "0.0.20",
 	"description": "Hyperactive animation layers",
 	"main": "dist/hyperact.js",
 	"module": "module/hyperact.js",
@@ -9,7 +9,7 @@
 		"dev": "BABEL_ENV=rollup ./node_modules/.bin/rollup -c && BABEL_ENV=webpack webpack --mode=development --progress --colors",
 		"lint": "eslint source/*.js ; eslint test/*.js --rule 'no-undef:0, no-self-assign:0'",
 		"test:mocha": "BABEL_ENV=mocha mocha --require babel-core/register --colors",
-		"test": "yarn lint ; yarn run test:mocha",
+		"test": "npm run lint ; npm run test:mocha",
 		"gcc": "gcc -framework Cocoa -framework QuartzCore -x objective-c -o ./test/objc ./test/objc.m ; ./test/objc ; rm ./test/objc"
 	},
 	"repository": {

@@ -107,7 +107,7 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 		keys.forEach( function(prettyKey) {
 			const prettyValue = layer[prettyKey];
 			const uglyKey = DELEGATE_DOUBLE_WHAMMY ? convertedKey(prettyKey,delegate.keyInput,delegate) : prettyKey;
-			registerAnimatableProperty(uglyKey); // automatic registration
+			//registerAnimatableProperty(uglyKey); // cannot perform automatic registration, would overwrite descriptions passed in 4th argument
 			const uglyValue = convertedInputOfProperty(prettyValue,uglyKey,delegate,defaultTypes);
 			uglyBacking[uglyKey] = uglyValue;
 			prettyBacking[uglyKey] = prettyValue;
@@ -424,6 +424,10 @@ export function activate(controller, delegate, layerInstance, descriptions) { //
 
 	function defaultPropertyDescription(prettyKey) {
 		const type = descriptions ? descriptions[prettyKey] : undefined;
+		if (!Number.isNaN(type)) {
+			const value = { type: HyperNumber };
+			value[prettyKey] = type;
+		}
 		return type && isDuckType(type) ? { type: type } : type;
 	}
 
