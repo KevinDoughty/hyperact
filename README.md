@@ -69,7 +69,7 @@ view.x = 1;
 
 
 ## Receiver Methods
-  The following methods are added to the `receiver`, the first argument to the `activate` function.
+  The following methods are added to the `receiver`, the first parameter to the `activate` function.
 
 
 #### `registerAnimatableProperty(property, default)`
@@ -139,7 +139,7 @@ view.x = 1;
 
 
 ## Receiver Property Accessors
-  The following property accessors are added to the `receiver`, the first argument to the `activate` function.
+  The following property accessors are added to the `receiver`, the first parameter to the `activate` function.
 
 
 #### `get layer`
