@@ -41,7 +41,7 @@ view.x = 1;
   - `receiver {object}` Required. The object that receives methods and property accessors. Existing properties are automatically registered to animate.
   - `delegate {object}` Optional. The object that implements also optional delegate methods. Default is `receiver`.  
   - `layer {object}` Optional. The object upon which property value change triggers implicit animation. Default is `receiver`.  
-  - `descriptions {object}` Optional. Declarative alternative to implementing animationForKey.
+  - `descriptions {object}` Optional. Declarative alternative to implementing animationForKey. (Currently broken.)
 
 *Returns*  
   `{object}` The same `receiver` with animation management methods and property accessors.
