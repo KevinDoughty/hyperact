@@ -1,20 +1,34 @@
-{
-	"parser": "babel-eslint",
+module.exports = {
+	"env": {
+		"browser": true,
+		"es2021": true,
+		"mocha": true,
+		"node": true
+	},
 	"extends": "eslint:recommended",
-	"globals": {
-		"document": true,
-		"window": true,
-		"setTimeout": true,
-		"console": true,
-
-		"self": true,
-		"Blob": true,
-		"Worker": true,
-		"ArrayBuffer": true,
-		"URL": true
-
+	"overrides": [
+	],
+	"parserOptions": {
+		"ecmaVersion": "latest",
+		"sourceType": "module"
 	},
 	"rules": {
+		// "indent": [
+		// 	"error",
+		// 	"tab"
+		// ],
+		// "linebreak-style": [
+		// 	"error",
+		// 	"unix"
+		// ],
+		// "quotes": [
+		// 	"error",
+		// 	"double"
+		// ],
+		// "semi": [
+		// 	"error",
+		// 	"always"
+		// ]
 		"indent": ["error", "tab", { "SwitchCase": 1 }],
 		"linebreak-style": ["error", "unix"],
 		"quotes": ["error", "double"],
@@ -27,4 +41,4 @@
 		"no-trailing-spaces": [2, { "skipBlankLines": true }],
 		"no-constant-condition": ["error", { "checkLoops": false }]
 	}
-}
+};

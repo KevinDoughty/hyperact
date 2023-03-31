@@ -4,7 +4,7 @@ import { HyperNumber } from "./types.js";
 import { isFunction, prepAnimationObjectFromAddAnimation, convertedKey, convertedInputOfProperty, convertedOutputOfProperty, implicitAnimation } from "./utils.js";
 
 
-export const DELEGATE_DOUBLE_WHAMMY = true; // allow delegate the ability to convert key, to mangle for makeshift key paths.
+const DELEGATE_DOUBLE_WHAMMY = true; // WET // DUPE in utils.js // MUST SYNC // allow delegate the ability to convert key, to mangle for makeshift key paths.
 const ENSURE_ONE_MORE_TICK = true;// true is needed to display one more time after all animations have ended. // false is needed to removeAllAnimations after unmount
 
 const HOW_IT_SHOULD_BE = false; // when true, hyperstyle transaction fails on holding down number key. Need a test that fails when this is true

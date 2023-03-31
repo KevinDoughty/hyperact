@@ -1,4 +1,4 @@
-import { activate, disableAnimation, HyperArray, HyperNumber, currentTransaction } from "hyperact";
+import { activate, disableAnimation, HyperArray, HyperNumber, currentTransaction } from "../../module/hyperact.js";
 import { work } from "./worker.js";
 const glMatrix = require("gl-matrix");
 const vec3 = glMatrix.vec3;

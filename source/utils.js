@@ -1,6 +1,7 @@
-import { DELEGATE_DOUBLE_WHAMMY } from "./core.js";
 import { HyperAnimation, HyperKeyframes, HyperGroup, HyperChain, animationFromDescription } from "./actions.js";
 import { HyperSet } from "./types.js";
+
+const DELEGATE_DOUBLE_WHAMMY = true; // WET // MUST SYNC with core.js version
 
 export function isFunction(w) { // WET
 	return w && {}.toString.call(w) === "[object Function]";
