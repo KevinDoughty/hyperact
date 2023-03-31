@@ -2,7 +2,8 @@
 
 This is a work in progress, still poorly defined in many areas.
 Documentation does not mean implementation.
-Beware changes like renaming, with semver violations, for just a little while longer.
+Still violating semver (sorry).
+Its greatest weakness is over-reliance on object copying, by design. A single animation of 1000 points is feasible but 1000 animations with a single point each is not. A better design using JS Proxy might resolve this.
 
 ```javascript
 import { activate } from "hyperact";
